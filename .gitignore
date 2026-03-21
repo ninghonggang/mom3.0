@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Test reports
+playwright-report/
+test-results/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# omc (local session state)
+.omc/
+mom-web/.omc/
+mom-server/.omc/
+
+# Lock files (optional - may want to keep package-lock.json)
+# package-lock.json
+
+# Zone.Identifier (Windows junk)
+*:Zone.Identifier

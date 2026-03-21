@@ -1,0 +1,41 @@
+server:
+  port: 8080
+  mode: debug
+  jwt:
+    secret: "mom3-secret-key-change-in-production"
+    access_token_expire: 7200    # 2小时（秒）
+    refresh_token_expire: 604800  # 7天（秒）
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "mes"
+  password: "mes123"
+  dbname: "mom3_db"
+  sslmode: "disable"
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+
+minio:
+  endpoint: "localhost:9000"
+  access_key: "minioadmin"
+  secret_key: "minioadmin"
+  use_ssl: false
+  bucket: "mom3-files"
+
+log:
+  level: "debug"
+  format: "json"
+  output: "stdout"
+
+websocket:
+  ping_interval: 30
+  max_msg_size: 1024
+
+asynq:
+  concurrency: 10
+  redis_url: "redis://localhost:6379"
