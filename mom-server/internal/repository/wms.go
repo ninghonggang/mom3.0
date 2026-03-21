@@ -119,3 +119,7 @@ func (r *InventoryRepository) Create(ctx context.Context, inventory *model.Inven
 func (r *InventoryRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
 	return r.db.WithContext(ctx).Model(&model.Inventory{}).Where("id = ?", id).Updates(updates).Error
 }
+
+func (r *InventoryRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&model.Inventory{}, id).Error
+}

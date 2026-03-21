@@ -79,6 +79,55 @@ func (h *WarehouseHandler) ListLocation(c *gin.Context) {
 	})
 }
 
+func (h *WarehouseHandler) GetLocation(c *gin.Context) {
+	id := c.Param("id")
+	location, err := h.service.GetLocationByID(c.Request.Context(), id)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, location)
+}
+
+func (h *WarehouseHandler) CreateLocation(c *gin.Context) {
+	var req model.Location
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	err := h.service.CreateLocation(c.Request.Context(), &req)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, req)
+}
+
+func (h *WarehouseHandler) UpdateLocation(c *gin.Context) {
+	id := c.Param("id")
+	var req model.Location
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	err := h.service.UpdateLocation(c.Request.Context(), id, &req)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, req)
+}
+
+func (h *WarehouseHandler) DeleteLocation(c *gin.Context) {
+	id := c.Param("id")
+	err := h.service.DeleteLocation(c.Request.Context(), id)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, nil)
+}
+
 func (h *WarehouseHandler) ListInventory(c *gin.Context) {
 	list, total, err := h.service.ListInventory(c.Request.Context())
 	if err != nil {
@@ -89,4 +138,53 @@ func (h *WarehouseHandler) ListInventory(c *gin.Context) {
 		"list":  list,
 		"total": total,
 	})
+}
+
+func (h *WarehouseHandler) GetInventory(c *gin.Context) {
+	id := c.Param("id")
+	inventory, err := h.service.GetInventoryByID(c.Request.Context(), id)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, inventory)
+}
+
+func (h *WarehouseHandler) CreateInventory(c *gin.Context) {
+	var req model.Inventory
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	err := h.service.CreateInventory(c.Request.Context(), &req)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, req)
+}
+
+func (h *WarehouseHandler) UpdateInventory(c *gin.Context) {
+	id := c.Param("id")
+	var req model.Inventory
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	err := h.service.UpdateInventory(c.Request.Context(), id, &req)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, req)
+}
+
+func (h *WarehouseHandler) DeleteInventory(c *gin.Context) {
+	id := c.Param("id")
+	err := h.service.DeleteInventory(c.Request.Context(), id)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, nil)
 }

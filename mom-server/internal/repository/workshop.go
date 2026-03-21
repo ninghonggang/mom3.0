@@ -46,6 +46,41 @@ func (r *WorkshopRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&model.Workshop{}, id).Error
 }
 
+type WorkstationRepository struct {
+	db *gorm.DB
+}
+
+func NewWorkstationRepository(db *gorm.DB) *WorkstationRepository {
+	return &WorkstationRepository{db: db}
+}
+
+func (r *WorkstationRepository) List(ctx context.Context, tenantID int64) ([]model.Workstation, int64, error) {
+	var list []model.Workstation
+	var total int64
+	query := r.db.WithContext(ctx).Model(&model.Workstation{})
+	if tenantID > 0 {
+		query = query.Where("tenant_id = ?", tenantID)
+	}
+	err := query.Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	err = query.Order("id DESC").Find(&list).Error
+	return list, total, err
+}
+
+func (r *WorkstationRepository) Create(ctx context.Context, ws *model.Workstation) error {
+	return r.db.WithContext(ctx).Create(ws).Error
+}
+
+func (r *WorkstationRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&model.Workstation{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (r *WorkstationRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&model.Workstation{}, id).Error
+}
+
 type ProductionLineRepository struct {
 	db *gorm.DB
 }

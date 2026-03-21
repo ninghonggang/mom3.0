@@ -2,20 +2,43 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+	"mom-server/internal/handler/aps"
+	"mom-server/internal/handler/business"
+	"mom-server/internal/handler/equipment"
+	"mom-server/internal/handler/production"
 	"mom-server/internal/handler/system"
+	"mom-server/internal/handler/trace"
+	"mom-server/internal/handler/wms"
 	"mom-server/internal/middleware"
 )
 
 // Router 全局路由
 type Router struct {
-	engine      *gin.Engine
-	userHandler *system.UserHandler
-	authHandler *system.AuthHandler
-	roleHandler *system.RoleHandler
-	menuHandler *system.MenuHandler
-	deptHandler *system.DeptHandler
-	dictHandler *system.DictHandler
-	postHandler *system.PostHandler
+	engine              *gin.Engine
+	userHandler         *system.UserHandler
+	authHandler         *system.AuthHandler
+	roleHandler         *system.RoleHandler
+	menuHandler         *system.MenuHandler
+	deptHandler         *system.DeptHandler
+	dictHandler         *system.DictHandler
+	postHandler         *system.PostHandler
+	warehouseHandler    *wms.WarehouseHandler
+	salesOrderHandler   *production.SalesOrderHandler
+	reportHandler       *production.ReportHandler
+	dispatchHandler     *production.DispatchHandler
+	mpsHandler         *aps.MPSHandler
+	mrpHandler         *aps.MRPHandler
+	scheduleHandler     *aps.ScheduleHandler
+	traceHandler       *trace.TraceHandler
+	andonHandler       *trace.AndonHandler
+	energyHandler      *trace.EnergyHandler
+	checkHandler       *equipment.EquipmentCheckHandler
+	maintHandler       *equipment.EquipmentMaintenanceHandler
+	repairHandler      *equipment.EquipmentRepairHandler
+	sparePartHandler   *equipment.SparePartHandler
+	lineHandler        *business.ProductionLineHandler
+	workstationHandler *business.WorkstationHandler
+	shiftHandler       *business.ShiftHandler
 }
 
 // New 创建路由
@@ -27,15 +50,49 @@ func New(
 	deptHandler *system.DeptHandler,
 	dictHandler *system.DictHandler,
 	postHandler *system.PostHandler,
+	warehouseHandler *wms.WarehouseHandler,
+	salesOrderHandler *production.SalesOrderHandler,
+	reportHandler *production.ReportHandler,
+	dispatchHandler *production.DispatchHandler,
+	mpsHandler *aps.MPSHandler,
+	mrpHandler *aps.MRPHandler,
+	scheduleHandler *aps.ScheduleHandler,
+	traceHandler *trace.TraceHandler,
+	andonHandler *trace.AndonHandler,
+	energyHandler *trace.EnergyHandler,
+	checkHandler *equipment.EquipmentCheckHandler,
+	maintHandler *equipment.EquipmentMaintenanceHandler,
+	repairHandler *equipment.EquipmentRepairHandler,
+	sparePartHandler *equipment.SparePartHandler,
+	lineHandler *business.ProductionLineHandler,
+	workstationHandler *business.WorkstationHandler,
+	shiftHandler *business.ShiftHandler,
 ) *Router {
 	return &Router{
-		userHandler:  userHandler,
-		authHandler:  authHandler,
-		roleHandler:  roleHandler,
-		menuHandler:  menuHandler,
-		deptHandler:  deptHandler,
-		dictHandler:  dictHandler,
-		postHandler:  postHandler,
+		userHandler:         userHandler,
+		authHandler:         authHandler,
+		roleHandler:         roleHandler,
+		menuHandler:         menuHandler,
+		deptHandler:         deptHandler,
+		dictHandler:         dictHandler,
+		postHandler:         postHandler,
+		warehouseHandler:    warehouseHandler,
+		salesOrderHandler:   salesOrderHandler,
+		reportHandler:       reportHandler,
+		dispatchHandler:     dispatchHandler,
+		mpsHandler:          mpsHandler,
+		mrpHandler:          mrpHandler,
+		scheduleHandler:      scheduleHandler,
+		traceHandler:        traceHandler,
+		andonHandler:        andonHandler,
+		energyHandler:       energyHandler,
+		checkHandler:        checkHandler,
+		maintHandler:        maintHandler,
+		repairHandler:       repairHandler,
+		sparePartHandler:    sparePartHandler,
+		lineHandler:         lineHandler,
+		workstationHandler:  workstationHandler,
+		shiftHandler:        shiftHandler,
 	}
 }
 
@@ -141,6 +198,166 @@ func (r *Router) Init(engine *gin.Engine) {
 				post.PUT("/:id", r.postHandler.Update)
 				post.DELETE("/:id", r.postHandler.Delete)
 			}
+		}
+
+		// 生产执行
+		salesOrder := protected.Group("/production/sales-order")
+		{
+			salesOrder.GET("/list", r.salesOrderHandler.List)
+			salesOrder.GET("/:id", r.salesOrderHandler.Get)
+			salesOrder.POST("", r.salesOrderHandler.Create)
+			salesOrder.PUT("/:id", r.salesOrderHandler.Update)
+			salesOrder.DELETE("/:id", r.salesOrderHandler.Delete)
+			salesOrder.PUT("/:id/confirm", r.salesOrderHandler.Confirm)
+		}
+
+		// 生产报工
+		report := protected.Group("/production/report")
+		{
+			report.GET("/list", r.reportHandler.List)
+			report.POST("", r.reportHandler.Create)
+		}
+
+		// 派工
+		dispatch := protected.Group("/production/dispatch")
+		{
+			dispatch.GET("/list", r.dispatchHandler.List)
+			dispatch.POST("", r.dispatchHandler.Create)
+			dispatch.PUT("/:id", r.dispatchHandler.Update)
+			dispatch.PUT("/:id/start", r.dispatchHandler.Start)
+			dispatch.PUT("/:id/complete", r.dispatchHandler.Complete)
+		}
+
+		// APS计划
+		aps := protected.Group("/aps")
+		{
+			mps := aps.Group("/mps")
+			{
+				mps.GET("/list", r.mpsHandler.List)
+				mps.GET("/:id", r.mpsHandler.Get)
+				mps.POST("", r.mpsHandler.Create)
+				mps.PUT("/:id", r.mpsHandler.Update)
+				mps.DELETE("/:id", r.mpsHandler.Delete)
+				mps.PUT("/:id/submit", r.mpsHandler.Submit)
+			}
+			mrp := aps.Group("/mrp")
+			{
+				mrp.GET("/list", r.mrpHandler.List)
+				mrp.PUT("/:id/calculate", r.mrpHandler.Calculate)
+			}
+			schedule := aps.Group("/schedule")
+			{
+				schedule.GET("/list", r.scheduleHandler.List)
+				schedule.POST("", r.scheduleHandler.Create)
+				schedule.PUT("/:id/execute", r.scheduleHandler.Execute)
+				schedule.GET("/:id/results", r.scheduleHandler.GetResults)
+			}
+		}
+
+		// 仓储管理
+		wms := protected.Group("/wms")
+		{
+			warehouse := wms.Group("/warehouse")
+			{
+				warehouse.GET("/list", r.warehouseHandler.ListWarehouse)
+				warehouse.GET("/:id", r.warehouseHandler.ListWarehouse)
+				warehouse.POST("", r.warehouseHandler.CreateWarehouse)
+				warehouse.PUT("/:id", r.warehouseHandler.UpdateWarehouse)
+				warehouse.DELETE("/:id", r.warehouseHandler.DeleteWarehouse)
+			}
+			location := wms.Group("/location")
+			{
+				location.GET("/list", r.warehouseHandler.ListLocation)
+				location.GET("/:id", r.warehouseHandler.GetLocation)
+				location.POST("", r.warehouseHandler.CreateLocation)
+				location.PUT("/:id", r.warehouseHandler.UpdateLocation)
+				location.DELETE("/:id", r.warehouseHandler.DeleteLocation)
+			}
+			inventory := wms.Group("/inventory")
+			{
+				inventory.GET("/list", r.warehouseHandler.ListInventory)
+				inventory.GET("/:id", r.warehouseHandler.GetInventory)
+				inventory.POST("", r.warehouseHandler.CreateInventory)
+				inventory.PUT("/:id", r.warehouseHandler.UpdateInventory)
+				inventory.DELETE("/:id", r.warehouseHandler.DeleteInventory)
+			}
+		}
+
+		// 追溯管理
+		trace := protected.Group("/trace")
+		{
+			trace.GET("/serial", r.traceHandler.TraceBySerial)
+			trace.GET("/batch", r.traceHandler.TraceByBatch)
+			trace.GET("/order/:id", r.traceHandler.TraceByOrder)
+		}
+
+		// 安东呼叫
+		andon := protected.Group("/andon")
+		{
+			call := andon.Group("/call")
+			{
+				call.GET("/list", r.andonHandler.List)
+				call.POST("", r.andonHandler.Create)
+				call.PUT("/:id/response", r.andonHandler.Response)
+				call.PUT("/:id/resolve", r.andonHandler.Resolve)
+			}
+		}
+
+		// 能源管理
+		energy := protected.Group("/energy")
+		{
+			record := energy.Group("/record")
+			{
+				record.GET("/list", r.energyHandler.List)
+				record.POST("", r.energyHandler.Create)
+			}
+			energy.GET("/stats", r.energyHandler.GetStats)
+			energy.GET("/trend", r.energyHandler.GetTrend)
+		}
+
+		// 设备点检
+		protected.Group("/equipment/check").GET("/list", r.checkHandler.List)
+
+		// 设备保养
+		protected.Group("/equipment/maintenance").GET("/list", r.maintHandler.List)
+
+		// 设备维修
+		equipmentRepair := protected.Group("/equipment/repair")
+		{
+			equipmentRepair.GET("/list", r.repairHandler.List)
+			equipmentRepair.POST("", r.repairHandler.Create)
+			equipmentRepair.PUT("/:id/start", r.repairHandler.Start)
+			equipmentRepair.PUT("/:id/complete", r.repairHandler.Complete)
+		}
+
+		// 备件
+		protected.Group("/equipment/spare").GET("/list", r.sparePartHandler.List)
+
+		// 生产线
+		line := protected.Group("/mdm/line")
+		{
+			line.GET("/list", r.lineHandler.List)
+			line.POST("", r.lineHandler.Create)
+			line.PUT("/:id", r.lineHandler.Update)
+			line.DELETE("/:id", r.lineHandler.Delete)
+		}
+
+		// 工位
+		workstation := protected.Group("/mdm/workstation")
+		{
+			workstation.GET("/list", r.workstationHandler.List)
+			workstation.POST("", r.workstationHandler.Create)
+			workstation.PUT("/:id", r.workstationHandler.Update)
+			workstation.DELETE("/:id", r.workstationHandler.Delete)
+		}
+
+		// 班次
+		shift := protected.Group("/mdm/shift")
+		{
+			shift.GET("/list", r.shiftHandler.List)
+			shift.POST("", r.shiftHandler.Create)
+			shift.PUT("/:id", r.shiftHandler.Update)
+			shift.DELETE("/:id", r.shiftHandler.Delete)
 		}
 
 		// TODO: 其他模块路由...

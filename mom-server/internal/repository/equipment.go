@@ -46,6 +46,33 @@ func (r *EquipmentRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&model.Equipment{}, id).Error
 }
 
+type EquipmentCheckRepository struct {
+	db *gorm.DB
+}
+
+func NewEquipmentCheckRepository(db *gorm.DB) *EquipmentCheckRepository {
+	return &EquipmentCheckRepository{db: db}
+}
+
+func (r *EquipmentCheckRepository) List(ctx context.Context, tenantID int64) ([]model.EquipmentCheck, int64, error) {
+	var list []model.EquipmentCheck
+	var total int64
+	query := r.db.WithContext(ctx).Model(&model.EquipmentCheck{})
+	if tenantID > 0 {
+		query = query.Where("tenant_id = ?", tenantID)
+	}
+	err := query.Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	err = query.Order("id DESC").Find(&list).Error
+	return list, total, err
+}
+
+func (r *EquipmentCheckRepository) Create(ctx context.Context, check *model.EquipmentCheck) error {
+	return r.db.WithContext(ctx).Create(check).Error
+}
+
 type EquipmentMaintenanceRepository struct {
 	db *gorm.DB
 }
@@ -98,4 +125,41 @@ func (r *EquipmentRepairRepository) List(ctx context.Context, tenantID int64) ([
 
 func (r *EquipmentRepairRepository) Create(ctx context.Context, m *model.EquipmentRepair) error {
 	return r.db.WithContext(ctx).Create(m).Error
+}
+
+func (r *EquipmentRepairRepository) GetByID(ctx context.Context, id uint) (*model.EquipmentRepair, error) {
+	var repair model.EquipmentRepair
+	err := r.db.WithContext(ctx).First(&repair, id).Error
+	return &repair, err
+}
+
+func (r *EquipmentRepairRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&model.EquipmentRepair{}).Where("id = ?", id).Updates(updates).Error
+}
+
+type SparePartRepository struct {
+	db *gorm.DB
+}
+
+func NewSparePartRepository(db *gorm.DB) *SparePartRepository {
+	return &SparePartRepository{db: db}
+}
+
+func (r *SparePartRepository) List(ctx context.Context, tenantID int64) ([]model.SparePart, int64, error) {
+	var list []model.SparePart
+	var total int64
+	query := r.db.WithContext(ctx).Model(&model.SparePart{})
+	if tenantID > 0 {
+		query = query.Where("tenant_id = ?", tenantID)
+	}
+	err := query.Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	err = query.Order("id DESC").Find(&list).Error
+	return list, total, err
+}
+
+func (r *SparePartRepository) Create(ctx context.Context, sp *model.SparePart) error {
+	return r.db.WithContext(ctx).Create(sp).Error
 }

@@ -71,6 +71,24 @@ const routes: RouteRecordRaw[] = [
       },
       // 生产执行
       {
+        path: 'production/sales-order',
+        name: 'SalesOrderList',
+        component: () => import('@/views/production/SalesOrderList.vue'),
+        meta: { title: '销售订单', icon: 'Document' }
+      },
+      {
+        path: 'production/report',
+        name: 'ReportList',
+        component: () => import('@/views/production/ReportList.vue'),
+        meta: { title: '生产报工', icon: 'DocumentCheck' }
+      },
+      {
+        path: 'production/dispatch',
+        name: 'DispatchList',
+        component: () => import('@/views/production/DispatchList.vue'),
+        meta: { title: '派工管理', icon: 'Tickets' }
+      },
+      {
         path: 'production/order',
         name: 'ProductionOrderList',
         component: () => import('@/views/production/ProductionOrderList.vue'),
@@ -89,6 +107,18 @@ const routes: RouteRecordRaw[] = [
         name: 'WarehouseList',
         component: () => import('@/views/wms/WarehouseList.vue'),
         meta: { title: '仓库管理', icon: 'House' }
+      },
+      {
+        path: 'wms/location',
+        name: 'LocationList',
+        component: () => import('@/views/wms/LocationList.vue'),
+        meta: { title: '库位管理', icon: 'Location' }
+      },
+      {
+        path: 'wms/inventory',
+        name: 'InventoryList',
+        component: () => import('@/views/wms/InventoryList.vue'),
+        meta: { title: '库存管理', icon: 'Box' }
       },
       // 质量管理
       {

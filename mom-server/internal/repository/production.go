@@ -99,3 +99,40 @@ func (r *DispatchRepository) Create(ctx context.Context, dispatch *model.Dispatc
 func (r *DispatchRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
 	return r.db.WithContext(ctx).Model(&model.Dispatch{}).Where("id = ?", id).Updates(updates).Error
 }
+
+type SalesOrderRepository struct {
+	db *gorm.DB
+}
+
+func NewSalesOrderRepository(db *gorm.DB) *SalesOrderRepository {
+	return &SalesOrderRepository{db: db}
+}
+
+func (r *SalesOrderRepository) List(ctx context.Context, tenantID int64) ([]model.SalesOrder, int64, error) {
+	var list []model.SalesOrder
+	var total int64
+	err := r.db.WithContext(ctx).Model(&model.SalesOrder{}).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	err = r.db.WithContext(ctx).Order("id DESC").Find(&list).Error
+	return list, total, err
+}
+
+func (r *SalesOrderRepository) GetByID(ctx context.Context, id uint) (*model.SalesOrder, error) {
+	var order model.SalesOrder
+	err := r.db.WithContext(ctx).First(&order, id).Error
+	return &order, err
+}
+
+func (r *SalesOrderRepository) Create(ctx context.Context, order *model.SalesOrder) error {
+	return r.db.WithContext(ctx).Create(order).Error
+}
+
+func (r *SalesOrderRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&model.SalesOrder{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (r *SalesOrderRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&model.SalesOrder{}, id).Error
+}

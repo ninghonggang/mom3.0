@@ -55,6 +55,14 @@ export const updateDispatch = (id: number, data: any) => {
   return request.put(`/production/dispatch/${id}`, data)
 }
 
+export const startDispatch = (id: number) => {
+  return request.put(`/production/dispatch/${id}/start`)
+}
+
+export const completeDispatch = (id: number) => {
+  return request.put(`/production/dispatch/${id}/complete`)
+}
+
 // 销售订单
 export const getSalesOrderList = (params?: any) => {
   return request.get('/production/sales-order/list', { params })
@@ -66,4 +74,12 @@ export const createSalesOrder = (data: any) => {
 
 export const updateSalesOrder = (id: number, data: any) => {
   return request.put(`/production/sales-order/${id}`, data)
+}
+
+export const deleteSalesOrder = (id: number) => {
+  return request.delete(`/production/sales-order/${id}`)
+}
+
+export const confirmSalesOrder = (id: number) => {
+  return request.put(`/production/sales-order/${id}/confirm`)
 }
