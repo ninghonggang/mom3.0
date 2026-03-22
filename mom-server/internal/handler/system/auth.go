@@ -34,13 +34,47 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.userSvc.Login(c.Request.Context(), req)
+	user, err := h.userSvc.ValidateLogin(c.Request.Context(), req)
 	if err != nil {
 		response.Error(c, 40001, err.Error())
 		return
 	}
 
-	response.Success(c, resp)
+	// 获取用户角色
+	roleIDs, _ := h.userSvc.GetUserRoles(c.Request.Context(), user.ID)
+	var roles []string
+	if len(roleIDs) > 0 {
+		roleList, _ := h.userSvc.GetAllRoles(c.Request.Context(), user.TenantID)
+		roleMap := make(map[int64]string)
+		for _, r := range roleList {
+			roleMap[r.ID] = r.RoleKey
+		}
+		for _, rid := range roleIDs {
+			if rk, ok := roleMap[rid]; ok {
+				roles = append(roles, rk)
+			}
+		}
+	}
+
+	// 生成真实JWT Token
+	accessToken, refreshToken, _ := h.jwtSvc.GenerateToken(user.ID, user.TenantID, user.Username, roles)
+
+	response.Success(c, &dto.LoginResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		ExpiresIn:    7200,
+		User: &dto.UserDTO{
+			ID:       user.ID,
+			Username: user.Username,
+			Nickname: user.Nickname,
+			Email:    user.Email,
+			Phone:    user.Phone,
+			Avatar:   user.Avatar,
+			DeptID:   user.DeptID,
+			Status:   user.Status,
+			Roles:    roles,
+		},
+	})
 }
 
 // Logout 退出登录

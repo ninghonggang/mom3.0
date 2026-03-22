@@ -96,6 +96,37 @@ func (s *UserService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Log
 	}, nil
 }
 
+// ValidateLogin 验证登录（不生成Token）
+func (s *UserService) ValidateLogin(ctx context.Context, req dto.LoginRequest) (*model.User, error) {
+	user, err := s.userRepo.FindByUsername(ctx, 1, req.Username)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrInvalidPassword
+		}
+		return nil, err
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		return nil, ErrInvalidPassword
+	}
+
+	if user.Status == 0 {
+		return nil, ErrUserDisabled
+	}
+
+	return user, nil
+}
+
+// GetUserRoles 获取用户角色ID列表
+func (s *UserService) GetUserRoles(ctx context.Context, userID int64) ([]int64, error) {
+	return s.userRepo.GetUserRoles(ctx, userID)
+}
+
+// GetAllRoles 获取所有角色
+func (s *UserService) GetAllRoles(ctx context.Context, tenantID int64) ([]model.Role, error) {
+	return s.roleRepo.FindAll(ctx, tenantID)
+}
+
 // Create 创建用户
 func (s *UserService) Create(ctx context.Context, req dto.CreateUserRequest) error {
 	// 检查用户名是否存在

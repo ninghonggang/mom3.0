@@ -81,6 +81,8 @@ func main() {
 	}
 
 	// 初始化JWT
+	log.Printf("DEBUG: cfg.Server.JWT.Secret = '%s'", cfg.Server.JWT.Secret)
+	log.Printf("DEBUG: cfg.Server.JWT.AccessTokenExpire = %v", cfg.Server.JWT.AccessTokenExpire)
 	jwtUtil := jwt.New(&cfg.Server.JWT)
 
 	// 初始化仓储层
