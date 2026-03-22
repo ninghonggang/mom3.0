@@ -10,11 +10,13 @@ import (
 	"mom-server/internal/handler/trace"
 	"mom-server/internal/handler/wms"
 	"mom-server/internal/middleware"
+	"mom-server/internal/pkg/jwt"
 )
 
 // Router 全局路由
 type Router struct {
 	engine              *gin.Engine
+	jwtUtil            *jwt.JWT
 	userHandler         *system.UserHandler
 	authHandler         *system.AuthHandler
 	roleHandler         *system.RoleHandler
@@ -43,6 +45,7 @@ type Router struct {
 
 // New 创建路由
 func New(
+	jwtUtil *jwt.JWT,
 	userHandler *system.UserHandler,
 	authHandler *system.AuthHandler,
 	roleHandler *system.RoleHandler,
@@ -69,6 +72,7 @@ func New(
 	shiftHandler *business.ShiftHandler,
 ) *Router {
 	return &Router{
+		jwtUtil:             jwtUtil,
 		userHandler:         userHandler,
 		authHandler:         authHandler,
 		roleHandler:         roleHandler,
@@ -118,7 +122,7 @@ func (r *Router) Init(engine *gin.Engine) {
 
 	// 需要认证的路由
 	protected := r.engine.Group("/api/v1")
-	protected.Use(middleware.JWTAuth(nil))
+	protected.Use(middleware.JWTAuth(r.jwtUtil))
 	{
 		// 认证相关
 		auth := protected.Group("/auth")

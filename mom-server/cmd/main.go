@@ -15,7 +15,6 @@ import (
 	"mom-server/internal/handler/production"
 	"mom-server/internal/handler/trace"
 	"mom-server/internal/handler/wms"
-	"mom-server/internal/middleware"
 	"mom-server/internal/model"
 	"mom-server/internal/pkg/jwt"
 	"mom-server/internal/repository"
@@ -81,8 +80,6 @@ func main() {
 	}
 
 	// 初始化JWT
-	log.Printf("DEBUG: cfg.Server.JWT.Secret = '%s'", cfg.Server.JWT.Secret)
-	log.Printf("DEBUG: cfg.Server.JWT.AccessTokenExpire = %v", cfg.Server.JWT.AccessTokenExpire)
 	jwtUtil := jwt.New(&cfg.Server.JWT)
 
 	// 初始化仓储层
@@ -169,13 +166,8 @@ func main() {
 	// 初始化路由
 	gin.SetMode(cfg.Server.Mode)
 	engine := gin.Default()
-	r := router.New(userHandler, authHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler)
+	r := router.New(jwtUtil, userHandler, authHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler)
 	r.Init(engine)
-
-	// 设置JWT中间件
-	r.SetJWT(func() gin.HandlerFunc {
-		return middleware.JWTAuth(jwtUtil)
-	})
 
 	// 启动服务器
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
