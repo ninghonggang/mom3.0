@@ -41,6 +41,12 @@
           </template>
           <el-menu-item index="/mdm/material">物料管理</el-menu-item>
           <el-menu-item index="/mdm/workshop">车间管理</el-menu-item>
+          <el-menu-item index="/mdm/line">生产线管理</el-menu-item>
+          <el-menu-item index="/mdm/workstation">工位管理</el-menu-item>
+          <el-menu-item index="/mdm/shift">班次管理</el-menu-item>
+          <el-menu-item index="/mdm/bom">BOM管理</el-menu-item>
+          <el-menu-item index="/mdm/operation">工序管理</el-menu-item>
+          <el-menu-item index="/mdm/mdm-shift">班次定义</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/production">
@@ -49,6 +55,9 @@
             <span>生产执行</span>
           </template>
           <el-menu-item index="/production/order">生产工单</el-menu-item>
+          <el-menu-item index="/production/sales-order">销售订单</el-menu-item>
+          <el-menu-item index="/production/report">生产报工</el-menu-item>
+          <el-menu-item index="/production/dispatch">派工</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/equipment">
@@ -57,6 +66,10 @@
             <span>设备管理</span>
           </template>
           <el-menu-item index="/equipment">设备台账</el-menu-item>
+          <el-menu-item index="/equipment/check">设备点检</el-menu-item>
+          <el-menu-item index="/equipment/maintenance">设备保养</el-menu-item>
+          <el-menu-item index="/equipment/repair">设备维修</el-menu-item>
+          <el-menu-item index="/equipment/spare">备件管理</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/wms">
@@ -65,6 +78,8 @@
             <span>仓储管理</span>
           </template>
           <el-menu-item index="/wms/warehouse">仓库管理</el-menu-item>
+          <el-menu-item index="/wms/location">库位管理</el-menu-item>
+          <el-menu-item index="/wms/inventory">库存管理</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/quality">
@@ -81,6 +96,8 @@
             <span>APS计划</span>
           </template>
           <el-menu-item index="/aps/mps">MPS计划</el-menu-item>
+          <el-menu-item index="/aps/mrp">MRP计划</el-menu-item>
+          <el-menu-item index="/aps/schedule">排程计划</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/trace">

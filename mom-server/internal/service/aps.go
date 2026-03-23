@@ -166,3 +166,12 @@ func (s *ScheduleService) GetResults(ctx context.Context, id string) ([]model.Sc
 	}
 	return s.scheduleRepo.GetResultsByPlanID(ctx, int64(planID))
 }
+
+func (s *ScheduleService) Delete(ctx context.Context, id string) error {
+	var planID uint
+	_, err := fmt.Sscanf(id, "%d", &planID)
+	if err != nil {
+		return err
+	}
+	return s.scheduleRepo.Delete(ctx, planID)
+}

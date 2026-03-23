@@ -129,3 +129,7 @@ func (r *ScheduleRepository) GetResultsByPlanID(ctx context.Context, planID int6
 	err := r.db.WithContext(ctx).Where("plan_id = ?", planID).Order("sequence ASC").Find(&results).Error
 	return results, err
 }
+
+func (r *ScheduleRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&model.SchedulePlan{}, id).Error
+}

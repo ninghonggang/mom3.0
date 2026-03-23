@@ -137,7 +137,7 @@ type Workstation struct {
 	Status     int     `json:"status" gorm:"default:1"`
 }
 
-// Shift 班次
+// Shift 班次 (旧版本，兼容)
 type Shift struct {
 	BaseModel
 	TenantID   int64   `json:"tenant_id" gorm:"index;not null"`
@@ -148,4 +148,21 @@ type Shift struct {
 	BreakStart *string `json:"break_start" gorm:"size:10"`
 	BreakEnd   *string `json:"break_end" gorm:"size:10"`
 	Status     int     `json:"status" gorm:"default:1"`
+}
+
+// MdmShift MDM班次
+type MdmShift struct {
+	BaseModel
+	TenantID   int64   `json:"tenant_id" gorm:"index;not null"`
+	ShiftCode  string  `json:"shift_code" gorm:"size:50;not null;uniqueIndex:idx_tenant_mdm_shift_code"`
+	ShiftName  string  `json:"shift_name" gorm:"size:100;not null"`
+	StartTime  string  `json:"start_time" gorm:"size:10"` // HH:mm
+	EndTime    string  `json:"end_time" gorm:"size:10"`   // HH:mm
+	WorkHours  float64 `json:"work_hours" gorm:"type:decimal(10,2);default:8"` // 工作时长
+	IsNight    int     `json:"is_night" gorm:"default:0"` // 是否夜班 0否 1是
+	Remark     *string `json:"remark" gorm:"size:500"`
+}
+
+func (MdmShift) TableName() string {
+	return "mdm_shift"
 }

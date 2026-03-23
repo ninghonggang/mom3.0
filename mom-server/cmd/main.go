@@ -8,11 +8,12 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"mom-server/internal/config"
-	"mom-server/internal/handler/system"
 	"mom-server/internal/handler/aps"
 	"mom-server/internal/handler/business"
 	"mom-server/internal/handler/equipment"
+	"mom-server/internal/handler/mdm"
 	"mom-server/internal/handler/production"
+	"mom-server/internal/handler/system"
 	"mom-server/internal/handler/trace"
 	"mom-server/internal/handler/wms"
 	"mom-server/internal/model"
@@ -75,6 +76,10 @@ func main() {
 		&model.AndonCall{},
 		&model.DataCollection{},
 		&model.EnergyRecord{},
+		&model.MdmBOM{},
+		&model.MdmBOMItem{},
+		&model.MdmOperation{},
+		&model.MdmShift{},
 	); err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)
 	}
@@ -111,6 +116,10 @@ func main() {
 	lineRepo := repository.NewProductionLineRepository(db)
 	workstationRepo := repository.NewWorkstationRepository(db)
 	shiftRepo := repository.NewShiftRepository(db)
+	bomRepo := repository.NewBOMRepository(db)
+	bomItemRepo := repository.NewBOMItemRepository(db)
+	opRepo := repository.NewOperationRepository(db)
+	mdmShiftRepo := repository.NewMdmShiftRepository(db)
 
 	// 初始化服务层
 	userSvc := service.NewUserService(userRepo, roleRepo)
@@ -136,6 +145,9 @@ func main() {
 	lineSvc := service.NewProductionLineService(lineRepo)
 	workstationSvc := service.NewWorkstationService(workstationRepo)
 	shiftSvc := service.NewShiftService(shiftRepo)
+	bomSvc := service.NewBOMService(bomRepo, bomItemRepo)
+	opSvc := service.NewOperationService(opRepo)
+	mdmShiftSvc := service.NewMdmShiftService(mdmShiftRepo)
 
 	// 初始化处理器层
 	authHandler := system.NewAuthHandler(userSvc, jwtUtil)
@@ -162,11 +174,14 @@ func main() {
 	lineHandler := business.NewProductionLineHandler(lineSvc)
 	workstationHandler := business.NewWorkstationHandler(workstationSvc)
 	shiftHandler := business.NewShiftHandler(shiftSvc)
+	bomHandler := mdm.NewBOMHandler(bomSvc)
+	opHandler := mdm.NewOperationHandler(opSvc)
+	mdmShiftHandler := mdm.NewShiftHandler(mdmShiftSvc)
 
 	// 初始化路由
 	gin.SetMode(cfg.Server.Mode)
 	engine := gin.Default()
-	r := router.New(jwtUtil, userHandler, authHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler)
+	r := router.New(jwtUtil, userHandler, authHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler)
 	r.Init(engine)
 
 	// 启动服务器

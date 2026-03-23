@@ -69,6 +69,36 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/mdm/WorkshopList.vue'),
         meta: { title: '车间管理', icon: 'OfficeBuilding' }
       },
+      {
+        path: 'mdm/line',
+        name: 'ProductionLineList',
+        component: () => import('@/views/mdm/LineList.vue'),
+        meta: { title: '生产线管理', icon: 'Connection' }
+      },
+      {
+        path: 'mdm/workstation',
+        name: 'WorkstationList',
+        component: () => import('@/views/mdm/WorkstationList.vue'),
+        meta: { title: '工位管理', icon: 'Grid' }
+      },
+      {
+        path: 'mdm/shift',
+        name: 'ShiftList',
+        component: () => import('@/views/mdm/ShiftList.vue'),
+        meta: { title: '班次管理', icon: 'Clock' }
+      },
+      {
+        path: 'mdm/bom',
+        name: 'BomList',
+        component: () => import('@/views/mdm/BomList.vue'),
+        meta: { title: 'BOM管理', icon: 'Files' }
+      },
+      {
+        path: 'mdm/operation',
+        name: 'OperationList',
+        component: () => import('@/views/mdm/OperationList.vue'),
+        meta: { title: '工序管理', icon: 'Operation' }
+      },
       // 生产执行
       {
         path: 'production/sales-order',
@@ -100,6 +130,30 @@ const routes: RouteRecordRaw[] = [
         name: 'EquipmentList',
         component: () => import('@/views/equipment/EquipmentList.vue'),
         meta: { title: '设备台账', icon: 'Monitor' }
+      },
+      {
+        path: 'equipment/check',
+        name: 'EquipmentCheck',
+        component: () => import('@/views/equipment/CheckList.vue'),
+        meta: { title: '设备点检', icon: 'Check' }
+      },
+      {
+        path: 'equipment/maintenance',
+        name: 'EquipmentMaintenance',
+        component: () => import('@/views/equipment/MaintenanceList.vue'),
+        meta: { title: '设备保养', icon: 'Tools' }
+      },
+      {
+        path: 'equipment/repair',
+        name: 'EquipmentRepair',
+        component: () => import('@/views/equipment/RepairList.vue'),
+        meta: { title: '设备维修', icon: 'Tool' }
+      },
+      {
+        path: 'equipment/spare',
+        name: 'SparePartList',
+        component: () => import('@/views/equipment/SparePartList.vue'),
+        meta: { title: '备件管理', icon: 'Box' }
       },
       // 仓储管理
       {
@@ -133,6 +187,18 @@ const routes: RouteRecordRaw[] = [
         name: 'MPSList',
         component: () => import('@/views/aps/MPSList.vue'),
         meta: { title: 'MPS计划', icon: 'Calendar' }
+      },
+      {
+        path: 'aps/mrp',
+        name: 'MRPList',
+        component: () => import('@/views/aps/MRPList.vue'),
+        meta: { title: 'MRP计划', icon: 'Grid' }
+      },
+      {
+        path: 'aps/schedule',
+        name: 'ScheduleList',
+        component: () => import('@/views/aps/ScheduleList.vue'),
+        meta: { title: '排程计划', icon: 'List' }
       },
       // 追溯管理
       {

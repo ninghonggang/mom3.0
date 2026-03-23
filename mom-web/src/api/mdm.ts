@@ -126,3 +126,45 @@ export const updateShift = (id: number, data: any) => {
 export const deleteShift = (id: number) => {
   return request.delete(`/mdm/shift/${id}`)
 }
+
+// MDM 工序
+export const getOperationList = (params?: any) => {
+  return request.get('/mdm/operation/list', { params })
+}
+
+export const getOperationById = (id: number) => {
+  return request.get(`/mdm/operation/${id}`)
+}
+
+export const createOperation = (data: any) => {
+  return request.post('/mdm/operation', data)
+}
+
+export const updateOperation = (id: number, data: any) => {
+  return request.put(`/mdm/operation/${id}`, data)
+}
+
+export const deleteOperation = (id: number) => {
+  return request.delete(`/mdm/operation/${id}`)
+}
+
+// MDM 班次
+export const getMdmShiftList = (params?: any) => {
+  return request.get('/mdm/mdm-shift/list', { params })
+}
+
+export const getMdmShiftById = (id: number) => {
+  return request.get(`/mdm/mdm-shift/${id}`)
+}
+
+export const createMdmShift = (data: any) => {
+  return request.post('/mdm/mdm-shift', data)
+}
+
+export const updateMdmShift = (id: number, data: any) => {
+  return request.put(`/mdm/mdm-shift/${id}`, data)
+}
+
+export const deleteMdmShift = (id: number) => {
+  return request.delete(`/mdm/mdm-shift/${id}`)
+}

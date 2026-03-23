@@ -161,3 +161,13 @@ func (h *ScheduleHandler) GetResults(c *gin.Context) {
 	}
 	response.Success(c, results)
 }
+
+func (h *ScheduleHandler) Delete(c *gin.Context) {
+	id := c.Param("id")
+	err := h.service.Delete(c.Request.Context(), id)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, nil)
+}

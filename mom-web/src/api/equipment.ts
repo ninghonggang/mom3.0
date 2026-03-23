@@ -34,6 +34,14 @@ export const createEquipmentCheck = (data: any) => {
   return request.post('/equipment/check', data)
 }
 
+export const updateEquipmentCheck = (id: number, data: any) => {
+  return request.put(`/equipment/check/${id}`, data)
+}
+
+export const deleteEquipmentCheck = (id: number) => {
+  return request.delete(`/equipment/check/${id}`)
+}
+
 // 设备保养
 export const getEquipmentMaintenanceList = (params?: any) => {
   return request.get('/equipment/maintenance/list', { params })
@@ -41,6 +49,14 @@ export const getEquipmentMaintenanceList = (params?: any) => {
 
 export const createEquipmentMaintenance = (data: any) => {
   return request.post('/equipment/maintenance', data)
+}
+
+export const updateEquipmentMaintenance = (id: number, data: any) => {
+  return request.put(`/equipment/maintenance/${id}`, data)
+}
+
+export const deleteEquipmentMaintenance = (id: number) => {
+  return request.delete(`/equipment/maintenance/${id}`)
 }
 
 // 设备维修
@@ -60,6 +76,14 @@ export const completeRepair = (id: number) => {
   return request.put(`/equipment/repair/${id}/complete`)
 }
 
+export const updateEquipmentRepair = (id: number, data: any) => {
+  return request.put(`/equipment/repair/${id}`, data)
+}
+
+export const deleteEquipmentRepair = (id: number) => {
+  return request.delete(`/equipment/repair/${id}`)
+}
+
 // OEE
 export const getEquipmentOEE = (params: any) => {
   return request.get('/equipment/oee', { params })
@@ -67,4 +91,21 @@ export const getEquipmentOEE = (params: any) => {
 
 export const getOEERealTime = (equipmentId: number) => {
   return request.get(`/equipment/${equipmentId}/oee/realtime`)
+}
+
+// 备件管理
+export const getSparePartList = (params?: any) => {
+  return request.get('/equipment/spare/list', { params })
+}
+
+export const createSparePart = (data: any) => {
+  return request.post('/equipment/spare', data)
+}
+
+export const updateSparePart = (id: number, data: any) => {
+  return request.put(`/equipment/spare/${id}`, data)
+}
+
+export const deleteSparePart = (id: number) => {
+  return request.delete(`/equipment/spare/${id}`)
 }

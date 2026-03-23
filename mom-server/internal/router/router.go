@@ -5,6 +5,7 @@ import (
 	"mom-server/internal/handler/aps"
 	"mom-server/internal/handler/business"
 	"mom-server/internal/handler/equipment"
+	"mom-server/internal/handler/mdm"
 	"mom-server/internal/handler/production"
 	"mom-server/internal/handler/system"
 	"mom-server/internal/handler/trace"
@@ -41,6 +42,9 @@ type Router struct {
 	lineHandler        *business.ProductionLineHandler
 	workstationHandler *business.WorkstationHandler
 	shiftHandler       *business.ShiftHandler
+	bomHandler         *mdm.BOMHandler
+	opHandler          *mdm.OperationHandler
+	mdmShiftHandler    *mdm.ShiftHandler
 }
 
 // New 创建路由
@@ -70,6 +74,9 @@ func New(
 	lineHandler *business.ProductionLineHandler,
 	workstationHandler *business.WorkstationHandler,
 	shiftHandler *business.ShiftHandler,
+	bomHandler *mdm.BOMHandler,
+	opHandler *mdm.OperationHandler,
+	mdmShiftHandler *mdm.ShiftHandler,
 ) *Router {
 	return &Router{
 		jwtUtil:             jwtUtil,
@@ -97,6 +104,9 @@ func New(
 		lineHandler:         lineHandler,
 		workstationHandler:  workstationHandler,
 		shiftHandler:        shiftHandler,
+		bomHandler:         bomHandler,
+		opHandler:          opHandler,
+		mdmShiftHandler:    mdmShiftHandler,
 	}
 }
 
@@ -255,6 +265,7 @@ func (r *Router) Init(engine *gin.Engine) {
 				schedule.POST("", r.scheduleHandler.Create)
 				schedule.PUT("/:id/execute", r.scheduleHandler.Execute)
 				schedule.GET("/:id/results", r.scheduleHandler.GetResults)
+				schedule.DELETE("/:id", r.scheduleHandler.Delete)
 			}
 		}
 
@@ -355,13 +366,46 @@ func (r *Router) Init(engine *gin.Engine) {
 			workstation.DELETE("/:id", r.workstationHandler.Delete)
 		}
 
-		// 班次
+		// 班次 (旧版本)
 		shift := protected.Group("/mdm/shift")
 		{
 			shift.GET("/list", r.shiftHandler.List)
 			shift.POST("", r.shiftHandler.Create)
 			shift.PUT("/:id", r.shiftHandler.Update)
 			shift.DELETE("/:id", r.shiftHandler.Delete)
+		}
+
+		// MDM BOM管理
+		bom := protected.Group("/mdm/bom")
+		{
+			bom.GET("/list", r.bomHandler.List)
+			bom.GET("/:id", r.bomHandler.Get)
+			bom.GET("/:id/items", r.bomHandler.GetWithItems)
+			bom.POST("", r.bomHandler.Create)
+			bom.PUT("/:id", r.bomHandler.Update)
+			bom.DELETE("/:id", r.bomHandler.Delete)
+			bom.PUT("/:id/status", r.bomHandler.UpdateStatus)
+			bom.POST("/:id/copy", r.bomHandler.CopyBOM)
+		}
+
+		// MDM 工序管理
+		operation := protected.Group("/mdm/operation")
+		{
+			operation.GET("/list", r.opHandler.List)
+			operation.GET("/:id", r.opHandler.Get)
+			operation.POST("", r.opHandler.Create)
+			operation.PUT("/:id", r.opHandler.Update)
+			operation.DELETE("/:id", r.opHandler.Delete)
+		}
+
+		// MDM 班次管理
+		mdmShift := protected.Group("/mdm/mdm-shift")
+		{
+			mdmShift.GET("/list", r.mdmShiftHandler.List)
+			mdmShift.GET("/:id", r.mdmShiftHandler.Get)
+			mdmShift.POST("", r.mdmShiftHandler.Create)
+			mdmShift.PUT("/:id", r.mdmShiftHandler.Update)
+			mdmShift.DELETE("/:id", r.mdmShiftHandler.Delete)
 		}
 
 		// TODO: 其他模块路由...

@@ -39,6 +39,10 @@ export const getMRPList = (params?: any) => {
   return request.get('/aps/mrp/list', { params })
 }
 
+export const calculateMRP = (id: number) => {
+  return request.put(`/aps/mrp/${id}/calculate`)
+}
+
 export const runMRP = (data: any) => {
   return request.post('/aps/mrp/run', data)
 }
@@ -48,12 +52,22 @@ export const getSchedulePlanList = (params?: any) => {
   return request.get('/aps/schedule/list', { params })
 }
 
+export const getScheduleList = getSchedulePlanList
+
 export const createSchedulePlan = (data: any) => {
   return request.post('/aps/schedule', data)
 }
 
+export const createSchedule = createSchedulePlan
+
 export const runSchedule = (id: number) => {
   return request.post(`/aps/schedule/${id}/run`)
+}
+
+export const executeSchedule = runSchedule
+
+export const deleteSchedule = (id: number) => {
+  return request.delete(`/aps/schedule/${id}`)
 }
 
 export const getScheduleGantt = (id: number) => {
