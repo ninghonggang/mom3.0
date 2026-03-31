@@ -8,6 +8,7 @@ import (
 	"mom-server/internal/handler/mdm"
 	"mom-server/internal/handler/production"
 	"mom-server/internal/handler/quality"
+	"mom-server/internal/handler/supplier"
 	"mom-server/internal/handler/system"
 	"mom-server/internal/handler/trace"
 	"mom-server/internal/handler/wms"
@@ -55,6 +56,7 @@ type Router struct {
 	defectRecordHandler *quality.DefectRecordHandler
 	ncrHandler        *quality.NCRHandler
 	spcHandler        *quality.SPCHandler
+	supplierHandler    *supplier.SupplierHandler
 }
 
 // New 创建路由
@@ -96,6 +98,7 @@ func New(
 	defectRecordHandler *quality.DefectRecordHandler,
 	ncrHandler *quality.NCRHandler,
 	spcHandler *quality.SPCHandler,
+	supplierHandler *supplier.SupplierHandler,
 ) *Router {
 	return &Router{
 		jwtUtil:             jwtUtil,
@@ -135,6 +138,7 @@ func New(
 		defectRecordHandler:   defectRecordHandler,
 		ncrHandler:            ncrHandler,
 		spcHandler:            spcHandler,
+		supplierHandler:       supplierHandler,
 	}
 }
 
@@ -528,6 +532,16 @@ func (r *Router) Init(engine *gin.Engine) {
 			mdmShift.POST("", r.mdmShiftHandler.Create)
 			mdmShift.PUT("/:id", r.mdmShiftHandler.Update)
 			mdmShift.DELETE("/:id", r.mdmShiftHandler.Delete)
+		}
+
+		// 供应商管理
+		supplier := protected.Group("/mdm/supplier")
+		{
+			supplier.GET("/list", r.supplierHandler.List)
+			supplier.GET("/:id", r.supplierHandler.Get)
+			supplier.POST("", r.supplierHandler.Create)
+			supplier.PUT("/:id", r.supplierHandler.Update)
+			supplier.DELETE("/:id", r.supplierHandler.Delete)
 		}
 
 		// TODO: 其他模块路由...

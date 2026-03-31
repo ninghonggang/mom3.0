@@ -14,6 +14,7 @@ import (
 	"mom-server/internal/handler/mdm"
 	"mom-server/internal/handler/production"
 	"mom-server/internal/handler/quality"
+	"mom-server/internal/handler/supplier"
 	"mom-server/internal/handler/system"
 	"mom-server/internal/handler/trace"
 	"mom-server/internal/handler/wms"
@@ -81,6 +82,7 @@ func main() {
 		&model.MdmBOMItem{},
 		&model.MdmOperation{},
 		&model.MdmShift{},
+		&model.Supplier{},
 	); err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)
 	}
@@ -129,6 +131,7 @@ func main() {
 	defectRecordRepo := repository.NewDefectRecordRepository(db)
 	ncrRepo := repository.NewNCRRepository(db)
 	spcRepo := repository.NewSPCDataRepository(db)
+	supplierRepo := repository.NewSupplierRepository(db)
 
 	// 初始化服务层
 	userSvc := service.NewUserService(userRepo, roleRepo)
@@ -165,6 +168,7 @@ func main() {
 	defectRecordSvc := service.NewDefectRecordService(defectRecordRepo)
 	ncrSvc := service.NewNCRService(ncrRepo)
 	spcSvc := service.NewSPCDataService(spcRepo)
+	supplierSvc := service.NewSupplierService(supplierRepo)
 	productionOrderSvc := service.NewProductionOrderService(productionRepo)
 
 	// 初始化处理器层
@@ -204,11 +208,12 @@ func main() {
 	defectRecordHandler := quality.NewDefectRecordHandler(defectRecordSvc)
 	ncrHandler := quality.NewNCRHandler(ncrSvc)
 	spcHandler := quality.NewSPCHandler(spcSvc)
+	supplierHandler := supplier.NewSupplierHandler(supplierSvc)
 
 	// 初始化路由
 	gin.SetMode(cfg.Server.Mode)
 	engine := gin.Default()
-	router.New(jwtUtil, userHandler, authHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler, iqcHandler, ipqcHandler, fqcHandler, oqcHandler, defectCodeHandler, defectRecordHandler, ncrHandler, spcHandler).Init(engine)
+	router.New(jwtUtil, userHandler, authHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler, iqcHandler, ipqcHandler, fqcHandler, oqcHandler, defectCodeHandler, defectRecordHandler, ncrHandler, spcHandler, supplierHandler).Init(engine)
 
 	// 启动服务器
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
