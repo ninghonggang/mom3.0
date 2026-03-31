@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -44,12 +43,8 @@ func (s *UserService) Login(ctx context.Context, req dto.LoginRequest) (*dto.Log
 		return nil, err
 	}
 
-	// Debug: 打印密码和哈希
-	fmt.Printf("DEBUG: username=%s, password=%s, hash=%s\n", req.Username, req.Password, user.Password)
-
 	// 验证密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		fmt.Printf("DEBUG: bcrypt error: %v\n", err)
 		return nil, ErrInvalidPassword
 	}
 

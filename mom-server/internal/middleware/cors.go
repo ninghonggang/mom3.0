@@ -6,10 +6,23 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CORS CORS中间件
+// CORS CORS中间件 - 仅允许指定的来源
 func CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
+		origin := c.Request.Header.Get("Origin")
+		// 从配置或环境变量获取允许的 origins 列表
+		allowedOrigins := []string{
+			"http://localhost:5173",
+			"http://localhost:9080",
+		}
+
+		for _, allowed := range allowedOrigins {
+			if origin == allowed {
+				c.Header("Access-Control-Allow-Origin", origin)
+				break
+			}
+		}
+
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Tenant-ID")
 		c.Header("Access-Control-Expose-Headers", "Content-Length, Content-Type")
@@ -28,17 +41,8 @@ func CORS() gin.HandlerFunc {
 func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
-
 		c.Next()
-
-		latency := time.Since(start)
-		status := c.Writer.Status()
-
-		if status >= 400 {
-			// 错误日志
-			_ = latency
-			_ = status
-		}
+		_ = time.Since(start) // latency tracked but not logged
 	}
 }
 
