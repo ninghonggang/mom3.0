@@ -13,6 +13,7 @@ import (
 	"mom-server/internal/handler/equipment"
 	"mom-server/internal/handler/mdm"
 	"mom-server/internal/handler/production"
+	"mom-server/internal/handler/quality"
 	"mom-server/internal/handler/system"
 	"mom-server/internal/handler/trace"
 	"mom-server/internal/handler/wms"
@@ -120,6 +121,7 @@ func main() {
 	bomItemRepo := repository.NewBOMItemRepository(db)
 	opRepo := repository.NewOperationRepository(db)
 	mdmShiftRepo := repository.NewMdmShiftRepository(db)
+	iqcRepo := repository.NewIQCRepository(db)
 
 	// 初始化服务层
 	userSvc := service.NewUserService(userRepo, roleRepo)
@@ -148,6 +150,7 @@ func main() {
 	bomSvc := service.NewBOMService(bomRepo, bomItemRepo)
 	opSvc := service.NewOperationService(opRepo)
 	mdmShiftSvc := service.NewMdmShiftService(mdmShiftRepo)
+	iqcSvc := service.NewIQCService(iqcRepo)
 	productionOrderSvc := service.NewProductionOrderService(productionRepo)
 
 	// 初始化处理器层
@@ -179,11 +182,12 @@ func main() {
 	opHandler := mdm.NewOperationHandler(opSvc)
 	mdmShiftHandler := mdm.NewShiftHandler(mdmShiftSvc)
 	productionOrderHandler := production.NewProductionOrderHandler(productionOrderSvc)
+	iqcHandler := quality.NewIQCHandler(iqcSvc)
 
 	// 初始化路由
 	gin.SetMode(cfg.Server.Mode)
 	engine := gin.Default()
-	router.New(jwtUtil, userHandler, authHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler).Init(engine)
+	router.New(jwtUtil, userHandler, authHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler, iqcHandler).Init(engine)
 
 	// 启动服务器
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)

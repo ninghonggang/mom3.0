@@ -7,6 +7,7 @@ import (
 	"mom-server/internal/handler/equipment"
 	"mom-server/internal/handler/mdm"
 	"mom-server/internal/handler/production"
+	"mom-server/internal/handler/quality"
 	"mom-server/internal/handler/system"
 	"mom-server/internal/handler/trace"
 	"mom-server/internal/handler/wms"
@@ -46,6 +47,7 @@ type Router struct {
 	opHandler          *mdm.OperationHandler
 	mdmShiftHandler    *mdm.ShiftHandler
 	productionOrderHandler *production.ProductionOrderHandler
+	iqcHandler        *quality.IQCHandler
 }
 
 // New 创建路由
@@ -79,6 +81,7 @@ func New(
 	opHandler *mdm.OperationHandler,
 	mdmShiftHandler *mdm.ShiftHandler,
 	productionOrderHandler *production.ProductionOrderHandler,
+	iqcHandler *quality.IQCHandler,
 ) *Router {
 	return &Router{
 		jwtUtil:             jwtUtil,
@@ -110,6 +113,7 @@ func New(
 		opHandler:          opHandler,
 		mdmShiftHandler:    mdmShiftHandler,
 		productionOrderHandler: productionOrderHandler,
+		iqcHandler:            iqcHandler,
 	}
 }
 
@@ -255,6 +259,16 @@ func (r *Router) Init(engine *gin.Engine) {
 			order.DELETE("/:id", r.productionOrderHandler.Delete)
 			order.PUT("/:id/start", r.productionOrderHandler.Start)
 			order.PUT("/:id/complete", r.productionOrderHandler.Complete)
+		}
+
+		// IQC入库检验
+		iqc := protected.Group("/quality/iqc")
+		{
+			iqc.GET("/list", r.iqcHandler.List)
+			iqc.GET("/:id", r.iqcHandler.Get)
+			iqc.POST("", r.iqcHandler.Create)
+			iqc.PUT("/:id", r.iqcHandler.Update)
+			iqc.DELETE("/:id", r.iqcHandler.Delete)
 		}
 
 		// APS计划
