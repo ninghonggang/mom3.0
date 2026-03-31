@@ -45,6 +45,7 @@ type Router struct {
 	bomHandler         *mdm.BOMHandler
 	opHandler          *mdm.OperationHandler
 	mdmShiftHandler    *mdm.ShiftHandler
+	productionOrderHandler *production.ProductionOrderHandler
 }
 
 // New 创建路由
@@ -77,6 +78,7 @@ func New(
 	bomHandler *mdm.BOMHandler,
 	opHandler *mdm.OperationHandler,
 	mdmShiftHandler *mdm.ShiftHandler,
+	productionOrderHandler *production.ProductionOrderHandler,
 ) *Router {
 	return &Router{
 		jwtUtil:             jwtUtil,
@@ -107,6 +109,7 @@ func New(
 		bomHandler:         bomHandler,
 		opHandler:          opHandler,
 		mdmShiftHandler:    mdmShiftHandler,
+		productionOrderHandler: productionOrderHandler,
 	}
 }
 
@@ -240,6 +243,18 @@ func (r *Router) Init(engine *gin.Engine) {
 			dispatch.PUT("/:id", r.dispatchHandler.Update)
 			dispatch.PUT("/:id/start", r.dispatchHandler.Start)
 			dispatch.PUT("/:id/complete", r.dispatchHandler.Complete)
+		}
+
+		// 生产工单
+		order := protected.Group("/production/order")
+		{
+			order.GET("/list", r.productionOrderHandler.List)
+			order.GET("/:id", r.productionOrderHandler.Get)
+			order.POST("", r.productionOrderHandler.Create)
+			order.PUT("/:id", r.productionOrderHandler.Update)
+			order.DELETE("/:id", r.productionOrderHandler.Delete)
+			order.PUT("/:id/start", r.productionOrderHandler.Start)
+			order.PUT("/:id/complete", r.productionOrderHandler.Complete)
 		}
 
 		// APS计划

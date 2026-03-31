@@ -148,6 +148,7 @@ func main() {
 	bomSvc := service.NewBOMService(bomRepo, bomItemRepo)
 	opSvc := service.NewOperationService(opRepo)
 	mdmShiftSvc := service.NewMdmShiftService(mdmShiftRepo)
+	productionOrderSvc := service.NewProductionOrderService(productionRepo)
 
 	// 初始化处理器层
 	authHandler := system.NewAuthHandler(userSvc, jwtUtil)
@@ -177,12 +178,12 @@ func main() {
 	bomHandler := mdm.NewBOMHandler(bomSvc)
 	opHandler := mdm.NewOperationHandler(opSvc)
 	mdmShiftHandler := mdm.NewShiftHandler(mdmShiftSvc)
+	productionOrderHandler := production.NewProductionOrderHandler(productionOrderSvc)
 
 	// 初始化路由
 	gin.SetMode(cfg.Server.Mode)
 	engine := gin.Default()
-	r := router.New(jwtUtil, userHandler, authHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler)
-	r.Init(engine)
+	router.New(jwtUtil, userHandler, authHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler).Init(engine)
 
 	// 启动服务器
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
