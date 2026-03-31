@@ -48,6 +48,13 @@ type Router struct {
 	mdmShiftHandler    *mdm.ShiftHandler
 	productionOrderHandler *production.ProductionOrderHandler
 	iqcHandler        *quality.IQCHandler
+	ipqcHandler       *quality.IPQCHandler
+	fqcHandler        *quality.FQCHandler
+	oqcHandler        *quality.OQCHandler
+	defectCodeHandler *quality.DefectCodeHandler
+	defectRecordHandler *quality.DefectRecordHandler
+	ncrHandler        *quality.NCRHandler
+	spcHandler        *quality.SPCHandler
 }
 
 // New 创建路由
@@ -82,6 +89,13 @@ func New(
 	mdmShiftHandler *mdm.ShiftHandler,
 	productionOrderHandler *production.ProductionOrderHandler,
 	iqcHandler *quality.IQCHandler,
+	ipqcHandler *quality.IPQCHandler,
+	fqcHandler *quality.FQCHandler,
+	oqcHandler *quality.OQCHandler,
+	defectCodeHandler *quality.DefectCodeHandler,
+	defectRecordHandler *quality.DefectRecordHandler,
+	ncrHandler *quality.NCRHandler,
+	spcHandler *quality.SPCHandler,
 ) *Router {
 	return &Router{
 		jwtUtil:             jwtUtil,
@@ -114,6 +128,13 @@ func New(
 		mdmShiftHandler:    mdmShiftHandler,
 		productionOrderHandler: productionOrderHandler,
 		iqcHandler:            iqcHandler,
+		ipqcHandler:           ipqcHandler,
+		fqcHandler:            fqcHandler,
+		oqcHandler:            oqcHandler,
+		defectCodeHandler:     defectCodeHandler,
+		defectRecordHandler:   defectRecordHandler,
+		ncrHandler:            ncrHandler,
+		spcHandler:            spcHandler,
 	}
 }
 
@@ -269,6 +290,78 @@ func (r *Router) Init(engine *gin.Engine) {
 			iqc.POST("", r.iqcHandler.Create)
 			iqc.PUT("/:id", r.iqcHandler.Update)
 			iqc.DELETE("/:id", r.iqcHandler.Delete)
+		}
+
+		// IPQC过程检验
+		ipqc := protected.Group("/quality/ipqc")
+		{
+			ipqc.GET("/list", r.ipqcHandler.List)
+			ipqc.GET("/:id", r.ipqcHandler.Get)
+			ipqc.POST("", r.ipqcHandler.Create)
+			ipqc.PUT("/:id", r.ipqcHandler.Update)
+			ipqc.DELETE("/:id", r.ipqcHandler.Delete)
+		}
+
+		// FQC最终检验
+		fqc := protected.Group("/quality/fqc")
+		{
+			fqc.GET("/list", r.fqcHandler.List)
+			fqc.GET("/:id", r.fqcHandler.Get)
+			fqc.POST("", r.fqcHandler.Create)
+			fqc.PUT("/:id", r.fqcHandler.Update)
+			fqc.DELETE("/:id", r.fqcHandler.Delete)
+		}
+
+		// OQC出货检验
+		oqc := protected.Group("/quality/oqc")
+		{
+			oqc.GET("/list", r.oqcHandler.List)
+			oqc.GET("/:id", r.oqcHandler.Get)
+			oqc.POST("", r.oqcHandler.Create)
+			oqc.PUT("/:id", r.oqcHandler.Update)
+			oqc.DELETE("/:id", r.oqcHandler.Delete)
+		}
+
+		// DefectCode不良品代码
+		defectCode := protected.Group("/quality/defect-code")
+		{
+			defectCode.GET("/list", r.defectCodeHandler.List)
+			defectCode.GET("/:id", r.defectCodeHandler.Get)
+			defectCode.POST("", r.defectCodeHandler.Create)
+			defectCode.PUT("/:id", r.defectCodeHandler.Update)
+			defectCode.DELETE("/:id", r.defectCodeHandler.Delete)
+		}
+
+		// DefectRecord不良品记录
+		defect := protected.Group("/quality/defect")
+		{
+			defect.GET("/list", r.defectRecordHandler.List)
+			defect.GET("/:id", r.defectRecordHandler.Get)
+			defect.POST("", r.defectRecordHandler.Create)
+			defect.PUT("/:id", r.defectRecordHandler.Update)
+			defect.DELETE("/:id", r.defectRecordHandler.Delete)
+			defect.PUT("/:id/handle", r.defectRecordHandler.Handle)
+		}
+
+		// NCR不良品处理单
+		ncr := protected.Group("/quality/ncr")
+		{
+			ncr.GET("/list", r.ncrHandler.List)
+			ncr.GET("/:id", r.ncrHandler.Get)
+			ncr.POST("", r.ncrHandler.Create)
+			ncr.PUT("/:id", r.ncrHandler.Update)
+			ncr.DELETE("/:id", r.ncrHandler.Delete)
+		}
+
+		// SPC数据
+		spc := protected.Group("/quality/spc")
+		{
+			spc.POST("/data", r.spcHandler.Create)
+			spc.GET("/chart", r.spcHandler.GetChartData)
+			spc.GET("/list", r.spcHandler.List)
+			spc.GET("/:id", r.spcHandler.Get)
+			spc.PUT("/:id", r.spcHandler.Update)
+			spc.DELETE("/:id", r.spcHandler.Delete)
 		}
 
 		// APS计划

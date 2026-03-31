@@ -122,6 +122,13 @@ func main() {
 	opRepo := repository.NewOperationRepository(db)
 	mdmShiftRepo := repository.NewMdmShiftRepository(db)
 	iqcRepo := repository.NewIQCRepository(db)
+	ipqcRepo := repository.NewIPQCRepository(db)
+	fqcRepo := repository.NewFQCRepository(db)
+	oqcRepo := repository.NewOQCRepository(db)
+	defectCodeRepo := repository.NewDefectCodeRepository(db)
+	defectRecordRepo := repository.NewDefectRecordRepository(db)
+	ncrRepo := repository.NewNCRRepository(db)
+	spcRepo := repository.NewSPCDataRepository(db)
 
 	// 初始化服务层
 	userSvc := service.NewUserService(userRepo, roleRepo)
@@ -151,6 +158,13 @@ func main() {
 	opSvc := service.NewOperationService(opRepo)
 	mdmShiftSvc := service.NewMdmShiftService(mdmShiftRepo)
 	iqcSvc := service.NewIQCService(iqcRepo)
+	ipqcSvc := service.NewIPQCService(ipqcRepo)
+	fqcSvc := service.NewFQCService(fqcRepo)
+	oqcSvc := service.NewOQCService(oqcRepo)
+	defectCodeSvc := service.NewDefectCodeService(defectCodeRepo)
+	defectRecordSvc := service.NewDefectRecordService(defectRecordRepo)
+	ncrSvc := service.NewNCRService(ncrRepo)
+	spcSvc := service.NewSPCDataService(spcRepo)
 	productionOrderSvc := service.NewProductionOrderService(productionRepo)
 
 	// 初始化处理器层
@@ -183,11 +197,18 @@ func main() {
 	mdmShiftHandler := mdm.NewShiftHandler(mdmShiftSvc)
 	productionOrderHandler := production.NewProductionOrderHandler(productionOrderSvc)
 	iqcHandler := quality.NewIQCHandler(iqcSvc)
+	ipqcHandler := quality.NewIPQCHandler(ipqcSvc)
+	fqcHandler := quality.NewFQCHandler(fqcSvc)
+	oqcHandler := quality.NewOQCHandler(oqcSvc)
+	defectCodeHandler := quality.NewDefectCodeHandler(defectCodeSvc)
+	defectRecordHandler := quality.NewDefectRecordHandler(defectRecordSvc)
+	ncrHandler := quality.NewNCRHandler(ncrSvc)
+	spcHandler := quality.NewSPCHandler(spcSvc)
 
 	// 初始化路由
 	gin.SetMode(cfg.Server.Mode)
 	engine := gin.Default()
-	router.New(jwtUtil, userHandler, authHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler, iqcHandler).Init(engine)
+	router.New(jwtUtil, userHandler, authHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler, iqcHandler, ipqcHandler, fqcHandler, oqcHandler, defectCodeHandler, defectRecordHandler, ncrHandler, spcHandler).Init(engine)
 
 	// 启动服务器
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
