@@ -22,9 +22,9 @@ func NewRoleService(repo *repository.RoleRepository, menuRepo *repository.MenuRe
 	}
 }
 
-func (s *RoleService) List(ctx context.Context, req *dto.RoleListReq) ([]model.Role, int64, error) {
+func (s *RoleService) List(ctx context.Context, tenantID int64, req *dto.RoleListReq) ([]model.Role, int64, error) {
 	pageReq := dto.PageRequest{Page: req.Page, PageSize: req.PageSize}
-	return s.repo.FindByPage(ctx, 0, pageReq, req.RoleName, "")
+	return s.repo.FindByPage(ctx, tenantID, pageReq, req.RoleName, "")
 }
 
 func (s *RoleService) GetByID(ctx context.Context, id string) (*model.Role, error) {
@@ -65,14 +65,23 @@ func (s *RoleService) Delete(ctx context.Context, id string) error {
 }
 
 func (s *RoleService) GetMenus(ctx context.Context, roleID string) ([]model.Menu, error) {
-	menuIDs, err := s.roleMenuDB.GetMenuIDsByRoleID(ctx, roleID)
+	var rID int64
+	_, err := fmt.Sscanf(roleID, "%d", &rID)
+	if err != nil {
+		return nil, err
+	}
+	menuIDs, err := s.roleMenuDB.GetMenuIDsByRoleID(ctx, rID)
 	if err != nil {
 		return nil, err
 	}
 	if len(menuIDs) == 0 {
 		return []model.Menu{}, nil
 	}
-	return s.menuRepo.GetByIDs(ctx, menuIDs)
+	uids := make([]uint, len(menuIDs))
+	for i, m := range menuIDs {
+		uids[i] = uint(m)
+	}
+	return s.menuRepo.GetByIDs(ctx, uids)
 }
 
 func (s *RoleService) AssignMenus(ctx context.Context, roleID string, menuIDs []uint) error {
@@ -94,4 +103,24 @@ func (s *RoleService) GetRoleMenusTree(ctx context.Context, roleID string) ([]mo
 		return nil, err
 	}
 	return s.menuRepo.BuildTree(menus), nil
+}
+
+// GetRolePerms 获取角色权限列表
+func (s *RoleService) GetRolePerms(ctx context.Context, roleID string) ([]string, error) {
+	var rID int64
+	_, err := fmt.Sscanf(roleID, "%d", &rID)
+	if err != nil {
+		return nil, err
+	}
+	return s.roleMenuDB.GetRolePerms(ctx, rID)
+}
+
+// AssignPerms 分配角色权限
+func (s *RoleService) AssignPerms(ctx context.Context, roleID string, perms []string) error {
+	var rID int64
+	_, err := fmt.Sscanf(roleID, "%d", &rID)
+	if err != nil {
+		return err
+	}
+	return s.roleMenuDB.AssignPerms(ctx, rID, perms)
 }

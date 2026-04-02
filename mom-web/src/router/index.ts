@@ -56,6 +56,30 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/system/PostList.vue'),
         meta: { title: '岗位管理', icon: 'Postcard' }
       },
+      {
+        path: 'system/tenant',
+        name: 'TenantList',
+        component: () => import('@/views/system/TenantList.vue'),
+        meta: { title: '租户管理', icon: 'Building' }
+      },
+      {
+        path: 'system/login-log',
+        name: 'LoginLogList',
+        component: () => import('@/views/system/LoginLogList.vue'),
+        meta: { title: '登录日志', icon: 'Key' }
+      },
+      {
+        path: 'system/oper-log',
+        name: 'OperLogList',
+        component: () => import('@/views/system/OperLogList.vue'),
+        meta: { title: '操作日志', icon: 'Document' }
+      },
+      {
+        path: 'system/config',
+        name: 'SystemConfig',
+        component: () => import('@/views/system/SystemConfig.vue'),
+        meta: { title: '系统配置', icon: 'Setting' }
+      },
       // 主数据管理
       {
         path: 'mdm/material',
@@ -251,6 +275,11 @@ router.beforeEach(async (to, from, next) => {
   if (!authStore.isLoggedIn) {
     next({ name: 'Login', query: { redirect: to.fullPath } })
     return
+  }
+
+  // 如果没有用户信息，获取一下
+  if (!authStore.userInfo) {
+    await authStore.getUserInfoAction()
   }
 
   next()

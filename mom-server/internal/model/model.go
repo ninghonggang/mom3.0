@@ -144,17 +144,34 @@ func (DictData) TableName() string {
 	return "sys_dict_data"
 }
 
-// Tenant 租户
+// Tenant 租户/工厂
 type Tenant struct {
 	BaseModel
-	TenantName   string  `json:"tenant_name" gorm:"size:100;not null"`
-	TenantKey    string  `json:"tenant_key" gorm:"size:100;not null;uniqueIndex"`
-	Contact      *string `json:"contact" gorm:"size:50"`
-	Phone        *string `json:"phone" gorm:"size:20"`
-	Email        *string `json:"email" gorm:"size:100"`
-	Status       int     `json:"status" gorm:"default:1"`
-	ExpireTime   *time.Time `json:"expire_time"`
-	PackageID    *int64  `json:"package_id"`
+	TenantName   string   `json:"tenant_name" gorm:"size:100;not null"`        // 工厂名称
+	TenantKey    string   `json:"tenant_key" gorm:"size:50;not null;uniqueIndex"` // 工厂代码(唯一标识)
+
+	// 地址信息
+	Province     *string  `json:"province" gorm:"size:50"`    // 省份
+	City        *string  `json:"city" gorm:"size:50"`        // 城市
+	District    *string  `json:"district" gorm:"size:50"`    // 区县
+	Address     *string  `json:"address" gorm:"size:255"`     // 详细地址
+
+	// 联系方式
+	Manager     *string  `json:"manager" gorm:"size:50"`      // 负责人/厂长
+	ContactName *string  `json:"contact_name" gorm:"size:50"` // 联系人姓名
+	ContactPhone *string `json:"contact_phone" gorm:"size:20"` // 联系电话
+	ContactEmail *string `json:"contact_email" gorm:"size:100"` // 联系邮箱
+
+	// 工厂属性
+	FactoryType *string  `json:"factory_type" gorm:"size:50"` // 工厂类型(离散/流程/混合)
+	EmployeeCount *int   `json:"employee_count"`             // 员工人数
+	AreaSize    *float64 `json:"area_size"`                   // 占地面积(平方米)
+	AnnualCapacity *float64 `json:"annual_capacity"`          // 年产能
+
+	// 系统管理
+	Status     int       `json:"status" gorm:"default:1"`     // 状态: 1正常 0禁用
+	ExpireTime *time.Time `json:"expire_time"`               // 授权过期时间
+	Remark     *string   `json:"remark" gorm:"type:text"`     // 备注说明
 }
 
 func (Tenant) TableName() string {
@@ -214,4 +231,14 @@ type UserRole struct {
 
 func (UserRole) TableName() string {
 	return "sys_user_role"
+}
+
+// RolePerm 角色权限关联
+type RolePerm struct {
+	RoleID int64 `json:"role_id" gorm:"primaryKey"`
+	Perm   string `json:"perm" gorm:"size:100;primaryKey"`
+}
+
+func (RolePerm) TableName() string {
+	return "sys_role_perm"
 }

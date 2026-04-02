@@ -3,7 +3,7 @@
     <!-- 侧边栏 -->
     <el-aside :width="isCollapse ? '64px' : '200px'" class="sidebar">
       <div class="logo">
-        <img v-if="!isCollapse" src="/favicon.svg" alt="logo" class="logo-img">
+        <img v-if="!isCollapse" :src="settingsStore.logoUrl || '/favicon.svg'" alt="logo" class="logo-img" @error="handleLogoError">
         <span v-if="!isCollapse" class="logo-text">MOM3.0</span>
       </div>
 
@@ -16,103 +16,21 @@
         text-color="#bfcbd9"
         active-text-color="#409eff"
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><House /></el-icon>
-          <template #title>首页</template>
-        </el-menu-item>
-
-        <el-sub-menu index="/system">
-          <template #title>
-            <el-icon><Setting /></el-icon>
-            <span>系统管理</span>
-          </template>
-          <el-menu-item index="/system/user">用户管理</el-menu-item>
-          <el-menu-item index="/system/role">角色管理</el-menu-item>
-          <el-menu-item index="/system/menu">菜单管理</el-menu-item>
-          <el-menu-item index="/system/dept">部门管理</el-menu-item>
-          <el-menu-item index="/system/dict">字典管理</el-menu-item>
-          <el-menu-item index="/system/post">岗位管理</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="/mdm">
-          <template #title>
-            <el-icon><Box /></el-icon>
-            <span>主数据</span>
-          </template>
-          <el-menu-item index="/mdm/material">物料管理</el-menu-item>
-          <el-menu-item index="/mdm/workshop">车间管理</el-menu-item>
-          <el-menu-item index="/mdm/line">生产线管理</el-menu-item>
-          <el-menu-item index="/mdm/workstation">工位管理</el-menu-item>
-          <el-menu-item index="/mdm/shift">班次管理</el-menu-item>
-          <el-menu-item index="/mdm/bom">BOM管理</el-menu-item>
-          <el-menu-item index="/mdm/operation">工序管理</el-menu-item>
-          <el-menu-item index="/mdm/mdm-shift">班次定义</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="/production">
-          <template #title>
-            <el-icon><List /></el-icon>
-            <span>生产执行</span>
-          </template>
-          <el-menu-item index="/production/order">生产工单</el-menu-item>
-          <el-menu-item index="/production/sales-order">销售订单</el-menu-item>
-          <el-menu-item index="/production/report">生产报工</el-menu-item>
-          <el-menu-item index="/production/dispatch">派工</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="/equipment">
-          <template #title>
-            <el-icon><Monitor /></el-icon>
-            <span>设备管理</span>
-          </template>
-          <el-menu-item index="/equipment">设备台账</el-menu-item>
-          <el-menu-item index="/equipment/check">设备点检</el-menu-item>
-          <el-menu-item index="/equipment/maintenance">设备保养</el-menu-item>
-          <el-menu-item index="/equipment/repair">设备维修</el-menu-item>
-          <el-menu-item index="/equipment/spare">备件管理</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="/wms">
-          <template #title>
-            <el-icon><House /></el-icon>
-            <span>仓储管理</span>
-          </template>
-          <el-menu-item index="/wms/warehouse">仓库管理</el-menu-item>
-          <el-menu-item index="/wms/location">库位管理</el-menu-item>
-          <el-menu-item index="/wms/inventory">库存管理</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="/quality">
-          <template #title>
-            <el-icon><CircleCheck /></el-icon>
-            <span>质量管理</span>
-          </template>
-          <el-menu-item index="/quality/iqc">IQC检验</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="/aps">
-          <template #title>
-            <el-icon><Calendar /></el-icon>
-            <span>APS计划</span>
-          </template>
-          <el-menu-item index="/aps/mps">MPS计划</el-menu-item>
-          <el-menu-item index="/aps/mrp">MRP计划</el-menu-item>
-          <el-menu-item index="/aps/schedule">排程计划</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="/trace">
-          <template #title>
-            <el-icon><Search /></el-icon>
-            <span>追溯管理</span>
-          </template>
-          <el-menu-item index="/trace/query">追溯查询</el-menu-item>
-          <el-menu-item index="/trace/andon">安东呼叫</el-menu-item>
-        </el-sub-menu>
-
-        <el-menu-item index="/energy/monitor">
-          <el-icon><Lightning /></el-icon>
-          <template #title>能源监控</template>
-        </el-menu-item>
+        <template v-for="menu in dynamicMenus" :key="menu.id">
+          <el-sub-menu v-if="menu.children && menu.children.length > 0" :index="menu.path">
+            <template #title>
+              <el-icon><component :is="getIcon(menu.icon)" /></el-icon>
+              <span>{{ menu.menu_name }}</span>
+            </template>
+            <el-menu-item v-for="child in menu.children" :key="child.id" :index="child.path">
+              {{ child.menu_name }}
+            </el-menu-item>
+          </el-sub-menu>
+          <el-menu-item v-else :index="menu.path">
+            <el-icon><component :is="getIcon(menu.icon)" /></el-icon>
+            <template #title>{{ menu.menu_name }}</template>
+          </el-menu-item>
+        </template>
       </el-menu>
     </el-aside>
 
@@ -127,6 +45,34 @@
         </div>
 
         <div class="header-right">
+          <!-- 快捷设置 -->
+          <el-dropdown @command="handleQuickSettings" trigger="click">
+            <span class="quick-settings">
+              <el-icon><Brush /></el-icon>
+              <span>设置</span>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item>
+                  <span>主题</span>
+                  <el-radio-group v-model="settingsStore.theme" size="small" @click.stop>
+                    <el-radio-button value="light">浅色</el-radio-button>
+                    <el-radio-button value="dark">深色</el-radio-button>
+                  </el-radio-group>
+                </el-dropdown-item>
+                <el-dropdown-item>
+                  <span>字体</span>
+                  <el-select v-model="settingsStore.fontFamily" size="small" style="width: 100px" @click.stop>
+                    <el-option value="default" label="默认" />
+                    <el-option value="helvetica" label="Helvetica" />
+                    <el-option value="microsoft" label="微软雅黑" />
+                  </el-select>
+                </el-dropdown-item>
+                <el-dropdown-item command="system-config" divided>系统设置</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <el-avatar :size="32" :src="userInfo?.avatar">
@@ -158,16 +104,57 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useSettingsStore } from '@/stores/settings'
 import { ElMessageBox } from 'element-plus'
+import {
+  House, Setting, Box, List, Monitor, House as Warehouse,
+  CircleCheck, Calendar, Search, Lightning, Fold, Expand, ArrowDown, Brush
+} from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
 
 const isCollapse = ref(false)
 const userInfo = computed(() => authStore.userInfo)
 
+// 动态菜单 - 从用户信息获取
+const dynamicMenus = computed(() => {
+  if (!authStore.userInfo?.menus) return []
+  return authStore.userInfo.menus.filter((m: any) => m.menu_type === 'M' || m.menu_type === 'C')
+})
+
+// 图标映射
+const iconMap: Record<string, any> = {
+  'House': House,
+  'Setting': Setting,
+  'Box': Box,
+  'List': List,
+  'Monitor': Monitor,
+  'Warehouse': Warehouse,
+  'CircleCheck': CircleCheck,
+  'Calendar': Calendar,
+  'Search': Search,
+  'Lightning': Lightning
+}
+
+const getIcon = (iconName?: string) => {
+  if (!iconName) return House
+  return iconMap[iconName] || House
+}
+
 const activeMenu = computed(() => route.path)
+
+const handleLogoError = () => {
+  settingsStore.setLogoUrl('')
+}
+
+const handleQuickSettings = (command: string) => {
+  if (command === 'system-config') {
+    router.push('/system/config')
+  }
+}
 
 const handleCommand = async (command: string) => {
   switch (command) {
@@ -218,6 +205,8 @@ const handleCommand = async (command: string) => {
 
   .sidebar-menu {
     border-right: none;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
   }
 }
 
@@ -240,6 +229,24 @@ const handleCommand = async (command: string) => {
   }
 
   .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .quick-settings {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: #666;
+
+      &:hover {
+        background: #f5f7fa;
+        color: var(--el-color-primary);
+      }
+    }
+
     .user-info {
       display: flex;
       align-items: center;

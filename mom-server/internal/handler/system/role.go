@@ -2,6 +2,7 @@ package system
 
 import (
 	"mom-server/internal/dto"
+	"mom-server/internal/middleware"
 	"mom-server/internal/model"
 	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
@@ -24,7 +25,8 @@ func (h *RoleHandler) List(c *gin.Context) {
 		return
 	}
 
-	list, total, err := h.roleService.List(c.Request.Context(), &req)
+	tenantID := middleware.GetTenantID(c)
+	list, total, err := h.roleService.List(c.Request.Context(), tenantID, &req)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -110,6 +112,34 @@ func (h *RoleHandler) AssignMenus(c *gin.Context) {
 	}
 
 	err := h.roleService.AssignMenus(c.Request.Context(), id, req.MenuIDs)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, nil)
+}
+
+func (h *RoleHandler) GetPerms(c *gin.Context) {
+	id := c.Param("id")
+	perms, err := h.roleService.GetRolePerms(c.Request.Context(), id)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, perms)
+}
+
+func (h *RoleHandler) AssignPerms(c *gin.Context) {
+	id := c.Param("id")
+	var req struct {
+		Perms []string `json:"perms"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	err := h.roleService.AssignPerms(c.Request.Context(), id, req.Perms)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return

@@ -25,6 +25,14 @@ export const resetUserPassword = (id: number, password: string) => {
   return request.put(`/system/user/${id}/password`, { password })
 }
 
+export const getAllRoles = () => {
+  return request.get('/system/role/list')
+}
+
+export const assignUserRoles = (id: number, roleIds: number[]) => {
+  return request.put(`/system/user/${id}/roles`, { role_ids: roleIds })
+}
+
 // 角色相关
 export const getRoleList = (params?: any) => {
   return request.get('/system/role/list', { params })
@@ -52,6 +60,14 @@ export const getRoleMenus = (id: number) => {
 
 export const assignRoleMenus = (id: number, menuIds: number[]) => {
   return request.put(`/system/role/${id}/menus`, { menu_ids: menuIds })
+}
+
+export const getRolePerms = (id: number) => {
+  return request.get(`/system/role/${id}/perms`)
+}
+
+export const assignRolePerms = (id: number, perms: string[]) => {
+  return request.put(`/system/role/${id}/perms`, { perms })
 }
 
 // 菜单相关
@@ -140,4 +156,51 @@ export const updatePost = (id: number, data: any) => {
 
 export const deletePost = (id: number) => {
   return request.delete(`/system/post/${id}`)
+}
+
+// 租户相关
+export const getTenantList = (params?: any) => {
+  return request.get('/system/tenant/list', { params })
+}
+
+export const getTenantById = (id: number) => {
+  return request.get(`/system/tenant/${id}`)
+}
+
+export const createTenant = (data: any) => {
+  return request.post('/system/tenant', data)
+}
+
+export const updateTenant = (id: number, data: any) => {
+  return request.put(`/system/tenant/${id}`, data)
+}
+
+export const deleteTenant = (id: number) => {
+  return request.delete(`/system/tenant/${id}`)
+}
+
+// 登录日志相关
+export const getLoginLogList = (params?: any) => {
+  return request.get('/system/loginlog/list', { params })
+}
+
+export const cleanLoginLog = () => {
+  return request.delete('/system/loginlog/clean')
+}
+
+export const exportLoginLog = () => {
+  return request.get('/system/loginlog/export')
+}
+
+// 操作日志相关
+export const getOperLogList = (params?: any) => {
+  return request.get('/system/operlog/list', { params })
+}
+
+export const cleanOperLog = () => {
+  return request.delete('/system/operlog/clean')
+}
+
+export const exportOperLog = () => {
+  return request.get('/system/operlog/export')
 }

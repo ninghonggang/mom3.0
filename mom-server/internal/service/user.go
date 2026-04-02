@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -21,79 +22,25 @@ var (
 
 // UserService 用户服务
 type UserService struct {
-	userRepo *repository.UserRepository
-	roleRepo *repository.RoleRepository
+	userRepo    *repository.UserRepository
+	roleRepo    *repository.RoleRepository
+	menuRepo    *repository.MenuRepository
+	roleMenuDB  *repository.RoleMenuRepository
 }
 
-func NewUserService(userRepo *repository.UserRepository, roleRepo *repository.RoleRepository) *UserService {
+func NewUserService(userRepo *repository.UserRepository, roleRepo *repository.RoleRepository, menuRepo *repository.MenuRepository, roleMenuDB *repository.RoleMenuRepository) *UserService {
 	return &UserService{
-		userRepo: userRepo,
-		roleRepo: roleRepo,
+		userRepo:   userRepo,
+		roleRepo:   roleRepo,
+		menuRepo:   menuRepo,
+		roleMenuDB: roleMenuDB,
 	}
-}
-
-// Login 登录
-func (s *UserService) Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error) {
-	// 查询用户
-	user, err := s.userRepo.FindByUsername(ctx, 1, req.Username)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrInvalidPassword
-		}
-		return nil, err
-	}
-
-	// 验证密码
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		return nil, ErrInvalidPassword
-	}
-
-	// 检查状态
-	if user.Status == 0 {
-		return nil, ErrUserDisabled
-	}
-
-	// 获取用户角色
-	roleIDs, _ := s.userRepo.GetUserRoles(ctx, user.ID)
-	var roles []string
-	if len(roleIDs) > 0 {
-		roleList, _ := s.roleRepo.FindAll(ctx, user.TenantID)
-		roleMap := make(map[int64]string)
-		for _, r := range roleList {
-			roleMap[r.ID] = r.RoleKey
-		}
-		for _, rid := range roleIDs {
-			if rk, ok := roleMap[rid]; ok {
-				roles = append(roles, rk)
-			}
-		}
-	}
-
-	// 生成Token（简化版，实际应该使用JWT服务）
-	token := "mock-token-" + user.Username
-	refreshToken := "mock-refresh-" + user.Username
-
-	return &dto.LoginResponse{
-		AccessToken:  token,
-		RefreshToken: refreshToken,
-		ExpiresIn:    7200,
-		User: &dto.UserDTO{
-			ID:       user.ID,
-			Username: user.Username,
-			Nickname: user.Nickname,
-			Email:    user.Email,
-			Phone:    user.Phone,
-			Avatar:   user.Avatar,
-			DeptID:   user.DeptID,
-			Status:   user.Status,
-			Roles:    roles,
-		},
-	}, nil
 }
 
 // ValidateLogin 验证登录（不生成Token）
 func (s *UserService) ValidateLogin(ctx context.Context, req dto.LoginRequest) (*model.User, error) {
-	user, err := s.userRepo.FindByUsername(ctx, 1, req.Username)
+	// 登录时查询所有租户，找到匹配的用户
+	user, err := s.userRepo.FindByUsernameAllTenants(ctx, req.Username)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrInvalidPassword
@@ -122,22 +69,28 @@ func (s *UserService) GetAllRoles(ctx context.Context, tenantID int64) ([]model.
 	return s.roleRepo.FindAll(ctx, tenantID)
 }
 
+// AssignRoles 分配角色
+func (s *UserService) AssignRoles(ctx context.Context, userID int64, roleIDs []int64) error {
+	return s.userRepo.AssignRoles(ctx, userID, roleIDs)
+}
+
 // Create 创建用户
-func (s *UserService) Create(ctx context.Context, req dto.CreateUserRequest) error {
+func (s *UserService) Create(ctx context.Context, tenantID int64, req dto.CreateUserRequest) error {
 	// 检查用户名是否存在
-	existing, _ := s.userRepo.FindByUsername(ctx, 1, req.Username)
+	existing, _ := s.userRepo.FindByUsername(ctx, tenantID, req.Username)
 	if existing != nil {
 		return ErrUserExists
 	}
 
-	// 加密密码
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	// 加密密码（使用更高的成本因子，生产环境建议12-14）
+	bcryptCost := 12
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcryptCost)
 	if err != nil {
 		return err
 	}
 
 	user := &model.User{
-		TenantModel: model.TenantModel{TenantID: 1},
+		TenantModel: model.TenantModel{TenantID: tenantID},
 		Username:    req.Username,
 		Nickname:    req.Nickname,
 		Password:    string(hashedPassword),
@@ -186,7 +139,7 @@ func (s *UserService) Delete(ctx context.Context, id int64) error {
 	return s.userRepo.Delete(ctx, id)
 }
 
-// GetByID 获取用户详情
+// GetByID 获取用户详情（优化N+1查询）
 func (s *UserService) GetByID(ctx context.Context, id int64) (*dto.UserDTO, error) {
 	user, err := s.userRepo.FindByID(ctx, id)
 	if err != nil {
@@ -196,18 +149,89 @@ func (s *UserService) GetByID(ctx context.Context, id int64) (*dto.UserDTO, erro
 		return nil, err
 	}
 
-	// 获取角色
+	// 获取角色IDs
 	roleIDs, _ := s.userRepo.GetUserRoles(ctx, user.ID)
+	if len(roleIDs) == 0 {
+		return &dto.UserDTO{
+			ID:       user.ID,
+			Username: user.Username,
+			Nickname: user.Nickname,
+			Email:    user.Email,
+			Phone:    user.Phone,
+			Avatar:   user.Avatar,
+			DeptID:   user.DeptID,
+			Status:   user.Status,
+			Roles:    []string{},
+			RoleIDs:  []int64{},
+			Perms:    []string{},
+			Menus:    []model.Menu{},
+		}, nil
+	}
+
+	// 批量查询所有角色（单次查询替代N次查询）
+	roleList, _ := s.roleRepo.FindAll(ctx, user.TenantID)
+	roleMap := make(map[int64]string)
 	var roles []string
-	if len(roleIDs) > 0 {
-		roleList, _ := s.roleRepo.FindAll(ctx, user.TenantID)
-		roleMap := make(map[int64]string)
-		for _, r := range roleList {
-			roleMap[r.ID] = r.RoleKey
+	for _, r := range roleList {
+		roleMap[r.ID] = r.RoleKey
+	}
+	for _, rid := range roleIDs {
+		if rk, ok := roleMap[rid]; ok {
+			roles = append(roles, rk)
 		}
-		for _, rid := range roleIDs {
-			if rk, ok := roleMap[rid]; ok {
-				roles = append(roles, rk)
+	}
+
+	// 获取用户菜单（根据角色权限）
+	var menus []model.Menu
+	isAdmin := false
+	for _, r := range roles {
+		if r == "admin" {
+			isAdmin = true
+			break
+		}
+	}
+
+	var perms []string
+	if isAdmin {
+		// 超管返回所有菜单（单次查询）
+		menus, _ = s.menuRepo.Tree(ctx, user.TenantID)
+		// 超管拥有所有权限
+		perms = []string{"*"}
+	} else if len(roleIDs) > 0 {
+		// 普通用户根据角色权限获取菜单
+		var allMenuIDs []int64
+		for _, roleID := range roleIDs {
+			menuIDs, _ := s.roleMenuDB.GetMenuIDsByRoleID(ctx, roleID)
+			allMenuIDs = append(allMenuIDs, menuIDs...)
+		}
+		if len(allMenuIDs) > 0 {
+			// 去重menuIDs
+			seen := make(map[int64]bool)
+			uniqueMenuIDs := []int64{}
+			for _, id := range allMenuIDs {
+				if !seen[id] {
+					seen[id] = true
+					uniqueMenuIDs = append(uniqueMenuIDs, id)
+				}
+			}
+
+			uids := make([]uint, len(uniqueMenuIDs))
+			for i, m := range uniqueMenuIDs {
+				uids[i] = uint(m)
+			}
+			menus, _ = s.menuRepo.GetByIDs(ctx, uids)
+			menus = s.menuRepo.BuildTree(menus)
+			// 收集权限标识（解析逗号分隔的多个权限码）
+			for _, m := range menus {
+				if m.Perms != "" {
+					// 拆分逗号分隔的权限码
+					for _, p := range strings.Split(m.Perms, ",") {
+						p = strings.TrimSpace(p)
+						if p != "" {
+							perms = append(perms, p)
+						}
+					}
+				}
 			}
 		}
 	}
@@ -222,12 +246,15 @@ func (s *UserService) GetByID(ctx context.Context, id int64) (*dto.UserDTO, erro
 		DeptID:   user.DeptID,
 		Status:   user.Status,
 		Roles:    roles,
+		RoleIDs:  roleIDs,
+		Perms:    perms,
+		Menus:    menus,
 	}, nil
 }
 
 // GetList 获取用户列表
-func (s *UserService) GetList(ctx context.Context, req dto.PageRequest, username, status string) (*dto.PageData, error) {
-	users, total, err := s.userRepo.FindByPage(ctx, 1, req, username, status)
+func (s *UserService) GetList(ctx context.Context, tenantID int64, req dto.PageRequest, username, status string) (*dto.PageData, error) {
+	users, total, err := s.userRepo.FindByPage(ctx, tenantID, req, username, status)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +283,9 @@ func (s *UserService) GetList(ctx context.Context, req dto.PageRequest, username
 
 // ResetPassword 重置密码
 func (s *UserService) ResetPassword(ctx context.Context, id int64, password string) error {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	// 加密密码（使用更高的成本因子，生产环境建议12-14）
+	bcryptCost := 12
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
 	if err != nil {
 		return err
 	}

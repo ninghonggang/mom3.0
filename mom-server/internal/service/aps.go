@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"mom-server/internal/model"
 	"mom-server/internal/repository"
 )
@@ -15,8 +17,8 @@ func NewMPSService(repo *repository.MPSRepository) *MPSService {
 	return &MPSService{repo: repo}
 }
 
-func (s *MPSService) List(ctx context.Context) ([]model.MPS, int64, error) {
-	return s.repo.List(ctx, 0)
+func (s *MPSService) List(ctx context.Context, tenantID int64) ([]model.MPS, int64, error) {
+	return s.repo.List(ctx, tenantID)
 }
 
 func (s *MPSService) GetByID(ctx context.Context, id string) (*model.MPS, error) {
@@ -77,8 +79,8 @@ func NewMRPService(mrp *repository.MRPRepository, inv *repository.InventoryRepos
 	return &MRPService{mrpRepo: mrp, invRepo: inv}
 }
 
-func (s *MRPService) List(ctx context.Context) ([]model.MRP, int64, error) {
-	return s.mrpRepo.List(ctx, 0)
+func (s *MRPService) List(ctx context.Context, tenantID int64) ([]model.MRP, int64, error) {
+	return s.mrpRepo.List(ctx, tenantID)
 }
 
 func (s *MRPService) Calculate(ctx context.Context, id string) error {
@@ -118,8 +120,8 @@ func NewScheduleService(schedule *repository.ScheduleRepository, order *reposito
 	return &ScheduleService{scheduleRepo: schedule, orderRepo: order}
 }
 
-func (s *ScheduleService) List(ctx context.Context) ([]model.SchedulePlan, int64, error) {
-	return s.scheduleRepo.List(ctx, 0)
+func (s *ScheduleService) List(ctx context.Context, tenantID int64) ([]model.SchedulePlan, int64, error) {
+	return s.scheduleRepo.List(ctx, tenantID)
 }
 
 func (s *ScheduleService) Create(ctx context.Context, plan *model.SchedulePlan) error {
@@ -132,9 +134,14 @@ func (s *ScheduleService) Execute(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.scheduleRepo.GetByID(ctx, planID)
+	plan, err := s.scheduleRepo.GetByID(ctx, planID)
 	if err != nil {
 		return err
+	}
+	// 删除旧的排程结果
+	results, _ := s.scheduleRepo.GetResultsByPlanID(ctx, int64(planID))
+	for _, r := range results {
+		s.scheduleRepo.Delete(ctx, uint(r.ID))
 	}
 	// 简单排程：按工序顺序排，标准工时估算
 	// 实际需要遗传算法/粒子群等优化
@@ -143,12 +150,32 @@ func (s *ScheduleService) Execute(ctx context.Context, id string) error {
 		return err
 	}
 	seq := 1
+	currentTime := time.Now()
+	if plan.StartDate != nil {
+		currentTime = *plan.StartDate
+	}
 	for _, order := range orders {
+		// 简单分配：按顺序分配产线和工位
+		// 实际需要根据资源能力、瓶颈等优化
+		lineID := int64(seq % 3) // 模拟3条产线轮换
+		lineName := fmt.Sprintf("产线%d", lineID+1)
+		stationID := int64(seq % 5)
+		stationName := fmt.Sprintf("工位%d", stationID+1)
+		// 估算工时：默认8小时
+		duration := 8 * time.Hour
+		planStartTime := currentTime.Add(time.Duration((seq-1)*8) * time.Hour)
+		planEndTime := planStartTime.Add(duration)
 		result := &model.ScheduleResult{
-			PlanID:   int64(planID),
-			OrderID:  order.ID,
-			OrderNo:  order.OrderNo,
-			Sequence: seq,
+			PlanID:         int64(planID),
+			OrderID:        order.ID,
+			OrderNo:        order.OrderNo,
+			Sequence:       seq,
+			LineID:         lineID,
+			LineName:       &lineName,
+			StationID:      &stationID,
+			StationName:    &stationName,
+			PlanStartTime:  &planStartTime,
+			PlanEndTime:    &planEndTime,
 		}
 		s.scheduleRepo.CreateResult(ctx, result)
 		seq++
@@ -174,4 +201,25 @@ func (s *ScheduleService) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	return s.scheduleRepo.Delete(ctx, planID)
+}
+
+// DragUpdate 更新排程结果（拖拽后保存）
+func (s *ScheduleService) DragUpdate(ctx context.Context, resultID uint, lineID int64, stationID int64, planStartTime, planEndTime time.Time) error {
+	updates := map[string]interface{}{
+		"line_id":         lineID,
+		"station_id":      stationID,
+		"plan_start_time": planStartTime,
+		"plan_end_time":   planEndTime,
+	}
+	return s.scheduleRepo.UpdateResult(ctx, resultID, updates)
+}
+
+// GetResultByID 获取单个排程结果
+func (s *ScheduleService) GetResultByID(ctx context.Context, id string) (*model.ScheduleResult, error) {
+	var resultID uint
+	_, err := fmt.Sscanf(id, "%d", &resultID)
+	if err != nil {
+		return nil, err
+	}
+	return s.scheduleRepo.GetResultByID(ctx, resultID)
 }

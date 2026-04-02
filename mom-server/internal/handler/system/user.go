@@ -39,8 +39,9 @@ func (h *UserHandler) GetList(c *gin.Context) {
 
 	username := c.Query("username")
 	status := c.Query("status")
+	tenantID := middleware.GetTenantID(c)
 
-	data, err := h.userSvc.GetList(c.Request.Context(), req, username, status)
+	data, err := h.userSvc.GetList(c.Request.Context(), tenantID, req, username, status)
 	if err != nil {
 		response.InternalError(c, err.Error())
 		return
@@ -92,7 +93,8 @@ func (h *UserHandler) Create(c *gin.Context) {
 		req.Password = "123456"
 	}
 
-	err := h.userSvc.Create(c.Request.Context(), req)
+	tenantID := middleware.GetTenantID(c)
+	err := h.userSvc.Create(c.Request.Context(), tenantID, req)
 	if err != nil {
 		response.Error(c, 40001, err.Error())
 		return
@@ -199,4 +201,29 @@ func (h *UserHandler) GetCurrentUser(c *gin.Context) {
 		return
 	}
 	response.Success(c, user)
+}
+
+// AssignRoles 分配角色
+func (h *UserHandler) AssignRoles(c *gin.Context) {
+	id := c.Param("id")
+	var userID int64
+	_, err := fmt.Sscanf(id, "%d", &userID)
+	if err != nil {
+		response.ParamError(c, "ID格式错误")
+		return
+	}
+
+	var req dto.AssignRolesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ParamError(c, "参数错误")
+		return
+	}
+
+	err = h.userSvc.AssignRoles(c.Request.Context(), userID, req.RoleIDs)
+	if err != nil {
+		response.Error(c, 40001, err.Error())
+		return
+	}
+
+	response.Success(c, nil)
 }

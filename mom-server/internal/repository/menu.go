@@ -30,7 +30,7 @@ func (r *MenuRepository) Tree(ctx context.Context, tenantID int64) ([]model.Menu
 }
 
 func (r *MenuRepository) BuildTree(menus []model.Menu) []model.Menu {
-	var result []model.Menu
+	var result []*model.Menu
 	menuMap := make(map[int64]*model.Menu)
 
 	for i := range menus {
@@ -39,7 +39,7 @@ func (r *MenuRepository) BuildTree(menus []model.Menu) []model.Menu {
 
 	for i := range menus {
 		if menus[i].ParentID == 0 {
-			result = append(result, menus[i])
+			result = append(result, &menus[i])
 		} else {
 			if parent, ok := menuMap[menus[i].ParentID]; ok {
 				parent.Children = append(parent.Children, menus[i])
@@ -47,7 +47,12 @@ func (r *MenuRepository) BuildTree(menus []model.Menu) []model.Menu {
 		}
 	}
 
-	return result
+	// 转换为普通 slice
+	final := make([]model.Menu, len(result))
+	for i, m := range result {
+		final[i] = *m
+	}
+	return final
 }
 
 func (r *MenuRepository) GetByID(ctx context.Context, id uint) (*model.Menu, error) {
@@ -82,11 +87,10 @@ func NewRoleMenuRepository(db *gorm.DB) *RoleMenuRepository {
 	return &RoleMenuRepository{db: db}
 }
 
-func (r *RoleMenuRepository) GetMenuIDsByRoleID(ctx context.Context, roleID string) ([]uint, error) {
-	var menuIDs []uint
-	id := roleID
+func (r *RoleMenuRepository) GetMenuIDsByRoleID(ctx context.Context, roleID int64) ([]int64, error) {
+	var menuIDs []int64
 	err := r.db.WithContext(ctx).Model(&model.RoleMenu{}).
-		Where("role_id = ?", id).
+		Where("role_id = ?", roleID).
 		Pluck("menu_id", &menuIDs).Error
 	return menuIDs, err
 }
@@ -98,6 +102,30 @@ func (r *RoleMenuRepository) AssignMenus(ctx context.Context, roleID int64, menu
 		}
 		for _, menuID := range menuIDs {
 			if err := tx.Create(&model.RoleMenu{RoleID: roleID, MenuID: menuID}).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// GetRolePerms 获取角色权限列表
+func (r *RoleMenuRepository) GetRolePerms(ctx context.Context, roleID int64) ([]string, error) {
+	var perms []string
+	err := r.db.WithContext(ctx).Model(&model.RolePerm{}).
+		Where("role_id = ?", roleID).
+		Pluck("perm", &perms).Error
+	return perms, err
+}
+
+// AssignPerms 分配角色权限
+func (r *RoleMenuRepository) AssignPerms(ctx context.Context, roleID int64, perms []string) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("role_id = ?", roleID).Delete(&model.RolePerm{}).Error; err != nil {
+			return err
+		}
+		for _, perm := range perms {
+			if err := tx.Create(&model.RolePerm{RoleID: roleID, Perm: perm}).Error; err != nil {
 				return err
 			}
 		}

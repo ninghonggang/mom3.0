@@ -1,5 +1,5 @@
 server:
-  port: 9080
+  port: 9081
   mode: debug
   jwt:
     secret: "mom3-secret-key-change-in-production"

@@ -1,6 +1,7 @@
 package system
 
 import (
+	"mom-server/internal/middleware"
 	"mom-server/internal/model"
 	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
@@ -17,7 +18,8 @@ func NewMenuHandler(ms *service.MenuService) *MenuHandler {
 }
 
 func (h *MenuHandler) List(c *gin.Context) {
-	menus, err := h.menuService.List(c.Request.Context())
+	tenantID := middleware.GetTenantID(c)
+	menus, err := h.menuService.List(c.Request.Context(), tenantID)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -26,7 +28,8 @@ func (h *MenuHandler) List(c *gin.Context) {
 }
 
 func (h *MenuHandler) Tree(c *gin.Context) {
-	menus, err := h.menuService.Tree(c.Request.Context())
+	tenantID := middleware.GetTenantID(c)
+	menus, err := h.menuService.Tree(c.Request.Context(), tenantID)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return

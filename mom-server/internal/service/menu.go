@@ -15,12 +15,12 @@ func NewMenuService(repo *repository.MenuRepository) *MenuService {
 	return &MenuService{repo: repo}
 }
 
-func (s *MenuService) List(ctx context.Context) ([]model.Menu, error) {
-	return s.repo.List(ctx, 0)
+func (s *MenuService) List(ctx context.Context, tenantID int64) ([]model.Menu, error) {
+	return s.repo.List(ctx, tenantID)
 }
 
-func (s *MenuService) Tree(ctx context.Context) ([]model.Menu, error) {
-	return s.repo.Tree(ctx, 0)
+func (s *MenuService) Tree(ctx context.Context, tenantID int64) ([]model.Menu, error) {
+	return s.repo.Tree(ctx, tenantID)
 }
 
 func (s *MenuService) GetByID(ctx context.Context, id string) (*model.Menu, error) {

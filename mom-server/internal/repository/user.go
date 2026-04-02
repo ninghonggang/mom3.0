@@ -42,11 +42,23 @@ func (r *UserRepository) FindByID(ctx context.Context, id int64) (*model.User, e
 	return &user, nil
 }
 
-// FindByUsername 根据用户名查询
+// FindByUsername 根据用户名查询（指定租户）
 func (r *UserRepository) FindByUsername(ctx context.Context, tenantID int64, username string) (*model.User, error) {
 	var user model.User
 	err := r.db.WithContext(ctx).
 		Where("tenant_id = ? AND username = ?", tenantID, username).
+		First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// FindByUsernameAllTenants 根据用户名查询所有租户（用于登录）
+func (r *UserRepository) FindByUsernameAllTenants(ctx context.Context, username string) (*model.User, error) {
+	var user model.User
+	err := r.db.WithContext(ctx).
+		Where("username = ?", username).
 		First(&user).Error
 	if err != nil {
 		return nil, err

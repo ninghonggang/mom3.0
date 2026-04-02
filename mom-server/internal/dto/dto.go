@@ -66,7 +66,9 @@ type UserDTO struct {
 	DeptID    *int64  `json:"dept_id"`
 	Status    int     `json:"status"`
 	Roles     []string `json:"roles"`
+	RoleIDs   []int64  `json:"role_ids"`
 	Perms     []string `json:"perms"`
+	Menus     interface{} `json:"menus"` // 菜单树
 }
 
 // CreateUserRequest 创建用户请求
@@ -100,6 +102,11 @@ type ResetPasswordRequest struct {
 type ChangePasswordRequest struct {
 	OldPassword string `json:"old_password" binding:"required"`
 	NewPassword string `json:"new_password" binding:"required"`
+}
+
+// AssignRolesRequest 分配角色请求
+type AssignRolesRequest struct {
+	RoleIDs []int64 `json:"role_ids"`
 }
 
 // CreateRoleRequest 创建角色请求

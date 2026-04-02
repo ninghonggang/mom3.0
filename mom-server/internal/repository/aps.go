@@ -133,3 +133,13 @@ func (r *ScheduleRepository) GetResultsByPlanID(ctx context.Context, planID int6
 func (r *ScheduleRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&model.SchedulePlan{}, id).Error
 }
+
+func (r *ScheduleRepository) UpdateResult(ctx context.Context, id uint, updates map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&model.ScheduleResult{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (r *ScheduleRepository) GetResultByID(ctx context.Context, id uint) (*model.ScheduleResult, error) {
+	var result model.ScheduleResult
+	err := r.db.WithContext(ctx).First(&result, id).Error
+	return &result, err
+}

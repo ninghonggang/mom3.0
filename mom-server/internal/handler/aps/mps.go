@@ -1,6 +1,10 @@
 package aps
 
 import (
+	"fmt"
+	"time"
+
+	"mom-server/internal/middleware"
 	"mom-server/internal/model"
 	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
@@ -17,7 +21,8 @@ func NewMPSHandler(s *service.MPSService) *MPSHandler {
 }
 
 func (h *MPSHandler) List(c *gin.Context) {
-	list, total, err := h.service.List(c.Request.Context())
+	tenantID := middleware.GetTenantID(c)
+	list, total, err := h.service.List(c.Request.Context(), tenantID)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -93,7 +98,8 @@ func NewMRPHandler(s *service.MRPService) *MRPHandler {
 }
 
 func (h *MRPHandler) List(c *gin.Context) {
-	list, total, err := h.service.List(c.Request.Context())
+	tenantID := middleware.GetTenantID(c)
+	list, total, err := h.service.List(c.Request.Context(), tenantID)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -120,7 +126,8 @@ func NewScheduleHandler(s *service.ScheduleService) *ScheduleHandler {
 }
 
 func (h *ScheduleHandler) List(c *gin.Context) {
-	list, total, err := h.service.List(c.Request.Context())
+	tenantID := middleware.GetTenantID(c)
+	list, total, err := h.service.List(c.Request.Context(), tenantID)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -170,4 +177,34 @@ func (h *ScheduleHandler) Delete(c *gin.Context) {
 		return
 	}
 	response.Success(c, nil)
+}
+
+// DragUpdateRequest 拖拽更新请求
+type DragUpdateRequest struct {
+	ResultID      uint  `json:"result_id" binding:"required"`
+	LineID        int64 `json:"line_id"`
+	StationID     int64 `json:"station_id"`
+	PlanStartTime int64 `json:"plan_start_time"` // 时间戳(秒)
+	PlanEndTime   int64 `json:"plan_end_time"`   // 时间戳(秒)
+}
+
+func (h *ScheduleHandler) DragUpdate(c *gin.Context) {
+	var req DragUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	planStartTime := time.Unix(req.PlanStartTime, 0)
+	planEndTime := time.Unix(req.PlanEndTime, 0)
+	err := h.service.DragUpdate(c.Request.Context(), req.ResultID, req.LineID, req.StationID, planStartTime, planEndTime)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	result, err := h.service.GetResultByID(c.Request.Context(), fmt.Sprintf("%d", req.ResultID))
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, result)
 }

@@ -57,7 +57,9 @@ func JWTAuth(jwtUtil *jwt.JWT) gin.HandlerFunc {
 // GetUserID 获取用户ID
 func GetUserID(c *gin.Context) int64 {
 	if v, exists := c.Get(ContextKeyUserID); exists {
-		return v.(int64)
+		if userID, ok := v.(int64); ok {
+			return userID
+		}
 	}
 	return 0
 }
@@ -65,7 +67,9 @@ func GetUserID(c *gin.Context) int64 {
 // GetTenantID 获取租户ID
 func GetTenantID(c *gin.Context) int64 {
 	if v, exists := c.Get(ContextKeyTenantID); exists {
-		return v.(int64)
+		if tenantID, ok := v.(int64); ok {
+			return tenantID
+		}
 	}
 	return 0
 }
@@ -73,7 +77,9 @@ func GetTenantID(c *gin.Context) int64 {
 // GetUsername 获取用户名
 func GetUsername(c *gin.Context) string {
 	if v, exists := c.Get(ContextKeyUsername); exists {
-		return v.(string)
+		if username, ok := v.(string); ok {
+			return username
+		}
 	}
 	return ""
 }
@@ -81,7 +87,9 @@ func GetUsername(c *gin.Context) string {
 // GetRoles 获取角色列表
 func GetRoles(c *gin.Context) []string {
 	if v, exists := c.Get(ContextKeyRoles); exists {
-		return v.([]string)
+		if roles, ok := v.([]string); ok {
+			return roles
+		}
 	}
 	return nil
 }

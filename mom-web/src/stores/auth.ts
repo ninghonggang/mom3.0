@@ -12,6 +12,7 @@ export interface UserInfo {
   phone?: string
   roles: string[]
   perms: string[]
+  menus?: any[]
 }
 
 export const useAuthStore = defineStore('auth', () => {

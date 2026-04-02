@@ -15,12 +15,12 @@ func NewDeptService(repo *repository.DeptRepository) *DeptService {
 	return &DeptService{repo: repo}
 }
 
-func (s *DeptService) List(ctx context.Context) ([]model.Dept, error) {
-	return s.repo.List(ctx, 0)
+func (s *DeptService) List(ctx context.Context, tenantID int64) ([]model.Dept, error) {
+	return s.repo.List(ctx, tenantID)
 }
 
-func (s *DeptService) Tree(ctx context.Context) ([]model.Dept, error) {
-	return s.repo.Tree(ctx, 0)
+func (s *DeptService) Tree(ctx context.Context, tenantID int64) ([]model.Dept, error) {
+	return s.repo.Tree(ctx, tenantID)
 }
 
 func (s *DeptService) GetByID(ctx context.Context, id string) (*model.Dept, error) {

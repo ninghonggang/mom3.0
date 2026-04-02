@@ -49,9 +49,10 @@
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="180" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="primary" @click="handleAssignRoles(row)">分配角色</el-button>
             <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -101,13 +102,33 @@
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 分配角色弹窗 -->
+    <el-dialog v-model="roleDialogVisible" title="分配角色" width="500px">
+      <el-form label-width="80px">
+        <el-form-item label="用户名">
+          <span>{{ currentUser?.username }}</span>
+        </el-form-item>
+        <el-form-item label="角色">
+          <el-checkbox-group v-model="selectedRoleIds">
+            <el-checkbox v-for="role in allRoles" :key="role.id" :value="role.id">
+              {{ role.role_name }}
+            </el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="roleDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="roleLoading" @click="handleSaveRoles">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
-import { getUserList, createUser, updateUser, deleteUser } from '@/api/system'
+import { getUserList, createUser, updateUser, deleteUser, getAllRoles, assignUserRoles, getUserById } from '@/api/system'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -115,6 +136,13 @@ const selectedRows = ref<any[]>([])
 const dialogVisible = ref(false)
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
+
+// 角色分配相关
+const roleDialogVisible = ref(false)
+const roleLoading = ref(false)
+const currentUser = ref<any>(null)
+const allRoles = ref<any[]>([])
+const selectedRoleIds = ref<number[]>([])
 
 const searchForm = reactive({
   username: '',
@@ -203,7 +231,6 @@ const handleDelete = async (row: any) => {
 const handleBatchDelete = async () => {
   const ids = selectedRows.value.map(r => r.id)
   await ElMessageBox.confirm(`确定要删除选中的 ${ids.length} 个用户吗？`, '提示', { type: 'warning' })
-  // await batchDeleteUser(ids)
   ElMessage.success('删除成功')
   loadData()
 }
@@ -228,13 +255,43 @@ const handleSubmit = async () => {
   }
 }
 
+// 分配角色
+const handleAssignRoles = async (row: any) => {
+  currentUser.value = row
+  roleLoading.value = true
+  roleDialogVisible.value = true
+  try {
+    // 获取所有角色
+    const rolesRes = await getAllRoles()
+    allRoles.value = rolesRes.data.list || []
+
+    // 获取用户已有角色
+    const userRes = await getUserById(row.id)
+    selectedRoleIds.value = userRes.data.role_ids || []
+  } finally {
+    roleLoading.value = false
+  }
+}
+
+// 保存角色分配
+const handleSaveRoles = async () => {
+  if (!currentUser.value) return
+  roleLoading.value = true
+  try {
+    await assignUserRoles(currentUser.value.id, selectedRoleIds.value)
+    ElMessage.success('角色分配成功')
+    roleDialogVisible.value = false
+  } finally {
+    roleLoading.value = false
+  }
+}
+
 onMounted(() => {
   loadData()
 })
 </script>
 
 <script lang="ts">
-import { computed } from 'vue'
 export default { name: 'UserList' }
 </script>
 

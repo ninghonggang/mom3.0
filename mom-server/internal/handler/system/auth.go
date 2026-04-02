@@ -11,12 +11,13 @@ import (
 
 // AuthHandler 认证处理器
 type AuthHandler struct {
-	userSvc *service.UserService
-	jwtSvc  *jwt.JWT
+	userSvc     *service.UserService
+	jwtSvc      *jwt.JWT
+	loginLogSvc *service.LoginLogService
 }
 
-func NewAuthHandler(userSvc *service.UserService, jwtSvc *jwt.JWT) *AuthHandler {
-	return &AuthHandler{userSvc: userSvc, jwtSvc: jwtSvc}
+func NewAuthHandler(userSvc *service.UserService, jwtSvc *jwt.JWT, loginLogSvc *service.LoginLogService) *AuthHandler {
+	return &AuthHandler{userSvc: userSvc, jwtSvc: jwtSvc, loginLogSvc: loginLogSvc}
 }
 
 // Login 登录
@@ -36,6 +37,15 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	user, err := h.userSvc.ValidateLogin(c.Request.Context(), req)
 	if err != nil {
+		// 记录登录失败日志（带recover保护）
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					// 防止panic影响主流程
+				}
+			}()
+			h.loginLogSvc.RecordLogin(c.Request.Context(), 1, req.Username, c.ClientIP(), "", "", "", 0, err.Error())
+		}()
 		response.Error(c, 40001, err.Error())
 		return
 	}
@@ -58,6 +68,16 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	// 生成真实JWT Token
 	accessToken, refreshToken, _ := h.jwtSvc.GenerateToken(user.ID, user.TenantID, user.Username, roles)
+
+	// 记录登录日志（带recover保护）
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				// 防止panic影响主流程
+			}
+		}()
+		h.loginLogSvc.RecordLogin(c.Request.Context(), user.TenantID, user.Username, c.ClientIP(), "", "", "", 1, "登录成功")
+	}()
 
 	response.Success(c, &dto.LoginResponse{
 		AccessToken:  accessToken,

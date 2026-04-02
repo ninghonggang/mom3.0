@@ -1,6 +1,7 @@
 package system
 
 import (
+	"mom-server/internal/middleware"
 	"mom-server/internal/model"
 	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
@@ -17,7 +18,8 @@ func NewDeptHandler(ds *service.DeptService) *DeptHandler {
 }
 
 func (h *DeptHandler) List(c *gin.Context) {
-	depts, err := h.deptService.List(c.Request.Context())
+	tenantID := middleware.GetTenantID(c)
+	depts, err := h.deptService.List(c.Request.Context(), tenantID)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -26,7 +28,8 @@ func (h *DeptHandler) List(c *gin.Context) {
 }
 
 func (h *DeptHandler) Tree(c *gin.Context) {
-	depts, err := h.deptService.Tree(c.Request.Context())
+	tenantID := middleware.GetTenantID(c)
+	depts, err := h.deptService.Tree(c.Request.Context(), tenantID)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return

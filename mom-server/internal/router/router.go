@@ -22,11 +22,13 @@ type Router struct {
 	jwtUtil            *jwt.JWT
 	userHandler         *system.UserHandler
 	authHandler         *system.AuthHandler
+	loginLogHandler     *system.LoginLogHandler
 	roleHandler         *system.RoleHandler
 	menuHandler         *system.MenuHandler
 	deptHandler         *system.DeptHandler
 	dictHandler         *system.DictHandler
 	postHandler         *system.PostHandler
+	tenantHandler       *system.TenantHandler
 	warehouseHandler    *wms.WarehouseHandler
 	salesOrderHandler   *production.SalesOrderHandler
 	reportHandler       *production.ReportHandler
@@ -57,6 +59,9 @@ type Router struct {
 	ncrHandler        *quality.NCRHandler
 	spcHandler        *quality.SPCHandler
 	supplierHandler    *supplier.SupplierHandler
+	materialHandler    *mdm.MaterialHandler
+	workshopHandler    *mdm.WorkshopHandler
+	operLogHandler     *system.OperLogHandler
 }
 
 // New 创建路由
@@ -64,11 +69,13 @@ func New(
 	jwtUtil *jwt.JWT,
 	userHandler *system.UserHandler,
 	authHandler *system.AuthHandler,
+	loginLogHandler *system.LoginLogHandler,
 	roleHandler *system.RoleHandler,
 	menuHandler *system.MenuHandler,
 	deptHandler *system.DeptHandler,
 	dictHandler *system.DictHandler,
 	postHandler *system.PostHandler,
+	tenantHandler *system.TenantHandler,
 	warehouseHandler *wms.WarehouseHandler,
 	salesOrderHandler *production.SalesOrderHandler,
 	reportHandler *production.ReportHandler,
@@ -99,16 +106,21 @@ func New(
 	ncrHandler *quality.NCRHandler,
 	spcHandler *quality.SPCHandler,
 	supplierHandler *supplier.SupplierHandler,
+	materialHandler *mdm.MaterialHandler,
+	workshopHandler *mdm.WorkshopHandler,
+	operLogHandler *system.OperLogHandler,
 ) *Router {
 	return &Router{
 		jwtUtil:             jwtUtil,
 		userHandler:         userHandler,
 		authHandler:         authHandler,
+		loginLogHandler:     loginLogHandler,
 		roleHandler:         roleHandler,
 		menuHandler:         menuHandler,
 		deptHandler:         deptHandler,
 		dictHandler:         dictHandler,
 		postHandler:         postHandler,
+		tenantHandler:       tenantHandler,
 		warehouseHandler:    warehouseHandler,
 		salesOrderHandler:   salesOrderHandler,
 		reportHandler:       reportHandler,
@@ -139,6 +151,9 @@ func New(
 		ncrHandler:            ncrHandler,
 		spcHandler:            spcHandler,
 		supplierHandler:       supplierHandler,
+		materialHandler:       materialHandler,
+		workshopHandler:       workshopHandler,
+		operLogHandler:         operLogHandler,
 	}
 }
 
@@ -185,6 +200,7 @@ func (r *Router) Init(engine *gin.Engine) {
 				user.PUT("/:id", r.userHandler.Update)
 				user.DELETE("/:id", r.userHandler.Delete)
 				user.PUT("/:id/password", r.userHandler.ResetPassword)
+				user.PUT("/:id/roles", r.userHandler.AssignRoles)
 			}
 
 			// 角色管理
@@ -197,6 +213,8 @@ func (r *Router) Init(engine *gin.Engine) {
 				role.DELETE("/:id", r.roleHandler.Delete)
 				role.GET("/:id/menus", r.roleHandler.GetMenus)
 				role.PUT("/:id/menus", r.roleHandler.AssignMenus)
+				role.GET("/:id/perms", r.roleHandler.GetPerms)
+				role.PUT("/:id/perms", r.roleHandler.AssignPerms)
 			}
 
 			// 菜单管理
@@ -243,6 +261,29 @@ func (r *Router) Init(engine *gin.Engine) {
 				post.POST("", r.postHandler.Create)
 				post.PUT("/:id", r.postHandler.Update)
 				post.DELETE("/:id", r.postHandler.Delete)
+			}
+
+			// 租户管理
+			tenant := system.Group("/tenant")
+			{
+				tenant.GET("/list", r.tenantHandler.List)
+				tenant.GET("/:id", r.tenantHandler.Get)
+				tenant.POST("", r.tenantHandler.Create)
+				tenant.PUT("/:id", r.tenantHandler.Update)
+				tenant.DELETE("/:id", r.tenantHandler.Delete)
+			}
+
+			// 操作日志
+			operLog := system.Group("/operlog")
+			{
+				operLog.GET("/list", r.operLogHandler.List)
+			}
+
+			// 登录日志
+			loginLog := system.Group("/loginlog")
+			{
+				loginLog.GET("/list", r.loginLogHandler.List)
+				loginLog.DELETE("/clean", r.loginLogHandler.Clean)
 			}
 		}
 
@@ -392,6 +433,7 @@ func (r *Router) Init(engine *gin.Engine) {
 				schedule.PUT("/:id/execute", r.scheduleHandler.Execute)
 				schedule.GET("/:id/results", r.scheduleHandler.GetResults)
 				schedule.DELETE("/:id", r.scheduleHandler.Delete)
+				schedule.PUT("/drag-update", r.scheduleHandler.DragUpdate)
 			}
 		}
 
@@ -499,6 +541,26 @@ func (r *Router) Init(engine *gin.Engine) {
 			shift.POST("", r.shiftHandler.Create)
 			shift.PUT("/:id", r.shiftHandler.Update)
 			shift.DELETE("/:id", r.shiftHandler.Delete)
+		}
+
+		// MDM 物料管理
+		material := protected.Group("/mdm/material")
+		{
+			material.GET("/list", r.materialHandler.List)
+			material.GET("/:id", r.materialHandler.Get)
+			material.POST("", r.materialHandler.Create)
+			material.PUT("/:id", r.materialHandler.Update)
+			material.DELETE("/:id", r.materialHandler.Delete)
+		}
+
+		// MDM 车间管理
+		workshop := protected.Group("/mdm/workshop")
+		{
+			workshop.GET("/list", r.workshopHandler.List)
+			workshop.GET("/:id", r.workshopHandler.Get)
+			workshop.POST("", r.workshopHandler.Create)
+			workshop.PUT("/:id", r.workshopHandler.Update)
+			workshop.DELETE("/:id", r.workshopHandler.Delete)
 		}
 
 		// MDM BOM管理
