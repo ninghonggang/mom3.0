@@ -68,7 +68,7 @@ export const updateNCR = (id: number, data: any) => {
 
 // SPC数据
 export const getSPCData = (params: any) => {
-  return request.get('/quality/spc/data', { params })
+  return request.get('/quality/spc/list', { params })
 }
 
 export const getSPCChart = (params: any) => {

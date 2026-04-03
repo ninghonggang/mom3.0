@@ -84,6 +84,12 @@
     <el-dialog v-model="permsDialogVisible" :title="'权限配置 - ' + currentRoleName" width="900px">
       <el-tabs>
         <el-tab-pane label="菜单权限">
+          <div class="menu-tree-toolbar">
+            <el-button type="primary" size="small" @click="handleSelectAllMenus">全选</el-button>
+            <el-button size="small" @click="handleCancelAllMenus">取消全选</el-button>
+            <el-button size="small" @click="handleExpandAll">展开全部</el-button>
+            <el-button size="small" @click="handleCollapseAll">收起全部</el-button>
+          </div>
           <el-scrollbar v-loading="permsLoading" height="400px">
             <el-tree
               ref="menuTreeRef"
@@ -92,7 +98,6 @@
               node-key="id"
               show-checkbox
               :default-expand-all="true"
-              check-strictly
               @check="handleTreeCheck"
             />
           </el-scrollbar>
@@ -283,17 +288,49 @@ const handlePerms = async (row: any) => {
   }
 }
 
-// 树节点选中变化
+// 树节点选中变化 - 支持父子联动
 const handleTreeCheck = (node: any, checked: any) => {
-  checkedMenuKeys.value = checked.checkedKeys || []
   selectedMenuIds.value = (checked.checkedKeys || []).map((k: any) => parseInt(k)).filter((k: any) => !isNaN(k))
+}
+
+// 全选
+const handleSelectAllMenus = () => {
+  menuTreeRef.value?.setCheckedNodes(menuTree.value.map(n => ({ ...n, children: undefined })))
+  // 获取所有节点ID
+  const allIds: number[] = []
+  const collectIds = (nodes: any[]) => {
+    nodes.forEach(node => {
+      allIds.push(node.id)
+      if (node.children?.length) collectIds(node.children)
+    })
+  }
+  collectIds(menuTree.value)
+  selectedMenuIds.value = allIds
+}
+
+// 取消全选
+const handleCancelAllMenus = () => {
+  menuTreeRef.value?.setCheckedKeys([])
+  selectedMenuIds.value = []
+}
+
+// 展开全部
+const handleExpandAll = () => {
+  const nodes = menuTreeRef.value?.store?.nodesMap || {}
+  Object.values(nodes).forEach((node: any) => node.expanded = true)
+}
+
+// 收起全部
+const handleCollapseAll = () => {
+  const nodes = menuTreeRef.value?.store?.nodesMap || {}
+  Object.values(nodes).forEach((node: any) => node.expanded = false)
 }
 
 // 保存权限
 const handleSavePerms = async () => {
-  // 获取选中的菜单ID
-  const menuIds = menuTreeRef.value?.getCheckedKeys() || []
-  const ids = menuIds.map((id: any) => parseInt(id)).filter((id: any) => !isNaN(id))
+  // 获取选中的菜单ID（包括半选中状态）
+  const checkedNodes = menuTreeRef.value?.getCheckedNodes(false, true) || []
+  const ids = checkedNodes.map((node: any) => node.id).filter((id: any) => !isNaN(id))
 
   // 保存菜单权限
   await assignRoleMenus(currentRoleId.value, ids)
@@ -335,6 +372,12 @@ onMounted(() => { loadData() })
 
 .perms-container {
   padding: 0 16px;
+}
+
+.menu-tree-toolbar {
+  margin-bottom: 12px;
+  display: flex;
+  gap: 8px;
 }
 
 .menu-perms {
