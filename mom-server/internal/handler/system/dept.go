@@ -48,12 +48,14 @@ func (h *DeptHandler) Get(c *gin.Context) {
 }
 
 func (h *DeptHandler) Create(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c)
 	var req model.Dept
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
 		return
 	}
 
+	req.TenantID = tenantID
 	err := h.deptService.Create(c.Request.Context(), &req)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())

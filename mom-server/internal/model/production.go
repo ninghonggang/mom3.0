@@ -21,6 +21,10 @@ type SalesOrder struct {
 	Remark        *string    `json:"remark" gorm:"size:500"`
 }
 
+func (SalesOrder) TableName() string {
+	return "pro_sales_order"
+}
+
 // SalesOrderItem 销售订单明细
 type SalesOrderItem struct {
 	BaseModel
@@ -33,6 +37,10 @@ type SalesOrderItem struct {
 	Price        float64 `json:"price" gorm:"type:decimal(18,2)"` // 单价
 	Amount       float64 `json:"amount" gorm:"type:decimal(18,2)"` // 金额
 	ShippedQty   float64 `json:"shipped_qty" gorm:"type:decimal(18,4);default:0"`
+}
+
+func (SalesOrderItem) TableName() string {
+	return "pro_sales_order_item"
 }
 
 // ProductionOrder 生产工单
@@ -64,6 +72,10 @@ type ProductionOrder struct {
 	Remark          *string    `json:"remark" gorm:"size:500"`
 }
 
+func (ProductionOrder) TableName() string {
+	return "pro_production_order"
+}
+
 // ProductionReport 生产报工
 type ProductionReport struct {
 	BaseModel
@@ -84,6 +96,10 @@ type ProductionReport struct {
 	Remark        *string    `json:"remark" gorm:"size:500"`
 }
 
+func (ProductionReport) TableName() string {
+	return "pro_production_report"
+}
+
 // Dispatch 派工单
 type Dispatch struct {
 	BaseModel
@@ -98,4 +114,8 @@ type Dispatch struct {
 	AssignUserName *string   `json:"assign_user_name" gorm:"size:50"`
 	Quantity      float64    `json:"quantity" gorm:"type:decimal(18,4)"` // 派工数量
 	Status        int        `json:"status" gorm:"default:1"` // 1待开始/2进行中/3已完成
+}
+
+func (Dispatch) TableName() string {
+	return "pro_dispatch"
 }

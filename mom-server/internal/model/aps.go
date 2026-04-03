@@ -17,6 +17,10 @@ type MRP struct {
 	Remark       *string    `json:"remark" gorm:"size:500"`
 }
 
+func (MRP) TableName() string {
+	return "aps_mrp"
+}
+
 // MRPItem MRP明细
 type MRPItem struct {
 	BaseModel
@@ -32,6 +36,10 @@ type MRPItem struct {
 	SourceNo    *string `json:"source_no" gorm:"size:50"`
 }
 
+func (MRPItem) TableName() string {
+	return "aps_mrp_item"
+}
+
 // MPS主生产计划
 type MPS struct {
 	BaseModel
@@ -45,6 +53,10 @@ type MPS struct {
 	Status       int        `json:"status" gorm:"default:1"`
 }
 
+func (MPS) TableName() string {
+	return "aps_mps"
+}
+
 // SchedulePlan 排程计划
 type SchedulePlan struct {
 	BaseModel
@@ -56,6 +68,10 @@ type SchedulePlan struct {
 	Algorithm    string     `json:"algorithm" gorm:"size:20"` // 遗传/粒子群/启发式
 	Status       int        `json:"status" gorm:"default:1"` // 1待排程/2排程中/3已完成
 	Remark       *string    `json:"remark" gorm:"size:500"`
+}
+
+func (SchedulePlan) TableName() string {
+	return "aps_schedule_plan"
 }
 
 // ScheduleResult 排程结果
@@ -76,6 +92,10 @@ type ScheduleResult struct {
 	Status       int        `json:"status" gorm:"default:1"` // 1待执行/2执行中/3已完成
 }
 
+func (ScheduleResult) TableName() string {
+	return "aps_schedule_result"
+}
+
 // Resource 资源
 type Resource struct {
 	BaseModel
@@ -90,6 +110,10 @@ type Resource struct {
 	Status       int     `json:"status" gorm:"default:1"`
 }
 
+func (Resource) TableName() string {
+	return "aps_resource"
+}
+
 // WorkCenter 工作中心
 type WorkCenter struct {
 	BaseModel
@@ -99,4 +123,8 @@ type WorkCenter struct {
 	WorkshopID    int64   `json:"workshop_id"`
 	Capacity      float64 `json:"capacity" gorm:"type:decimal(18,2)"`
 	Status        int     `json:"status" gorm:"default:1"`
+}
+
+func (WorkCenter) TableName() string {
+	return "aps_work_center"
 }

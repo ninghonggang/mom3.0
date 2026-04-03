@@ -24,6 +24,10 @@ type Material struct {
 	Status       int      `json:"status" gorm:"default:1"`
 }
 
+func (Material) TableName() string {
+	return "mdm_material"
+}
+
 // MaterialCategory 物料分类
 type MaterialCategory struct {
 	BaseModel
@@ -33,6 +37,10 @@ type MaterialCategory struct {
 	CategoryCode string `json:"category_code" gorm:"size:50"`
 	Sort       int     `json:"sort" gorm:"default:0"`
 	Status     int     `json:"status" gorm:"default:1"`
+}
+
+func (MaterialCategory) TableName() string {
+	return "mdm_material_category"
 }
 
 // BOM 物料清单
@@ -50,6 +58,10 @@ type BOM struct {
 	ExpDate     *time.Time `json:"exp_date"`             // 失效日期
 }
 
+func (BOM) TableName() string {
+	return "mdm_bom"
+}
+
 // BOMItem BOM明细
 type BOMItem struct {
 	BaseModel
@@ -65,6 +77,10 @@ type BOMItem struct {
 	Sort        int     `json:"sort" gorm:"default:0"`
 }
 
+func (BOMItem) TableName() string {
+	return "mdm_bom_item"
+}
+
 // Process 工艺路线
 type Process struct {
 	BaseModel
@@ -77,6 +93,10 @@ type Process struct {
 	Status      int     `json:"status" gorm:"default:1"`
 }
 
+func (Process) TableName() string {
+	return "mdm_operation"
+}
+
 // Route 工序
 type Route struct {
 	BaseModel
@@ -86,6 +106,10 @@ type Route struct {
 	MaterialID int64   `json:"material_id" gorm:"not null"` // 物料ID
 	Version    string  `json:"version" gorm:"size:20"`      // 版本
 	Status     int     `json:"status" gorm:"default:1"`
+}
+
+func (Route) TableName() string {
+	return "mdm_route"
 }
 
 // RouteOperation 工序明细
@@ -102,10 +126,14 @@ type RouteOperation struct {
 	TransportTime int   `json:"transport_time"` // 搬运时间(秒)
 }
 
+func (RouteOperation) TableName() string {
+	return "mdm_route_operation"
+}
+
 // Workshop 车间
 type Workshop struct {
 	BaseModel
-	TenantID     int64   `json:"tenant_id" gjson:"index;not null"`
+	TenantID     int64   `json:"tenant_id" gorm:"index;not null"`
 	WorkshopCode string  `json:"workshop_code" gorm:"size:50;not null;uniqueIndex:idx_tenant_workshop"`
 	WorkshopName string  `json:"workshop_name" gorm:"size:100;not null"`
 	WorkshopType string  `json:"workshop_type" gorm:"size:20"` // 加工/装配/检验
@@ -113,6 +141,10 @@ type Workshop struct {
 	Phone        *string `json:"phone" gorm:"size:20"`
 	Address      *string `json:"address" gorm:"size:200"`
 	Status       int     `json:"status" gorm:"default:1"`
+}
+
+func (Workshop) TableName() string {
+	return "mdm_workshop"
 }
 
 // ProductionLine 生产线
@@ -126,6 +158,10 @@ type ProductionLine struct {
 	Status       int     `json:"status" gorm:"default:1"`
 }
 
+func (ProductionLine) TableName() string {
+	return "mdm_production_line"
+}
+
 // Workstation 工位
 type Workstation struct {
 	BaseModel
@@ -135,6 +171,10 @@ type Workstation struct {
 	LineID     int64   `json:"line_id" gorm:"not null"`
 	StationType string  `json:"station_type" gorm:"size:20"` // 加工/装配/检验/物料
 	Status     int     `json:"status" gorm:"default:1"`
+}
+
+func (Workstation) TableName() string {
+	return "mdm_workstation"
 }
 
 // Shift 班次 (旧版本，兼容)
@@ -148,6 +188,10 @@ type Shift struct {
 	BreakStart *string `json:"break_start" gorm:"size:10"`
 	BreakEnd   *string `json:"break_end" gorm:"size:10"`
 	Status     int     `json:"status" gorm:"default:1"`
+}
+
+func (Shift) TableName() string {
+	return "mdm_shift"
 }
 
 // MdmShift MDM班次

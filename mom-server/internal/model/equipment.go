@@ -29,6 +29,10 @@ type Equipment struct {
 	Status        int        `json:"status" gorm:"default:1"` // 1运行/2待机/3故障/4维修/5报废
 }
 
+func (Equipment) TableName() string {
+	return "equ_equipment"
+}
+
 // EquipmentCheck 设备点检
 type EquipmentCheck struct {
 	BaseModel
@@ -43,6 +47,10 @@ type EquipmentCheck struct {
 	CheckResult    int        `json:"check_result"` // 1正常/2异常
 	Status         int        `json:"status" gorm:"default:1"` // 1待点检/2已完成/3异常待处理
 	Remark         *string    `json:"remark" gorm:"size:500"`
+}
+
+func (EquipmentCheck) TableName() string {
+	return "equ_equipment_check"
 }
 
 // EquipmentMaintenance 设备保养
@@ -63,6 +71,10 @@ type EquipmentMaintenance struct {
 	Content       *string    `json:"content" gorm:"type:text"` // 保养内容
 	Cost          float64    `json:"cost" gorm:"type:decimal(18,2)"` // 费用
 	Status        int        `json:"status" gorm:"default:1"` // 1待执行/2进行中/3已完成
+}
+
+func (EquipmentMaintenance) TableName() string {
+	return "equ_equipment_maintenance"
 }
 
 // EquipmentRepair 设备维修
@@ -86,6 +98,10 @@ type EquipmentRepair struct {
 	Status        int        `json:"status" gorm:"default:1"` // 1待维修/2维修中/3已完成
 }
 
+func (EquipmentRepair) TableName() string {
+	return "equ_equipment_repair"
+}
+
 // SparePart 备件
 type SparePart struct {
 	BaseModel
@@ -99,4 +115,8 @@ type SparePart struct {
 	Price          float64 `json:"price" gorm:"type:decimal(18,2)"` // 单价
 	Supplier       *string `json:"supplier" gorm:"size:100"`
 	Status         int     `json:"status" gorm:"default:1"`
+}
+
+func (SparePart) TableName() string {
+	return "equ_spare_part"
 }

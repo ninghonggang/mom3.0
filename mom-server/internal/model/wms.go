@@ -19,6 +19,10 @@ type Warehouse struct {
 	Status       int     `json:"status" gorm:"default:1"`
 }
 
+func (Warehouse) TableName() string {
+	return "wms_warehouse"
+}
+
 // Location 库位
 type Location struct {
 	BaseModel
@@ -35,6 +39,10 @@ type Location struct {
 	Status      int     `json:"status" gorm:"default:1"`
 }
 
+func (Location) TableName() string {
+	return "wms_location"
+}
+
 // Inventory 库存
 type Inventory struct {
 	BaseModel
@@ -49,6 +57,10 @@ type Inventory struct {
 	AllocatedQty float64 `json:"allocated_qty" gorm:"type:decimal(18,4);default:0"` // 已分配数量
 	LockedQty    float64 `json:"locked_qty" gorm:"type:decimal(18,4);default:0"` // 冻结数量
 	BatchNo      *string `json:"batch_no" gorm:"size:50"` // 批次号
+}
+
+func (Inventory) TableName() string {
+	return "wms_inventory"
 }
 
 // InventoryRecord 库存记录
@@ -71,6 +83,10 @@ type InventoryRecord struct {
 	Remark       *string    `json:"remark" gorm:"size:500"`
 }
 
+func (InventoryRecord) TableName() string {
+	return "wms_inventory_record"
+}
+
 // ReceiveOrder 收货单
 type ReceiveOrder struct {
 	BaseModel
@@ -85,6 +101,10 @@ type ReceiveOrder struct {
 	Remark       *string    `json:"remark" gorm:"size:500"`
 }
 
+func (ReceiveOrder) TableName() string {
+	return "wms_receive_order"
+}
+
 // ReceiveOrderItem 收货单明细
 type ReceiveOrderItem struct {
 	BaseModel
@@ -96,6 +116,10 @@ type ReceiveOrderItem struct {
 	ReceivedQty float64 `json:"received_qty" gorm:"type:decimal(18,4);default:0"`
 	Unit       string  `json:"unit" gorm:"size:20"`
 	BatchNo    *string `json:"batch_no" gorm:"size:50"`
+}
+
+func (ReceiveOrderItem) TableName() string {
+	return "wms_receive_order_item"
 }
 
 // DeliveryOrder 发货单
@@ -112,6 +136,10 @@ type DeliveryOrder struct {
 	Remark        *string    `json:"remark" gorm:"size:500"`
 }
 
+func (DeliveryOrder) TableName() string {
+	return "wms_delivery_order"
+}
+
 // DeliveryOrderItem 发货单明细
 type DeliveryOrderItem struct {
 	BaseModel
@@ -123,6 +151,10 @@ type DeliveryOrderItem struct {
 	ShippedQty   float64 `json:"shipped_qty" gorm:"type:decimal(18,4);default:0"`
 	Unit        string  `json:"unit" gorm:"size:20"`
 	BatchNo     *string `json:"batch_no" gorm:"size:50"`
+}
+
+func (DeliveryOrderItem) TableName() string {
+	return "wms_delivery_order_item"
 }
 
 // TransferOrder 调拨单
@@ -138,6 +170,10 @@ type TransferOrder struct {
 	Remark      *string    `json:"remark" gorm:"size:500"`
 }
 
+func (TransferOrder) TableName() string {
+	return "wms_transfer_order"
+}
+
 // StockCheck 盘点单
 type StockCheck struct {
 	BaseModel
@@ -148,4 +184,8 @@ type StockCheck struct {
 	CheckUserID int64      `json:"check_user_id"`
 	Status      int        `json:"status" gorm:"default:1"` // 1待盘点/2盘点中/3已完成
 	Remark      *string    `json:"remark" gorm:"size:500"`
+}
+
+func (StockCheck) TableName() string {
+	return "wms_stock_check"
 }

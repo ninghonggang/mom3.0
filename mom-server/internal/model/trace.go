@@ -23,6 +23,10 @@ type SerialNumber struct {
 	Status        int        `json:"status" gorm:"default:1"` // 1在制/2入库/3出库/4已使用
 }
 
+func (SerialNumber) TableName() string {
+	return "tra_serial_number"
+}
+
 // TraceRecord 追溯记录
 type TraceRecord struct {
 	BaseModel
@@ -44,6 +48,10 @@ type TraceRecord struct {
 	InputQty      float64    `json:"input_qty" gorm:"type:decimal(18,4)"`
 	OutputQty     float64    `json:"output_qty" gorm:"type:decimal(18,4)"`
 	RejectQty     float64    `json:"reject_qty" gorm:"type:decimal(18,4);default:0"`
+}
+
+func (TraceRecord) TableName() string {
+	return "tra_trace_record"
 }
 
 // ========== 安东系统 ==========
@@ -70,6 +78,10 @@ type AndonCall struct {
 	Remark        *string    `json:"remark" gorm:"size:500"`
 }
 
+func (AndonCall) TableName() string {
+	return "tra_andon_call"
+}
+
 // ========== 数据采集 ==========
 
 // DataCollection 数据采集
@@ -84,6 +96,10 @@ type DataCollection struct {
 	DataValue  string     `json:"data_value" gorm:"size:200"` // 数据值
 	Unit       *string    `json:"unit" gorm:"size:20"`
 	CollectTime time.Time `json:"collect_time"`
+}
+
+func (DataCollection) TableName() string {
+	return "tra_data_collection"
 }
 
 // ========== 能源管理 ==========
@@ -104,4 +120,8 @@ type EnergyRecord struct {
 	Amount      *float64   `json:"amount"` // 金额
 	RecordDate  time.Time  `json:"record_date"`
 	Remark      *string    `json:"remark" gorm:"size:500"`
+}
+
+func (EnergyRecord) TableName() string {
+	return "ene_energy_record"
 }

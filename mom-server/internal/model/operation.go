@@ -17,5 +17,5 @@ type MdmOperation struct {
 }
 
 func (MdmOperation) TableName() string {
-	return "mdm_operation"
+	return "processes"
 }

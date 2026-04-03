@@ -21,7 +21,7 @@ type MdmBOM struct {
 }
 
 func (MdmBOM) TableName() string {
-	return "mdm_bom"
+	return "boms"
 }
 
 // MDM BOM 物料清单行表
@@ -41,5 +41,5 @@ type MdmBOMItem struct {
 }
 
 func (MdmBOMItem) TableName() string {
-	return "mdm_bom_item"
+	return "bom_items"
 }

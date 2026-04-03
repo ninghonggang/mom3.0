@@ -199,6 +199,10 @@ type OperLog struct {
 	OperTime    time.Time `json:"oper_time"`
 }
 
+func (OperLog) TableName() string {
+	return "sys_oper_log"
+}
+
 // LoginLog 登录日志
 type LoginLog struct {
 	BaseModel
@@ -211,6 +215,10 @@ type LoginLog struct {
 	Status     int       `json:"status" gorm:"default:0"`
 	Msg        *string  `json:"msg" gorm:"size:255"`
 	LoginTime  time.Time `json:"login_time"`
+}
+
+func (LoginLog) TableName() string {
+	return "sys_login_log"
 }
 
 // RoleMenu 角色菜单关联

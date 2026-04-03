@@ -106,8 +106,8 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '工位管理', icon: 'Grid' }
       },
       {
-        path: 'mdm/shift',
-        name: 'ShiftList',
+        path: 'mdm/mdm-shift',
+        name: 'MdmShiftList',
         component: () => import('@/views/mdm/ShiftList.vue'),
         meta: { title: '班次管理', icon: 'Clock' }
       },
@@ -204,6 +204,48 @@ const routes: RouteRecordRaw[] = [
         name: 'IQCList',
         component: () => import('@/views/quality/IQCList.vue'),
         meta: { title: 'IQC检验', icon: 'CircleCheck' }
+      },
+      {
+        path: 'quality/ipqc',
+        name: 'IPQCList',
+        component: () => import('@/views/quality/IPQCList.vue'),
+        meta: { title: 'IPQC检验', icon: 'Check' }
+      },
+      {
+        path: 'quality/fqc',
+        name: 'FQCList',
+        component: () => import('@/views/quality/FQCList.vue'),
+        meta: { title: 'FQC检验', icon: 'CircleCheck' }
+      },
+      {
+        path: 'quality/oqc',
+        name: 'OQCList',
+        component: () => import('@/views/quality/OQCList.vue'),
+        meta: { title: 'OQC检验', icon: 'Box' }
+      },
+      {
+        path: 'quality/defect-code',
+        name: 'DefectCodeList',
+        component: () => import('@/views/quality/DefectCodeList.vue'),
+        meta: { title: '不良代码', icon: 'Warning' }
+      },
+      {
+        path: 'quality/defect-record',
+        name: 'DefectRecordList',
+        component: () => import('@/views/quality/DefectRecordList.vue'),
+        meta: { title: '不良记录', icon: 'Document' }
+      },
+      {
+        path: 'quality/ncr',
+        name: 'NCRList',
+        component: () => import('@/views/quality/NCRList.vue'),
+        meta: { title: 'NCR', icon: 'FolderOpened' }
+      },
+      {
+        path: 'quality/spc',
+        name: 'SPCDataList',
+        component: () => import('@/views/quality/SPCDataList.vue'),
+        meta: { title: 'SPC数据', icon: 'DataLine' }
       },
       // APS计划
       {

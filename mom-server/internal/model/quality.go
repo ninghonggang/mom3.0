@@ -25,6 +25,10 @@ type IQC struct {
 	Remark       *string    `json:"remark" gorm:"size:500"`
 }
 
+func (IQC) TableName() string {
+	return "qc_iqc"
+}
+
 // IQCItem IQC检验明细
 type IQCItem struct {
 	BaseModel
@@ -35,6 +39,10 @@ type IQCItem struct {
 	CheckMethod *string `json:"check_method" gorm:"size:100"` // 检查方法
 	Result      int      `json:"result" gorm:"default:1"` // 1合格/2不合格
 	Remark     *string `json:"remark" gorm:"size:200"`
+}
+
+func (IQCItem) TableName() string {
+	return "qc_iqc_item"
 }
 
 // IPQC 过程检验
@@ -55,6 +63,10 @@ type IPQC struct {
 	Remark       *string    `json:"remark" gorm:"size:500"`
 }
 
+func (IPQC) TableName() string {
+	return "qc_ipqc"
+}
+
 // FQC 最终检验
 type FQC struct {
 	BaseModel
@@ -73,6 +85,10 @@ type FQC struct {
 	Remark       *string    `json:"remark" gorm:"size:500"`
 }
 
+func (FQC) TableName() string {
+	return "qc_fqc"
+}
+
 // OQC 出货检验
 type OQC struct {
 	BaseModel
@@ -89,6 +105,10 @@ type OQC struct {
 	Remark       *string    `json:"remark" gorm:"size:500"`
 }
 
+func (OQC) TableName() string {
+	return "qc_oqc"
+}
+
 // DefectCode 不良品代码
 type DefectCode struct {
 	BaseModel
@@ -98,6 +118,10 @@ type DefectCode struct {
 	DefectType  string  `json:"defect_type" gorm:"size:20"` // 尺寸/外观/功能/其他
 	Severity    int     `json:"severity" gorm:"default:1"` // 1轻微/2一般/3严重
 	Status      int     `json:"status" gorm:"default:1"`
+}
+
+func (DefectCode) TableName() string {
+	return "qc_defect_code"
 }
 
 // DefectRecord 不良品记录
@@ -119,6 +143,10 @@ type DefectRecord struct {
 	Status        int        `json:"status" gorm:"default:1"` // 1待处理/2处理中/3已处理
 }
 
+func (DefectRecord) TableName() string {
+	return "qc_defect_record"
+}
+
 // NCR 不良品处理单
 type NCR struct {
 	BaseModel
@@ -134,6 +162,10 @@ type NCR struct {
 	VerifyUserID *int64    `json:"verify_user_id"`
 	VerifyDate   *time.Time `json:"verify_date"`
 	Status       int        `json:"status" gorm:"default:1"` // 1待处理/2处理中/3已完成/4已关闭
+}
+
+func (NCR) TableName() string {
+	return "qc_ncr"
 }
 
 // SPCData SPC数据
@@ -152,4 +184,8 @@ type SPCData struct {
 	UCL         *float64   `json:"ucl"` // 控制上限
 	LCL         *float64   `json:"lcl"` // 控制下限
 	CheckTime   time.Time  `json:"check_time"`
+}
+
+func (SPCData) TableName() string {
+	return "qc_spc_data"
 }
