@@ -83,3 +83,63 @@ export const deleteSalesOrder = (id: number) => {
 export const confirmSalesOrder = (id: number) => {
   return request.put(`/production/sales-order/${id}/confirm`)
 }
+
+// 生产看板
+export const getKanbanDashboard = () => {
+  return request.get('/production/kanban/dashboard')
+}
+
+// 工单变更记录
+export const getOrderChangeList = (params?: any) => {
+  return request.get('/production/order-change/list', { params })
+}
+
+// 包装条码
+export const getPackageList = (params?: any) => {
+  return request.get('/production/packages/list', { params })
+}
+
+export const getPackage = (id: number) => {
+  return request.get(`/production/packages/${id}`)
+}
+
+export const createPackage = (data: any) => {
+  return request.post('/production/packages/create', data)
+}
+
+export const addPackageItem = (data: any) => {
+  return request.post('/production/packages/add-item', data)
+}
+
+export const sealPackage = (data: any) => {
+  return request.post('/production/packages/seal', data)
+}
+
+export const deletePackage = (id: number) => {
+  return request.delete(`/production/packages/${id}`)
+}
+
+// 首末件检验
+export const getFirstLastInspectList = (params?: any) => {
+  return request.get('/production/first-last-inspect/list', { params })
+}
+
+export const getFirstLastInspect = (id: number) => {
+  return request.get(`/production/first-last-inspect/${id}`)
+}
+
+export const createFirstLastInspect = (data: any) => {
+  return request.post('/production/first-last-inspect', data)
+}
+
+export const updateFirstLastInspect = (id: number, data: any) => {
+  return request.put(`/production/first-last-inspect/${id}`, data)
+}
+
+export const deleteFirstLastInspect = (id: number) => {
+  return request.delete(`/production/first-last-inspect/${id}`)
+}
+
+export const getFirstLastInspectOverdue = () => {
+  return request.get('/production/first-last-inspect/overdue')
+}

@@ -18,6 +18,10 @@ type MdmBOM struct {
 	EffDate      *time.Time `json:"eff_date" gorm:"type:date"` // 生效日期
 	ExpDate      *time.Time `json:"exp_date" gorm:"type:date"` // 失效日期
 	Remark       *string    `json:"remark" gorm:"size:500"`
+	ErpBomCode   string     `json:"erp_bom_code" gorm:"size:50"`           // 金蝶BOM编码
+	ErpSyncTime  *time.Time `json:"erp_sync_time"`                         // 同步时间
+	ErpSyncStatus string     `json:"erp_sync_status" gorm:"size:20"`       // SYNCED/PENDING/FAILED
+	IsCurrent    int        `json:"is_current" gorm:"default:1"`         // 是否当前版本 0否 1是
 }
 
 func (MdmBOM) TableName() string {

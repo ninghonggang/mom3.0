@@ -88,6 +88,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '物料管理', icon: 'Box' }
       },
       {
+        path: 'mdm/material-category',
+        name: 'MaterialCategoryList',
+        component: () => import('@/views/mdm/MaterialCategoryList.vue'),
+        meta: { title: '物料分类', icon: 'Folder' }
+      },
+      {
         path: 'mdm/workshop',
         name: 'WorkshopList',
         component: () => import('@/views/mdm/WorkshopList.vue'),
@@ -123,6 +129,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/mdm/OperationList.vue'),
         meta: { title: '工序管理', icon: 'Operation' }
       },
+      {
+        path: 'mdm/customer',
+        name: 'CustomerList',
+        component: () => import('@/views/mdm/CustomerList.vue'),
+        meta: { title: '客户管理', icon: 'User' }
+      },
       // 生产执行
       {
         path: 'production/sales-order',
@@ -147,6 +159,30 @@ const routes: RouteRecordRaw[] = [
         name: 'ProductionOrderList',
         component: () => import('@/views/production/ProductionOrderList.vue'),
         meta: { title: '生产工单', icon: 'List' }
+      },
+      {
+        path: 'production/kanban',
+        name: 'KanbanBoard',
+        component: () => import('@/views/production/KanbanBoard.vue'),
+        meta: { title: '生产看板', icon: 'DataBoard' }
+      },
+      {
+        path: 'production/order-change',
+        name: 'OrderChangeList',
+        component: () => import('@/views/production/OrderChangeList.vue'),
+        meta: { title: '工单变更', icon: 'Edit' }
+      },
+      {
+        path: 'production/package',
+        name: 'PackageList',
+        component: () => import('@/views/production/PackageList.vue'),
+        meta: { title: '包装条码', icon: 'Box' }
+      },
+      {
+        path: 'production/first-last-inspect',
+        name: 'FirstLastInspectList',
+        component: () => import('@/views/production/FirstLastInspectList.vue'),
+        meta: { title: '首末件检验', icon: 'Check' }
       },
       // 设备管理
       {
@@ -179,12 +215,30 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/equipment/SparePartList.vue'),
         meta: { title: '备件管理', icon: 'Box' }
       },
+      {
+        path: 'equipment/oee',
+        name: 'OEELIst',
+        component: () => import('@/views/equipment/OEELIst.vue'),
+        meta: { title: 'OEE分析', icon: 'DataLine' }
+      },
       // 仓储管理
       {
         path: 'wms/warehouse',
         name: 'WarehouseList',
         component: () => import('@/views/wms/WarehouseList.vue'),
         meta: { title: '仓库管理', icon: 'House' }
+      },
+      {
+        path: 'wms/data-point',
+        name: 'DataPointList',
+        component: () => import('@/views/wms/DataPointList.vue'),
+        meta: { title: '数据采集点', icon: 'DataLine' }
+      },
+      {
+        path: 'wms/scan-log',
+        name: 'ScanLogList',
+        component: () => import('@/views/wms/ScanLogList.vue'),
+        meta: { title: '扫描记录', icon: 'Scanner' }
       },
       {
         path: 'wms/location',
@@ -197,6 +251,18 @@ const routes: RouteRecordRaw[] = [
         name: 'InventoryList',
         component: () => import('@/views/wms/InventoryList.vue'),
         meta: { title: '库存管理', icon: 'Box' }
+      },
+      {
+        path: 'wms/receive',
+        name: 'ReceiveOrderList',
+        component: () => import('@/views/wms/ReceiveOrderList.vue'),
+        meta: { title: '收货单', icon: 'Download' }
+      },
+      {
+        path: 'wms/delivery',
+        name: 'DeliveryOrderList',
+        component: () => import('@/views/wms/DeliveryOrderList.vue'),
+        meta: { title: '发货单', icon: 'Upload' }
       },
       // 质量管理
       {
@@ -265,6 +331,12 @@ const routes: RouteRecordRaw[] = [
         name: 'ScheduleList',
         component: () => import('@/views/aps/ScheduleList.vue'),
         meta: { title: '排程计划', icon: 'List' }
+      },
+      {
+        path: 'aps/work-center',
+        name: 'WorkCenterList',
+        component: () => import('@/views/aps/WorkCenterList.vue'),
+        meta: { title: '工作中心', icon: 'OfficeBuilding' }
       },
       // 追溯管理
       {

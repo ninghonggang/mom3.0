@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"mom-server/internal/handler/aps"
 	"mom-server/internal/handler/business"
+	"mom-server/internal/handler/dc"
 	"mom-server/internal/handler/equipment"
 	"mom-server/internal/handler/mdm"
 	"mom-server/internal/handler/production"
@@ -29,6 +30,7 @@ type Router struct {
 	dictHandler         *system.DictHandler
 	postHandler         *system.PostHandler
 	tenantHandler       *system.TenantHandler
+	importHandler       *system.ImportHandler
 	warehouseHandler    *wms.WarehouseHandler
 	salesOrderHandler   *production.SalesOrderHandler
 	reportHandler       *production.ReportHandler
@@ -36,6 +38,7 @@ type Router struct {
 	mpsHandler         *aps.MPSHandler
 	mrpHandler         *aps.MRPHandler
 	scheduleHandler     *aps.ScheduleHandler
+	workCenterHandler  *aps.WorkCenterHandler
 	traceHandler       *trace.TraceHandler
 	andonHandler       *trace.AndonHandler
 	energyHandler      *trace.EnergyHandler
@@ -60,8 +63,14 @@ type Router struct {
 	spcHandler        *quality.SPCHandler
 	supplierHandler    *supplier.SupplierHandler
 	materialHandler    *mdm.MaterialHandler
+	materialCategoryHandler *mdm.MaterialCategoryHandler
+	customerHandler   *mdm.CustomerHandler
 	workshopHandler    *mdm.WorkshopHandler
 	operLogHandler     *system.OperLogHandler
+	oeeHandler       *equipment.OEEHandler
+	firstLastInspectHandler *production.FirstLastInspectHandler
+	packageHandler     *production.PackageHandler
+	dcHandler          *dc.DataCollectionHandler
 }
 
 // New 创建路由
@@ -83,6 +92,7 @@ func New(
 	mpsHandler *aps.MPSHandler,
 	mrpHandler *aps.MRPHandler,
 	scheduleHandler *aps.ScheduleHandler,
+	workCenterHandler *aps.WorkCenterHandler,
 	traceHandler *trace.TraceHandler,
 	andonHandler *trace.AndonHandler,
 	energyHandler *trace.EnergyHandler,
@@ -107,8 +117,15 @@ func New(
 	spcHandler *quality.SPCHandler,
 	supplierHandler *supplier.SupplierHandler,
 	materialHandler *mdm.MaterialHandler,
+	materialCategoryHandler *mdm.MaterialCategoryHandler,
+	customerHandler *mdm.CustomerHandler,
 	workshopHandler *mdm.WorkshopHandler,
 	operLogHandler *system.OperLogHandler,
+	oeeHandler *equipment.OEEHandler,
+	importHandler *system.ImportHandler,
+	firstLastInspectHandler *production.FirstLastInspectHandler,
+	packageHandler *production.PackageHandler,
+	dcHandler *dc.DataCollectionHandler,
 ) *Router {
 	return &Router{
 		jwtUtil:             jwtUtil,
@@ -128,6 +145,7 @@ func New(
 		mpsHandler:          mpsHandler,
 		mrpHandler:          mrpHandler,
 		scheduleHandler:      scheduleHandler,
+		workCenterHandler:   workCenterHandler,
 		traceHandler:        traceHandler,
 		andonHandler:        andonHandler,
 		energyHandler:       energyHandler,
@@ -152,9 +170,16 @@ func New(
 		spcHandler:            spcHandler,
 		supplierHandler:       supplierHandler,
 		materialHandler:       materialHandler,
+		materialCategoryHandler: materialCategoryHandler,
+		customerHandler:     customerHandler,
 		workshopHandler:       workshopHandler,
 		operLogHandler:         operLogHandler,
-	}
+		oeeHandler:            oeeHandler,
+		importHandler:         importHandler,
+			firstLastInspectHandler: firstLastInspectHandler,
+			packageHandler:          packageHandler,
+			dcHandler:               dcHandler,
+		}
 }
 
 // Init 初始化路由
@@ -327,6 +352,17 @@ func (r *Router) Init(engine *gin.Engine) {
 			order.PUT("/:id/complete", r.productionOrderHandler.Complete)
 		}
 
+		// 包装条码
+		packages := protected.Group("/production/packages")
+		{
+			packages.GET("/list", r.packageHandler.List)
+			packages.GET("/:id", r.packageHandler.Get)
+			packages.POST("/create", r.packageHandler.Create)
+			packages.POST("/add-item", r.packageHandler.AddItem)
+			packages.POST("/seal", r.packageHandler.Seal)
+			packages.DELETE("/:id", r.packageHandler.Delete)
+		}
+
 		// IQC入库检验
 		iqc := protected.Group("/quality/iqc")
 		{
@@ -435,6 +471,15 @@ func (r *Router) Init(engine *gin.Engine) {
 				schedule.DELETE("/:id", r.scheduleHandler.Delete)
 				schedule.PUT("/drag-update", r.scheduleHandler.DragUpdate)
 			}
+			workCenter := aps.Group("/work-center")
+			{
+				workCenter.GET("/list", r.workCenterHandler.List)
+				workCenter.GET("/:id", r.workCenterHandler.Get)
+				workCenter.POST("", r.workCenterHandler.Create)
+				workCenter.PUT("/:id", r.workCenterHandler.Update)
+				workCenter.DELETE("/:id", r.workCenterHandler.Delete)
+				workCenter.GET("/by-workshop", r.workCenterHandler.ListByWorkshop)
+			}
 		}
 
 		// 仓储管理
@@ -516,6 +561,16 @@ func (r *Router) Init(engine *gin.Engine) {
 		// 备件
 		protected.Group("/equipment/spare").GET("/list", r.sparePartHandler.List)
 
+		// OEE分析
+		oee := protected.Group("/equipment/oee")
+		{
+			oee.GET("/list", r.oeeHandler.List)
+			oee.GET("/:id", r.oeeHandler.Get)
+			oee.POST("/calculate", r.oeeHandler.Calculate)
+			oee.GET("/chart", r.oeeHandler.Chart)
+			oee.DELETE("/:id", r.oeeHandler.Delete)
+		}
+
 		// 生产线
 		line := protected.Group("/mdm/line")
 		{
@@ -553,6 +608,27 @@ func (r *Router) Init(engine *gin.Engine) {
 			material.DELETE("/:id", r.materialHandler.Delete)
 		}
 
+		// MDM 物料分类管理
+		materialCategory := protected.Group("/mdm/material-category")
+		{
+			materialCategory.GET("/list", r.materialCategoryHandler.List)
+			materialCategory.GET("/tree", r.materialCategoryHandler.Tree)
+			materialCategory.GET("/:id", r.materialCategoryHandler.Get)
+			materialCategory.POST("", r.materialCategoryHandler.Create)
+			materialCategory.PUT("/:id", r.materialCategoryHandler.Update)
+			materialCategory.DELETE("/:id", r.materialCategoryHandler.Delete)
+		}
+
+		// MDM 客户管理
+		customer := protected.Group("/mdm/customer")
+		{
+			customer.GET("/list", r.customerHandler.List)
+			customer.GET("/:id", r.customerHandler.Get)
+			customer.POST("", r.customerHandler.Create)
+			customer.PUT("/:id", r.customerHandler.Update)
+			customer.DELETE("/:id", r.customerHandler.Delete)
+		}
+
 		// MDM 车间管理
 		workshop := protected.Group("/mdm/workshop")
 		{
@@ -574,6 +650,8 @@ func (r *Router) Init(engine *gin.Engine) {
 			bom.DELETE("/:id", r.bomHandler.Delete)
 			bom.PUT("/:id/status", r.bomHandler.UpdateStatus)
 			bom.POST("/:id/copy", r.bomHandler.CopyBOM)
+			bom.GET("/template", r.importHandler.DownloadBOMTemplate)
+			bom.POST("/import", r.importHandler.ImportBOM)
 		}
 
 		// MDM 工序管理
@@ -604,6 +682,39 @@ func (r *Router) Init(engine *gin.Engine) {
 			supplier.POST("", r.supplierHandler.Create)
 			supplier.PUT("/:id", r.supplierHandler.Update)
 			supplier.DELETE("/:id", r.supplierHandler.Delete)
+		}
+
+		// 首末件检验
+		firstLastInspect := protected.Group("/production/first-last-inspect")
+		{
+			firstLastInspect.GET("/list", r.firstLastInspectHandler.List)
+			firstLastInspect.GET("/:id", r.firstLastInspectHandler.Get)
+			firstLastInspect.GET("/overdue", r.firstLastInspectHandler.ListOverdue)
+			firstLastInspect.POST("", r.firstLastInspectHandler.Create)
+			firstLastInspect.PUT("/:id", r.firstLastInspectHandler.Update)
+			firstLastInspect.DELETE("/:id", r.firstLastInspectHandler.Delete)
+		}
+
+		// 数据采集
+		dc := protected.Group("/dc")
+		{
+			dataPoint := dc.Group("/data-point")
+			{
+				dataPoint.GET("/list", r.dcHandler.ListDataPoint)
+				dataPoint.GET("/:id", r.dcHandler.GetDataPoint)
+				dataPoint.POST("", r.dcHandler.CreateDataPoint)
+				dataPoint.PUT("/:id", r.dcHandler.UpdateDataPoint)
+				dataPoint.DELETE("/:id", r.dcHandler.DeleteDataPoint)
+			}
+			scanLog := dc.Group("/scan-log")
+			{
+				scanLog.GET("/list", r.dcHandler.ListScanLog)
+				scanLog.POST("/scan", r.dcHandler.CreateScanLog)
+			}
+			collect := dc.Group("/collect-record")
+			{
+				collect.GET("/list", r.dcHandler.ListCollectRecord)
+			}
 		}
 
 		// TODO: 其他模块路由...

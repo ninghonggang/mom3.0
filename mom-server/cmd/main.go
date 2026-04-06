@@ -10,6 +10,7 @@ import (
 	"mom-server/internal/config"
 	"mom-server/internal/handler/aps"
 	"mom-server/internal/handler/business"
+	"mom-server/internal/handler/dc"
 	"mom-server/internal/handler/equipment"
 	"mom-server/internal/handler/mdm"
 	"mom-server/internal/handler/production"
@@ -115,16 +116,12 @@ func main() {
 		log.Fatalf("数据库迁移失败[第5批-追溯管理表]: %v", err)
 	}
 	
-	// 第6批：主数据管理表
+	// 第6批：主数据管理表（跳过已有数据的表避免迁移错误）
 	log.Println("迁移第6批：主数据管理表")
 	if err := db.AutoMigrate(
 		&model.Material{},
 		&model.MaterialCategory{},
-		&model.BOM{},
-		&model.BOMItem{},
-		&model.Process{},
-		&model.Route{},
-		&model.RouteOperation{},
+		// BOM/BOMItem/Process/Route/RouteOperation等表已有数据,跳过迁移
 		&model.Workshop{},
 		&model.ProductionLine{},
 		&model.Workstation{},
@@ -150,7 +147,42 @@ func main() {
 	); err != nil {
 		log.Fatalf("数据库迁移失败[第7批-质量管理表]: %v", err)
 	}
-	
+
+	// 第8批：设备OEE表
+	log.Println("迁移第8批：设备OEE表")
+	if err := db.AutoMigrate(
+		&model.OEE{},
+		&model.OEEEvent{},
+	); err != nil {
+		log.Fatalf("数据库迁移失败[第8批-设备OEE表]: %v", err)
+	}
+
+	// 第9批：首末件检验表
+	log.Println("迁移第9批：首末件检验表")
+	if err := db.AutoMigrate(
+		&model.MesFirstLastInspect{},
+	); err != nil {
+		log.Fatalf("数据库迁移失败[第9批-首末件检验表]: %v", err)
+	}
+
+	// 第10批：包装条码表
+	log.Println("迁移第10批：包装条码表")
+	if err := db.AutoMigrate(
+		&model.MesPackage{},
+	); err != nil {
+		log.Fatalf("数据库迁移失败[第10批-包装条码表]: %v", err)
+	}
+
+	// 第11批：数据采集表
+	log.Println("迁移第11批：数据采集表")
+	if err := db.AutoMigrate(
+		&model.DCDataPoint{},
+		&model.DCCollectRecord{},
+		&model.DCScanLog{},
+	); err != nil {
+		log.Fatalf("数据库迁移失败[第11批-数据采集表]: %v", err)
+	}
+
 	log.Println("数据库迁移完成")
 
 	// 初始化JWT
@@ -169,12 +201,18 @@ func main() {
 	warehouseRepo := repository.NewWarehouseRepository(db)
 	locationRepo := repository.NewLocationRepository(db)
 	inventoryRepo := repository.NewInventoryRepository(db)
+	receiveOrderRepo := repository.NewReceiveOrderRepository(db)
+	receiveOrderItemRepo := repository.NewReceiveOrderItemRepository(db)
+	deliveryOrderRepo := repository.NewDeliveryOrderRepository(db)
+	deliveryOrderItemRepo := repository.NewDeliveryOrderItemRepository(db)
 	salesOrderRepo := repository.NewSalesOrderRepository(db)
 	reportRepo := repository.NewProductionReportRepository(db)
+	productionOrderChangeLogRepo := repository.NewProductionOrderChangeLogRepository(db)
 	dispatchRepo := repository.NewDispatchRepository(db)
 	mpsRepo := repository.NewMPSRepository(db)
 	mrpRepo := repository.NewMRPRepository(db)
 	scheduleRepo := repository.NewScheduleRepository(db)
+	workCenterRepo := repository.NewWorkCenterRepository(db)
 	productionRepo := repository.NewProductionOrderRepository(db)
 	traceRepo := repository.NewTraceRepository(db)
 	andonRepo := repository.NewAndonRepository(db)
@@ -186,6 +224,8 @@ func main() {
 	lineRepo := repository.NewProductionLineRepository(db)
 	workstationRepo := repository.NewWorkstationRepository(db)
 	materialRepo := repository.NewMaterialRepository(db)
+	materialCategoryRepo := repository.NewMaterialCategoryRepository(db)
+	customerRepo := repository.NewCustomerRepository(db)
 	workshopRepo := repository.NewWorkshopRepository(db)
 	supplierRepo := repository.NewSupplierRepository(db)
 	shiftRepo := repository.NewShiftRepository(db)
@@ -203,10 +243,20 @@ func main() {
 	spcRepo := repository.NewSPCDataRepository(db)
 	operLogRepo := repository.NewOperLogRepository(db)
 	loginLogRepo := repository.NewLoginLogRepository(db)
+	oeeRepo := repository.NewOEERepository(db)
+	oeeEventRepo := repository.NewOEEEventRepository(db)
+	firstLastInspectRepo := repository.NewFirstLastInspectRepository(db)
+	packageRepo := repository.NewPackageRepository(db)
+	dcDataPointRepo := repository.NewDCDataPointRepository(db)
+	dcScanLogRepo := repository.NewDCScanLogRepository(db)
+	dcCollectRecordRepo := repository.NewDCCollectRecordRepository(db)
+	importTaskRepo := repository.NewImportTaskRepository(db)
 
 	// 初始化服务层
 	userSvc := service.NewUserService(userRepo, roleRepo, menuRepo, roleMenuRepo)
 	materialSvc := service.NewMaterialService(materialRepo)
+	materialCategorySvc := service.NewMaterialCategoryService(materialCategoryRepo)
+	customerSvc := service.NewCustomerService(customerRepo)
 	workshopSvc := service.NewWorkshopService(workshopRepo)
 	roleSvc := service.NewRoleService(roleRepo, menuRepo, roleMenuRepo)
 	menuSvc := service.NewMenuService(menuRepo)
@@ -214,13 +264,14 @@ func main() {
 	dictSvc := service.NewDictService(dictTypeRepo, dictDataRepo)
 	postSvc := service.NewPostService(postRepo)
 	tenantSvc := service.NewTenantService(tenantRepo)
-	warehouseSvc := service.NewWarehouseService(warehouseRepo, locationRepo, inventoryRepo)
+	warehouseSvc := service.NewWarehouseService(db, warehouseRepo, locationRepo, inventoryRepo, receiveOrderRepo, receiveOrderItemRepo, deliveryOrderRepo, deliveryOrderItemRepo)
 	salesOrderSvc := service.NewSalesOrderService(salesOrderRepo)
 	reportSvc := service.NewProductionReportService(reportRepo)
 	dispatchSvc := service.NewDispatchService(dispatchRepo)
 	mpsSvc := service.NewMPSService(mpsRepo)
-	mrpSvc := service.NewMRPService(mrpRepo, inventoryRepo)
-	scheduleSvc := service.NewScheduleService(scheduleRepo, productionRepo)
+	mrpSvc := service.NewMRPService(mrpRepo, inventoryRepo, bomRepo, bomItemRepo, mpsRepo)
+	scheduleSvc := service.NewScheduleService(scheduleRepo, productionRepo, lineRepo)
+	workCenterSvc := service.NewWorkCenterService(workCenterRepo)
 	traceSvc := service.NewTraceService(traceRepo)
 	andonSvc := service.NewAndonService(andonRepo)
 	energySvc := service.NewEnergyService(energyRepo)
@@ -245,7 +296,13 @@ func main() {
 	supplierSvc := service.NewSupplierService(supplierRepo)
 	operLogSvc := service.NewOperLogService(operLogRepo)
 	loginLogSvc := service.NewLoginLogService(loginLogRepo)
-	productionOrderSvc := service.NewProductionOrderService(productionRepo)
+	productionOrderChangeLogSvc := service.NewProductionOrderChangeLogService(productionOrderChangeLogRepo)
+	productionOrderSvc := service.NewProductionOrderService(productionRepo, productionOrderChangeLogSvc)
+	oeeSvc := service.NewOEEService(oeeRepo, oeeEventRepo)
+	firstLastInspectSvc := service.NewFirstLastInspectService(firstLastInspectRepo)
+	packageSvc := service.NewPackageService(packageRepo)
+	dcSvc := service.NewDCService(dcDataPointRepo, dcScanLogRepo, dcCollectRecordRepo)
+	importSvc := service.NewImportService(importTaskRepo, materialRepo)
 
 	// 初始化处理器层
 	authHandler := system.NewAuthHandler(userSvc, jwtUtil, loginLogSvc)
@@ -263,6 +320,7 @@ func main() {
 	apsMPSHandler := aps.NewMPSHandler(mpsSvc)
 	apsMRPHandler := aps.NewMRPHandler(mrpSvc)
 	apsScheduleHandler := aps.NewScheduleHandler(scheduleSvc)
+	workCenterHandler := aps.NewWorkCenterHandler(workCenterSvc)
 	traceHandler := trace.NewTraceHandler(traceSvc)
 	andonHandler := trace.NewAndonHandler(andonSvc)
 	energyHandler := trace.NewEnergyHandler(energySvc)
@@ -287,14 +345,21 @@ func main() {
 	spcHandler := quality.NewSPCHandler(spcSvc)
 	supplierHandler := supplier.NewSupplierHandler(supplierSvc)
 	materialHandler := mdm.NewMaterialHandler(materialSvc)
+	materialCategoryHandler := mdm.NewMaterialCategoryHandler(materialCategorySvc)
+	customerHandler := mdm.NewCustomerHandler(customerSvc)
 	workshopHandler := mdm.NewWorkshopHandler(workshopSvc)
 	operLogHandler := system.NewOperLogHandler(operLogSvc)
 	loginLogHandler := system.NewLoginLogHandler(loginLogSvc)
+	importHandler := system.NewImportHandler(importSvc)
+	oeeHandler := equipment.NewOEEHandler(oeeSvc)
+	firstLastInspectHandler := production.NewFirstLastInspectHandler(firstLastInspectSvc)
+	packageHandler := production.NewPackageHandler(packageSvc)
+	dcHandler := dc.NewDataCollectionHandler(dcSvc)
 
 	// 初始化路由
 	gin.SetMode(cfg.Server.Mode)
 	engine := gin.Default()
-	router.New(jwtUtil, userHandler, authHandler, loginLogHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, tenantHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler, iqcHandler, ipqcHandler, fqcHandler, oqcHandler, defectCodeHandler, defectRecordHandler, ncrHandler, spcHandler, supplierHandler, materialHandler, workshopHandler, operLogHandler).Init(engine)
+	router.New(jwtUtil, userHandler, authHandler, loginLogHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, tenantHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, workCenterHandler, traceHandler, andonHandler, energyHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler, iqcHandler, ipqcHandler, fqcHandler, oqcHandler, defectCodeHandler, defectRecordHandler, ncrHandler, spcHandler, supplierHandler, materialHandler, materialCategoryHandler, customerHandler, workshopHandler, operLogHandler, oeeHandler, importHandler, firstLastInspectHandler, packageHandler, dcHandler).Init(engine)
 
 	// 启动服务器
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
