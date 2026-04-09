@@ -80,6 +80,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/system/SystemConfig.vue'),
         meta: { title: '系统配置', icon: 'Setting' }
       },
+      {
+        path: 'system/ai-config',
+        name: 'AiConfig',
+        component: () => import('@/views/system/AiConfigView.vue'),
+        meta: { title: 'AI助手配置', icon: 'ChatDotRound' }
+      },
       // 主数据管理
       {
         path: 'mdm/material',
