@@ -68,6 +68,9 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getSPCData, getSPCChart } from '@/api/quality'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])

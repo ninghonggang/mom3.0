@@ -21,7 +21,7 @@
     </el-card>
 
     <el-card class="toolbar-card">
-      <el-button type="primary" @click="handleAdd">
+      <el-button type="primary" v-if="hasPermission('production:order:add')" @click="handleAdd">
         <el-icon><Plus /></el-icon>新增
       </el-button>
     </el-card>
@@ -43,10 +43,10 @@
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleStart(row)" v-if="row.status === 1">开始</el-button>
-            <el-button link type="success" size="small" @click="handleComplete(row)" v-if="row.status === 2">完成</el-button>
-            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" size="small" v-if="hasPermission('production:order:release') && row.status === 1" @click="handleStart(row)">开始</el-button>
+            <el-button link type="success" size="small" v-if="hasPermission('production:order:release') && row.status === 2" @click="handleComplete(row)">完成</el-button>
+            <el-button link type="primary" size="small" v-if="hasPermission('production:order:edit')" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" size="small" v-if="hasPermission('production:order:delete')" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -134,6 +134,9 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
 import { getProductionOrderList, createProductionOrder, updateProductionOrder, deleteProductionOrder, startProductionOrder, completeProductionOrder } from '@/api/production'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -191,10 +194,14 @@ const handleEdit = (row: any) => {
 }
 
 const handleDelete = async (row: any) => {
-  await ElMessageBox.confirm('确定删除该工单吗？', '提示', { type: 'warning' })
-  await deleteProductionOrder(row.id)
-  ElMessage.success('删除成功')
-  loadData()
+  try {
+    await ElMessageBox.confirm('确定删除该工单吗？', '提示', { type: 'warning' })
+    await deleteProductionOrder(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    // user cancelled or API error
+  }
 }
 
 const handleStart = async (row: any) => {

@@ -13,7 +13,7 @@
     </el-card>
 
     <el-card class="toolbar-card">
-      <el-button type="primary" @click="handleAdd">
+      <el-button type="primary" v-if="hasPermission('production:report:add')" @click="handleAdd">
         <el-icon><Plus /></el-icon>新增报工
       </el-button>
     </el-card>
@@ -84,6 +84,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, FormInstance, FormRules } from 'element-plus'
 import { getProductionReportList, createProductionReport } from '@/api/production'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])

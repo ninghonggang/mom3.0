@@ -21,7 +21,7 @@
     </el-card>
 
     <el-card class="toolbar-card">
-      <el-button type="primary" @click="handleAdd">
+      <el-button type="primary" v-if="hasPermission('quality:iqc:add')" @click="handleAdd">
         <el-icon><Plus /></el-icon>新增
       </el-button>
     </el-card>
@@ -44,8 +44,8 @@
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" size="small" v-if="hasPermission('quality:iqc:edit')" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" size="small" v-if="hasPermission('quality:iqc:delete')" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -62,19 +62,87 @@
         />
       </div>
     </el-card>
+
+    <!-- 新增/编辑对话框 -->
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px">
+      <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
+        <el-form-item label="检验单号" prop="iqc_no">
+          <el-input v-model="formData.iqc_no" :disabled="!!formData.id" />
+        </el-form-item>
+        <el-form-item label="物料编码" prop="material_code">
+          <el-input v-model="formData.material_code" />
+        </el-form-item>
+        <el-form-item label="物料名称" prop="material_name">
+          <el-input v-model="formData.material_name" />
+        </el-form-item>
+        <el-form-item label="供应商">
+          <el-input v-model="formData.supplier_name" />
+        </el-form-item>
+        <el-form-item label="送检数量" prop="quantity">
+          <el-input-number v-model="formData.quantity" :min="0" />
+        </el-form-item>
+        <el-form-item label="合格数量">
+          <el-input-number v-model="formData.qualified_qty" :min="0" />
+        </el-form-item>
+        <el-form-item label="不合格数">
+          <el-input-number v-model="formData.unqualified_qty" :min="0" />
+        </el-form-item>
+        <el-form-item label="检验人">
+          <el-input v-model="formData.check_user" />
+        </el-form-item>
+        <el-form-item label="检验日期">
+          <el-date-picker v-model="formData.check_date" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" />
+        </el-form-item>
+        <el-form-item label="状态" prop="status">
+          <el-select v-model="formData.status" placeholder="请选择">
+            <el-option label="待检验" :value="1" />
+            <el-option label="检验中" :value="2" />
+            <el-option label="合格" :value="3" />
+            <el-option label="不合格" :value="4" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="formData.remark" type="textarea" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { getIQCList } from '@/api/quality'
+import { ref, reactive, onMounted, computed } from 'vue'
+import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
+import { getIQCList, createIQC, updateIQC, deleteIQC } from '@/api/quality'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
+const dialogVisible = ref(false)
+const submitLoading = ref(false)
+const formRef = ref<FormInstance>()
 
 const searchForm = reactive({ iqc_no: '', status: '' })
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
+const formData = reactive<any>({
+  id: 0, iqc_no: '', material_code: '', material_name: '', supplier_name: '',
+  quantity: 0, qualified_qty: 0, unqualified_qty: 0, check_user: '', check_date: '', status: 1, remark: ''
+})
+
+const rules: FormRules = {
+  iqc_no: [{ required: true, message: '请输入检验单号', trigger: 'blur' }],
+  material_code: [{ required: true, message: '请输入物料编码', trigger: 'blur' }],
+  material_name: [{ required: true, message: '请输入物料名称', trigger: 'blur' }],
+  quantity: [{ required: true, message: '请输入送检数量', trigger: 'blur' }],
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }]
+}
+
+const dialogTitle = computed(() => formData.id ? '编辑IQC' : '新增IQC')
 
 const getStatusText = (status: number) => {
   const map: Record<number, string> = { 1: '待检验', 2: '检验中', 3: '合格', 4: '不合格' }
@@ -99,9 +167,44 @@ const loadData = async () => {
 
 const handleSearch = () => { pagination.page = 1; loadData() }
 const handleReset = () => { searchForm.iqc_no = ''; searchForm.status = ''; handleSearch() }
-const handleAdd = () => { ElMessage.info('新增功能') }
-const handleEdit = (row: any) => { ElMessage.info('编辑功能') }
-const handleDelete = (row: any) => { ElMessage.info('删除功能') }
+
+const handleAdd = () => {
+  Object.assign(formData, { id: 0, iqc_no: '', material_code: '', material_name: '', supplier_name: '',
+    quantity: 0, qualified_qty: 0, unqualified_qty: 0, check_user: '', check_date: '', status: 1, remark: '' })
+  dialogVisible.value = true
+}
+
+const handleEdit = (row: any) => {
+  Object.assign(formData, row)
+  dialogVisible.value = true
+}
+
+const handleDelete = async (row: any) => {
+  try {
+    await ElMessageBox.confirm('确定删除该IQC记录吗？', '提示', { type: 'warning' })
+    await deleteIQC(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    // user cancelled or API error
+  }
+}
+
+const handleSubmit = async () => {
+  if (!formRef.value) return
+  await formRef.value.validate()
+  submitLoading.value = true
+  try {
+    if (formData.id) {
+      await updateIQC(formData.id, formData)
+    } else {
+      await createIQC(formData)
+    }
+    ElMessage.success(formData.id ? '更新成功' : '创建成功')
+    dialogVisible.value = false
+    loadData()
+  } finally { submitLoading.value = false }
+}
 
 onMounted(() => { loadData() })
 </script>

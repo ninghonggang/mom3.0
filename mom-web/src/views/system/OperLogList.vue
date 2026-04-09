@@ -41,10 +41,10 @@
 
     <!-- 工具栏 -->
     <el-card class="toolbar-card">
-      <el-button type="danger" @click="handleClean">
+      <el-button type="danger" v-if="hasPermission('system:operlog:clean')" @click="handleClean">
         <el-icon><Delete /></el-icon>清理日志
       </el-button>
-      <el-button type="warning" @click="handleExport">
+      <el-button type="warning" v-if="hasPermission('system:operlog:export')" @click="handleExport">
         <el-icon><Download /></el-icon>导出
       </el-button>
     </el-card>
@@ -139,6 +139,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getOperLogList, cleanOperLog, exportOperLog } from '@/api/system'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])

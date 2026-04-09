@@ -13,7 +13,7 @@
     </el-card>
 
     <el-card class="toolbar-card">
-      <el-button type="primary" @click="handleAdd">
+      <el-button type="primary" v-if="hasPermission('production:dispatch:add')" @click="handleAdd">
         <el-icon><Plus /></el-icon>新增派工
       </el-button>
     </el-card>
@@ -32,9 +32,9 @@
         </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button link type="success" @click="handleStart(row)" v-if="row.status === 1">开始</el-button>
-            <el-button link type="warning" @click="handleComplete(row)" v-if="row.status === 2">完成</el-button>
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="success" v-if="hasPermission('production:dispatch:edit') && row.status === 1" @click="handleStart(row)">开始</el-button>
+            <el-button link type="warning" v-if="hasPermission('production:dispatch:edit') && row.status === 2" @click="handleComplete(row)">完成</el-button>
+            <el-button link type="primary" v-if="hasPermission('production:dispatch:edit')" @click="handleEdit(row)">编辑</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -79,6 +79,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, FormInstance, FormRules } from 'element-plus'
 import { getDispatchList, createDispatch, updateDispatch, startDispatch, completeDispatch } from '@/api/production'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])

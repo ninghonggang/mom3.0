@@ -23,7 +23,7 @@
     </el-card>
 
     <el-card class="toolbar-card">
-      <el-button type="primary" @click="handleAdd">
+      <el-button type="primary" v-if="hasPermission('quality:fqc:add')" @click="handleAdd">
         <el-icon><Plus /></el-icon>新增
       </el-button>
     </el-card>
@@ -45,8 +45,8 @@
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" size="small" v-if="hasPermission('quality:fqc:edit')" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" size="small" v-if="hasPermission('quality:fqc:delete')" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -63,29 +63,83 @@
         />
       </div>
     </el-card>
+
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px">
+      <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
+        <el-form-item label="检验单号" prop="fqc_no">
+          <el-input v-model="formData.fqc_no" :disabled="!!formData.id" />
+        </el-form-item>
+        <el-form-item label="工单号" prop="order_no">
+          <el-input v-model="formData.order_no" />
+        </el-form-item>
+        <el-form-item label="数量" prop="quantity">
+          <el-input-number v-model="formData.quantity" :min="0" />
+        </el-form-item>
+        <el-form-item label="抽样数">
+          <el-input-number v-model="formData.sample_size" :min="0" />
+        </el-form-item>
+        <el-form-item label="合格数">
+          <el-input-number v-model="formData.qualified_qty" :min="0" />
+        </el-form-item>
+        <el-form-item label="不合格数">
+          <el-input-number v-model="formData.rejected_qty" :min="0" />
+        </el-form-item>
+        <el-form-item label="检验人">
+          <el-input v-model="formData.check_user_name" />
+        </el-form-item>
+        <el-form-item label="检验日期">
+          <el-date-picker v-model="formData.check_date" type="date" value-format="YYYY-MM-DD" placeholder="选择日期" />
+        </el-form-item>
+        <el-form-item label="结果" prop="result">
+          <el-select v-model="formData.result" placeholder="请选择">
+            <el-option label="待检验" :value="1" />
+            <el-option label="合格" :value="2" />
+            <el-option label="不合格" :value="3" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="formData.remark" type="textarea" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { getFQCList } from '@/api/quality'
+import { ref, reactive, onMounted, computed } from 'vue'
+import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
+import { getFQCList, createFQC, updateFQC, deleteFQC } from '@/api/quality'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
+const dialogVisible = ref(false)
+const submitLoading = ref(false)
+const formRef = ref<FormInstance>()
 
 const searchForm = reactive({ fqc_no: '', order_no: '', result: '' })
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
+const formData = reactive<any>({
+  id: 0, fqc_no: '', order_no: '', quantity: 0, sample_size: 0,
+  qualified_qty: 0, rejected_qty: 0, check_user_name: '', check_date: '', result: 1, remark: ''
+})
 
-const getStatusText = (status: number) => {
-  const map: Record<number, string> = { 1: '待检验', 2: '合格', 3: '不合格' }
-  return map[status] || '未知'
+const rules: FormRules = {
+  fqc_no: [{ required: true, message: '请输入检验单号', trigger: 'blur' }],
+  order_no: [{ required: true, message: '请输入工单号', trigger: 'blur' }],
+  quantity: [{ required: true, message: '请输入数量', trigger: 'blur' }],
+  result: [{ required: true, message: '请选择结果', trigger: 'change' }]
 }
 
-const getStatusType = (status: number) => {
-  const map: Record<number, string> = { 1: 'info', 2: 'success', 3: 'danger' }
-  return map[status] || 'info'
-}
+const dialogTitle = computed(() => formData.id ? '编辑FQC' : '新增FQC')
+const getStatusText = (s: number) => ({ 1: '待检验', 2: '合格', 3: '不合格' })[s] || '未知'
+const getStatusType = (s: number) => ({ 1: 'info', 2: 'success', 3: 'danger' })[s] || 'info'
 
 const loadData = async () => {
   loading.value = true
@@ -93,16 +147,36 @@ const loadData = async () => {
     const res = await getFQCList({ ...searchForm, page: pagination.page, page_size: pagination.pageSize })
     tableData.value = res.data.list || []
     pagination.total = res.data.total || 0
-  } finally {
-    loading.value = false
-  }
+  } finally { loading.value = false }
 }
 
 const handleSearch = () => { pagination.page = 1; loadData() }
 const handleReset = () => { searchForm.fqc_no = ''; searchForm.order_no = ''; searchForm.result = ''; handleSearch() }
-const handleAdd = () => { ElMessage.info('新增功能') }
-const handleEdit = (row: any) => { ElMessage.info('编辑功能') }
-const handleDelete = (row: any) => { ElMessage.info('删除功能') }
+
+const handleAdd = () => {
+  Object.assign(formData, { id: 0, fqc_no: '', order_no: '', quantity: 0, sample_size: 0, qualified_qty: 0, rejected_qty: 0, check_user_name: '', check_date: '', result: 1, remark: '' })
+  dialogVisible.value = true
+}
+const handleEdit = (row: any) => { Object.assign(formData, row); dialogVisible.value = true }
+const handleDelete = async (row: any) => {
+  try {
+    await ElMessageBox.confirm('确定删除该FQC记录吗？', '提示', { type: 'warning' })
+    await deleteFQC(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch {}
+}
+const handleSubmit = async () => {
+  if (!formRef.value) return
+  await formRef.value.validate()
+  submitLoading.value = true
+  try {
+    formData.id ? await updateFQC(formData.id, formData) : await createFQC(formData)
+    ElMessage.success(formData.id ? '更新成功' : '创建成功')
+    dialogVisible.value = false
+    loadData()
+  } finally { submitLoading.value = false }
+}
 
 onMounted(() => { loadData() })
 </script>

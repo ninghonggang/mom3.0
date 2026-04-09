@@ -21,10 +21,10 @@
 
     <!-- 工具栏 -->
     <el-card class="toolbar-card">
-      <el-button type="primary" @click="handleAdd">
+      <el-button type="primary" v-if="hasPermission('system:user:add')" @click="handleAdd">
         <el-icon><Plus /></el-icon>新增
       </el-button>
-      <el-button type="danger" :disabled="!selectedRows.length" @click="handleBatchDelete">
+      <el-button type="danger" v-if="hasPermission('system:user:delete')" :disabled="!selectedRows.length" @click="handleBatchDelete">
         <el-icon><Delete /></el-icon>批量删除
       </el-button>
     </el-card>
@@ -51,9 +51,9 @@
         <el-table-column prop="created_at" label="创建时间" width="180" />
         <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="primary" @click="handleAssignRoles(row)">分配角色</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" v-if="hasPermission('system:user:edit')" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="primary" v-if="hasPermission('system:role:assign')" @click="handleAssignRoles(row)">分配角色</el-button>
+            <el-button link type="danger" v-if="hasPermission('system:user:delete')" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -129,6 +129,9 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
 import { getUserList, createUser, updateUser, deleteUser, getAllRoles, assignUserRoles, getUserById } from '@/api/system'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -222,10 +225,14 @@ const handleEdit = (row: any) => {
 }
 
 const handleDelete = async (row: any) => {
-  await ElMessageBox.confirm('确定要删除该用户吗？', '提示', { type: 'warning' })
-  await deleteUser(row.id)
-  ElMessage.success('删除成功')
-  loadData()
+  try {
+    await ElMessageBox.confirm('确定要删除该用户吗？', '提示', { type: 'warning' })
+    await deleteUser(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    // user cancelled or API error
+  }
 }
 
 const handleBatchDelete = async () => {

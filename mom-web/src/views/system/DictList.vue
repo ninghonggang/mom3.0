@@ -16,7 +16,7 @@
     </el-card>
 
     <el-card class="toolbar-card">
-      <el-button type="primary" @click="handleAdd">
+      <el-button type="primary" v-if="hasPermission('system:dict:add')" @click="handleAdd">
         <el-icon><Plus /></el-icon>新增
       </el-button>
     </el-card>
@@ -30,8 +30,8 @@
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleData(row)">字典数据</el-button>
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" v-if="hasPermission('system:dict:edit')" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" v-if="hasPermission('system:dict:delete')" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -69,7 +69,7 @@
 
     <el-dialog v-model="dataDialogVisible" title="字典数据" width="800px">
       <div class="mb-4">
-        <el-button type="primary" size="small" @click="handleAddData">
+        <el-button type="primary" size="small" v-if="hasPermission('system:dict:edit')" @click="handleAddData">
           <el-icon><Plus /></el-icon>新增
         </el-button>
       </div>
@@ -103,6 +103,9 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
 import { getDictTypeList, createDictType, updateDictType, deleteDictType, getDictDataList } from '@/api/system'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -149,10 +152,14 @@ const handleEdit = (row: any) => {
 }
 
 const handleDelete = async (row: any) => {
-  await ElMessageBox.confirm('确定删除该字典吗？', '提示', { type: 'warning' })
-  await deleteDictType(row.id)
-  ElMessage.success('删除成功')
-  loadData()
+  try {
+    await ElMessageBox.confirm('确定删除该字典吗？', '提示', { type: 'warning' })
+    await deleteDictType(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    // user cancelled or API error
+  }
 }
 
 const handleSubmit = async () => {

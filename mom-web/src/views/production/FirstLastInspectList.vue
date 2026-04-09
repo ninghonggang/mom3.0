@@ -79,13 +79,50 @@
         />
       </div>
     </el-card>
+
+    <!-- 检验对话框 -->
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px" @close="handleDialogClose">
+      <el-form ref="formRef" :model="form" :rules="formRules" label-width="100px">
+        <el-form-item label="工单ID" prop="production_order_id">
+          <el-input-number v-model="form.production_order_id" :min="1" placeholder="请输入工单ID" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="工序ID" prop="process_id">
+          <el-input-number v-model="form.process_id" :min="1" placeholder="请输入工序ID" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="工位ID" prop="workstation_id">
+          <el-input-number v-model="form.workstation_id" :min="1" placeholder="请输入工位ID" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="检验类型" prop="inspect_type">
+          <el-select v-model="form.inspect_type" placeholder="请选择检验类型" style="width: 100%">
+            <el-option label="首件" value="FIRST" />
+            <el-option label="末件" value="LAST" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="检验员" prop="inspector_name">
+          <el-input v-model="form.inspector_name" placeholder="请输入检验员姓名" />
+        </el-form-item>
+        <el-form-item label="总体结果" prop="overall_result">
+          <el-select v-model="form.overall_result" placeholder="请选择结果" style="width: 100%">
+            <el-option label="合格" value="OK" />
+            <el-option label="不合格" value="NG" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注" prop="remark">
+          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="submitLoading">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getFirstLastInspectList, deleteFirstLastInspect } from '@/api/production'
+import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
+import { getFirstLastInspectList, getFirstLastInspect, createFirstLastInspect, updateFirstLastInspect, deleteFirstLastInspect } from '@/api/production'
 import { useAuthStore } from '@/stores/auth'
 
 const { hasPermission } = useAuthStore()
@@ -94,6 +131,31 @@ const loading = ref(false)
 const tableData = ref<any[]>([])
 const searchForm = reactive({ order_no: '', inspect_type: '', status: '' })
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
+
+// 对话框
+const dialogVisible = ref(false)
+const dialogTitle = ref('')
+const submitLoading = ref(false)
+const formRef = ref<FormInstance>()
+const isEdit = ref(false)
+
+const form = reactive({
+  id: undefined as number | undefined,
+  production_order_id: undefined as number | undefined,
+  process_id: undefined as number | undefined,
+  workstation_id: undefined as number | undefined,
+  inspect_type: '',
+  inspector_name: '',
+  overall_result: '',
+  remark: ''
+})
+
+const formRules: FormRules = {
+  production_order_id: [{ required: true, message: '请输入工单ID', trigger: 'blur' }],
+  inspect_type: [{ required: true, message: '请选择检验类型', trigger: 'change' }],
+  inspector_name: [{ required: true, message: '请输入检验员', trigger: 'blur' }],
+  overall_result: [{ required: true, message: '请选择检验结果', trigger: 'change' }]
+}
 
 const loadData = async () => {
   loading.value = true
@@ -110,17 +172,75 @@ const loadData = async () => {
 
 const handleSearch = () => { pagination.page = 1; loadData() }
 const handleReset = () => { searchForm.order_no = ''; searchForm.inspect_type = ''; searchForm.status = ''; handleSearch() }
-const handleAdd = () => { ElMessage.info('新增检验功能') }
-const handleEdit = (row: any) => { ElMessage.info('编辑检验: ' + row.inspect_no) }
+
+const handleAdd = () => {
+  isEdit.value = false
+  dialogTitle.value = '新增检验'
+  resetForm()
+  dialogVisible.value = true
+}
+
+const handleEdit = async (row: any) => {
+  isEdit.value = true
+  dialogTitle.value = '编辑检验'
+  try {
+    const res = await getFirstLastInspect(row.id)
+    Object.assign(form, res.data)
+    dialogVisible.value = true
+  } catch (error) {
+    ElMessage.error('获取检验信息失败')
+  }
+}
+
+const handleSubmit = async () => {
+  if (!formRef.value) return
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return
+    submitLoading.value = true
+    try {
+      if (isEdit.value) {
+        await updateFirstLastInspect(form.id!, form)
+        ElMessage.success('更新成功')
+      } else {
+        await createFirstLastInspect(form)
+        ElMessage.success('创建成功')
+      }
+      dialogVisible.value = false
+      loadData()
+    } catch (error: any) {
+      ElMessage.error(error.message || '操作失败')
+    } finally {
+      submitLoading.value = false
+    }
+  })
+}
+
 const handleDelete = async (row: any) => {
   try {
     await ElMessageBox.confirm('确定删除该检验单吗？', '提示', { type: 'warning' })
     await deleteFirstLastInspect(row.id)
     ElMessage.success('删除成功')
     loadData()
-  } catch (error) {
-    // user cancelled or API error
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
+    }
   }
+}
+
+const resetForm = () => {
+  form.id = undefined
+  form.production_order_id = undefined
+  form.process_id = undefined
+  form.workstation_id = undefined
+  form.inspect_type = ''
+  form.inspector_name = ''
+  form.overall_result = ''
+  form.remark = ''
+}
+
+const handleDialogClose = () => {
+  formRef.value?.resetFields()
 }
 
 onMounted(() => { loadData() })
