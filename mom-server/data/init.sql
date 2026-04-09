@@ -386,6 +386,44 @@ CREATE TABLE IF NOT EXISTS mdm_operation (
 );
 CREATE INDEX IF NOT EXISTS idx_mdm_operation_tenant ON mdm_operation(tenant_id);
 
+-- 供应商表
+CREATE TABLE IF NOT EXISTS mdm_supplier (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP,
+    tenant_id BIGINT NOT NULL,
+    code VARCHAR(50) NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    type VARCHAR(50),
+    contact VARCHAR(100),
+    phone VARCHAR(50),
+    email VARCHAR(100),
+    address VARCHAR(500),
+    status INTEGER DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_mdm_supplier_tenant ON mdm_supplier(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_mdm_supplier_code ON mdm_supplier(code);
+
+-- 客户表
+CREATE TABLE IF NOT EXISTS mdm_customer (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP,
+    tenant_id BIGINT NOT NULL,
+    code VARCHAR(50) NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    type VARCHAR(50),
+    contact VARCHAR(100),
+    phone VARCHAR(50),
+    email VARCHAR(100),
+    address VARCHAR(500),
+    status INTEGER DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_mdm_customer_tenant ON mdm_customer(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_mdm_customer_code ON mdm_customer(code);
+
 -- =====================================================
 -- 设备管理模块
 -- =====================================================
@@ -1289,6 +1327,61 @@ CREATE INDEX IF NOT EXISTS idx_ene_energy_record_tenant ON ene_energy_record(ten
 CREATE INDEX IF NOT EXISTS idx_ene_energy_record_date ON ene_energy_record(record_date);
 
 -- =====================================================
+-- AI模块
+-- =====================================================
+
+-- AI配置表
+CREATE TABLE IF NOT EXISTS ai_config (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    tenant_id BIGINT NOT NULL,
+    config_name VARCHAR(100),
+    provider VARCHAR(50),
+    endpoint VARCHAR(500),
+    api_version VARCHAR(100),
+    model_name VARCHAR(100),
+    api_key VARCHAR(500),
+    temperature DECIMAL(3,2) DEFAULT 0.7,
+    max_tokens INTEGER DEFAULT 2000,
+    timeout INTEGER DEFAULT 30,
+    enable BOOLEAN DEFAULT TRUE
+);
+CREATE INDEX IF NOT EXISTS idx_ai_config_tenant ON ai_config(tenant_id);
+
+-- AI聊天会话表
+CREATE TABLE IF NOT EXISTS ai_chat_conversation (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP,
+    tenant_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    session_id UUID NOT NULL,
+    title VARCHAR(200),
+    UNIQUE (tenant_id, session_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ai_chat_conversation_tenant ON ai_chat_conversation(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_ai_chat_conversation_user ON ai_chat_conversation(user_id);
+
+-- AI聊天消息表
+CREATE TABLE IF NOT EXISTS ai_chat_message (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    tenant_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    conversation_id BIGINT NOT NULL,
+    role VARCHAR(20),
+    content TEXT,
+    intent_json TEXT,
+    operation_type VARCHAR(20),
+    status VARCHAR(20) DEFAULT 'pending',
+    tool_result TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_ai_chat_message_tenant ON ai_chat_message(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_ai_chat_message_conversation ON ai_chat_message(conversation_id);
+
+-- =====================================================
 -- 初始化数据
 -- =====================================================
 
@@ -1316,11 +1409,13 @@ INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, status)
 (1, '岗位管理', 'C', '/system/post', 'Postcard', 6, 1),
 (1, '主数据', 'M', '/mdm', 'Box', 3, 1),
 (1, '物料管理', 'C', '/mdm/material', 'Box', 1, 1),
-(1, '车间管理', 'C', '/mdm/workshop', 'OfficeBuilding', 2, 1),
-(1, '生产线管理', 'C', '/mdm/line', 'Connection', 3, 1),
-(1, '工位管理', 'C', '/mdm/workstation', 'Grid', 4, 1),
-(1, 'BOM管理', 'C', '/mdm/bom', 'Files', 5, 1),
-(1, '工序管理', 'C', '/mdm/operation', 'Operation', 6, 1),
+(1, '供应商管理', 'C', '/mdm/supplier', 'OfficeBuilding', 2, 1),
+(1, '客户管理', 'C', '/mdm/customer', 'User', 3, 1),
+(1, '车间管理', 'C', '/mdm/workshop', 'OfficeBuilding', 4, 1),
+(1, '生产线管理', 'C', '/mdm/line', 'Connection', 5, 1),
+(1, '工位管理', 'C', '/mdm/workstation', 'Grid', 6, 1),
+(1, 'BOM管理', 'C', '/mdm/bom', 'Files', 7, 1),
+(1, '工序管理', 'C', '/mdm/operation', 'Operation', 8, 1),
 (1, '生产执行', 'M', '/production', 'List', 4, 1),
 (1, '生产工单', 'C', '/production/order', 'List', 1, 1),
 (1, '销售订单', 'C', '/production/sales-order', 'Document', 2, 1),
@@ -1345,7 +1440,8 @@ INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, status)
 (1, '追溯管理', 'M', '/trace', 'Search', 9, 1),
 (1, '追溯查询', 'C', '/trace/query', 'Search', 1, 1),
 (1, '安东呼叫', 'C', '/trace/andon', 'Bell', 2, 1),
-(1, '能源监控', 'C', '/energy/monitor', 'Lightning', 10, 1);
+(1, '能源监控', 'C', '/energy/monitor', 'Lightning', 10, 1),
+(1, 'AI助手', 'C', '/ai-chat', 'ChatDotRound', 11, 1);
 
 -- 插入字典类型
 INSERT INTO sys_dict_type (dict_name, dict_type, status) VALUES
@@ -1368,7 +1464,10 @@ INSERT INTO sys_dict_type (dict_name, dict_type, status) VALUES
 ('库存状态', 'inventory_status', 1),
 ('单据状态', 'doc_status', 1),
 ('检验结果', 'qc_result', 1),
-('能源类型', 'energy_type', 1);
+('能源类型', 'energy_type', 1),
+('物料类型', 'material_type', 1),
+('供应商类型', 'supplier_type', 1),
+('客户类型', 'customer_type', 1);
 
 -- 插入字典数据
 INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status) VALUES
@@ -1426,7 +1525,22 @@ INSERT INTO sys_dict_data (dict_sort, dict_label, dict_value, dict_type, status)
 (1, '电', 'electricity', 'energy_type', 1),
 (2, '水', 'water', 'energy_type', 1),
 (3, '气', 'gas', 'energy_type', 1),
-(4, '蒸汽', 'steam', 'energy_type', 1);
+(4, '蒸汽', 'steam', 'energy_type', 1),
+-- 物料类型
+(1, '原材料', 'raw', 'material_type', 1),
+(2, '半成品', 'semi', 'material_type', 1),
+(3, '成品', 'finished', 'material_type', 1),
+(4, '包材', 'package', 'material_type', 1),
+(5, '辅材', 'aux', 'material_type', 1),
+(6, '备件', 'parts', 'material_type', 1),
+-- 供应商类型
+(1, '原材料供应商', 'raw_supplier', 'supplier_type', 1),
+(2, '设备供应商', 'equipment_supplier', 'supplier_type', 1),
+(3, '服务供应商', 'service_supplier', 'supplier_type', 1),
+-- 客户类型
+(1, '终端客户', 'end_customer', 'customer_type', 1),
+(2, '经销商', 'dealer', 'customer_type', 1),
+(3, '代理商', 'agent', 'customer_type', 1);
 
 -- 给管理员分配所有菜单
 INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, id FROM sys_menu WHERE tenant_id = 1;
@@ -1467,6 +1581,43 @@ INSERT INTO equ_equipment (tenant_id, equipment_code, equipment_name, equipment_
 (1, 'EQ001', '装配机器人A1', 'production', 'ABB', 'IRB120', 1, 1, 1, 1),
 (1, 'EQ002', '检测设备C1', 'inspection', 'KEYENCE', 'CV-X300', 3, NULL, 3, 1),
 (1, 'EQ003', '加工中心M1', 'production', 'DMG', 'CMX50U', 2, 3, NULL, 1);
+
+-- 插入示例供应商
+INSERT INTO mdm_supplier (tenant_id, code, name, type, contact, phone, email, address, status) VALUES
+(1, 'SUP001', '上海钢材有限公司', 'raw_supplier', '张经理', '13800010001', 'zhang@shsteel.com', '上海市宝山区', 1),
+(1, 'SUP002', '杭州塑料有限公司', 'raw_supplier', '李经理', '13800010002', 'li@hzplastic.com', '杭州市余杭区', 1),
+(1, 'SUP003', '宁波电子有限公司', 'raw_supplier', '王经理', '13800010003', 'wang@nbelectronic.com', '宁波市高新区', 1),
+(1, 'SUP004', '温州五金有限公司', 'raw_supplier', '陈经理', '13800010004', 'chen@wzhardware.com', '温州市瓯海区', 1),
+(1, 'SUP005', '嘉兴包装有限公司', 'raw_supplier', '刘经理', '13800010005', 'liu@jxpackage.com', '嘉兴市秀洲区', 1),
+(1, 'SUP006', 'ABB机器人有限公司', 'equipment_supplier', '周经理', '13800010006', 'zhou@abb.com', '上海市浦东新区', 1),
+(1, 'SUP007', 'DMG森精机有限公司', 'equipment_supplier', '吴经理', '13800010007', 'wu@dmg.com', '天津市滨海新区', 1);
+
+-- 插入示例客户
+INSERT INTO mdm_customer (tenant_id, code, name, type, contact, phone, email, address, status) VALUES
+(1, 'CUS001', '杭州汽车配件有限公司', 'end_customer', '赵经理', '13900010001', 'zhao@hzauto.com', '杭州市萧山区', 1),
+(1, 'CUS002', '上海机电设备有限公司', 'dealer', '钱经理', '13900010002', 'qian@shjd.com', '上海市闵行区', 1),
+(1, 'CUS003', '宁波电子科技有限公司', 'end_customer', '孙经理', '13900010003', 'sun@nbec.com', '宁波市鄞州区', 1),
+(1, 'CUS004', '温州电器股份有限公司', 'agent', '李经理', '13900010004', 'li@wzelectric.com', '温州市乐清市', 1);
+
+-- 插入示例物料
+INSERT INTO mdm_material (tenant_id, material_code, material_name, material_type, unit, unit_name, spec, weight, status) VALUES
+(1, 'MAT-RAW-001', '钢板A3', 'raw', 'PCS', '张', '1200*2400mm', 25.5, 1),
+(1, 'MAT-RAW-002', '钢板A4', 'raw', 'PCS', '张', '1200*1800mm', 19.5, 1),
+(1, 'MAT-RAW-003', '铝合金板', 'raw', 'PCS', '张', '1000*2000mm', 15.0, 1),
+(1, 'MAT-RAW-004', '不锈钢板', 'raw', 'PCS', '张', '1500*3000mm', 45.0, 1),
+(1, 'MAT-RAW-005', '塑料粒子PP', 'raw', 'KG', '千克', '通用级', 1000.0, 1),
+(1, 'MAT-PARTS-001', '轴承6205', 'parts', 'PCS', '个', '内径25mm', 0.3, 1),
+(1, 'MAT-PARTS-002', '电机0.75KW', 'parts', 'PCS', '台', '0.75KW/380V', 8.5, 1),
+(1, 'MAT-PARTS-003', 'PLC控制器', 'parts', 'PCS', '个', 'S7-200Smart', 0.5, 1),
+(1, 'MAT-SEMI-001', '电机组件A', 'semi', 'SET', '套', '', 5.0, 1),
+(1, 'MAT-SEMI-002', '控制柜', 'semi', 'SET', '套', '', 25.0, 1),
+(1, 'MAT-FIN-001', '配电箱', 'finished', 'PCS', '台', '', 15.0, 1),
+(1, 'MAT-PKG-001', '包装箱', 'package', 'PCS', '个', '600*400*300', 0.5, 1);
+
+-- 插入示例班次
+INSERT INTO mdm_shift (tenant_id, shift_code, shift_name, start_time, end_time, break_start, break_end, status) VALUES
+(1, 'SHIFT-DAY', '白班', '08:00', '17:00', '12:00', '13:00', 1),
+(1, 'SHIFT-NIGHT', '夜班', '20:00', '05:00', '00:00', '01:00', 1);
 
 -- 完成
 COMMENT ON DATABASE mom3 IS 'MOM3.0 Manufacturing Operation Management System';
