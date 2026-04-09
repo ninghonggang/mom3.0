@@ -77,8 +77,11 @@ func (s *UserService) AssignRoles(ctx context.Context, userID int64, roleIDs []i
 // Create 创建用户
 func (s *UserService) Create(ctx context.Context, tenantID int64, req dto.CreateUserRequest) error {
 	// 检查用户名是否存在
-	existing, _ := s.userRepo.FindByUsername(ctx, tenantID, req.Username)
-	if existing != nil {
+	existing, err := s.userRepo.FindByUsername(ctx, tenantID, req.Username)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	if existing != nil && existing.ID != 0 {
 		return ErrUserExists
 	}
 
@@ -106,7 +109,9 @@ func (s *UserService) Create(ctx context.Context, tenantID int64, req dto.Create
 
 	// 分配角色
 	if len(req.RoleIDs) > 0 {
-		s.userRepo.AssignRoles(ctx, user.ID, req.RoleIDs)
+		if err := s.userRepo.AssignRoles(ctx, user.ID, req.RoleIDs); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -128,7 +133,9 @@ func (s *UserService) Update(ctx context.Context, id int64, req dto.UpdateUserRe
 
 	// 更新角色
 	if req.RoleIDs != nil {
-		s.userRepo.AssignRoles(ctx, id, req.RoleIDs)
+		if err := s.userRepo.AssignRoles(ctx, id, req.RoleIDs); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -150,7 +157,10 @@ func (s *UserService) GetByID(ctx context.Context, id int64) (*dto.UserDTO, erro
 	}
 
 	// 获取角色IDs
-	roleIDs, _ := s.userRepo.GetUserRoles(ctx, user.ID)
+	roleIDs, err := s.userRepo.GetUserRoles(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
 	if len(roleIDs) == 0 {
 		return &dto.UserDTO{
 			ID:       user.ID,
@@ -169,7 +179,10 @@ func (s *UserService) GetByID(ctx context.Context, id int64) (*dto.UserDTO, erro
 	}
 
 	// 批量查询所有角色（单次查询替代N次查询）
-	roleList, _ := s.roleRepo.FindAll(ctx, user.TenantID)
+	roleList, err := s.roleRepo.FindAll(ctx, user.TenantID)
+	if err != nil {
+		return nil, err
+	}
 	roleMap := make(map[int64]string)
 	var roles []string
 	for _, r := range roleList {
@@ -194,14 +207,20 @@ func (s *UserService) GetByID(ctx context.Context, id int64) (*dto.UserDTO, erro
 	var perms []string
 	if isAdmin {
 		// 超管返回所有菜单（单次查询）
-		menus, _ = s.menuRepo.Tree(ctx, user.TenantID)
+		menus, err = s.menuRepo.Tree(ctx, user.TenantID)
+		if err != nil {
+			return nil, err
+		}
 		// 超管拥有所有权限
 		perms = []string{"*"}
 	} else if len(roleIDs) > 0 {
 		// 普通用户根据角色权限获取菜单
 		var allMenuIDs []int64
 		for _, roleID := range roleIDs {
-			menuIDs, _ := s.roleMenuDB.GetMenuIDsByRoleID(ctx, roleID)
+			menuIDs, err := s.roleMenuDB.GetMenuIDsByRoleID(ctx, roleID)
+			if err != nil {
+				return nil, err
+			}
 			allMenuIDs = append(allMenuIDs, menuIDs...)
 		}
 		if len(allMenuIDs) > 0 {
@@ -219,7 +238,10 @@ func (s *UserService) GetByID(ctx context.Context, id int64) (*dto.UserDTO, erro
 			for i, m := range uniqueMenuIDs {
 				uids[i] = uint(m)
 			}
-			menus, _ = s.menuRepo.GetByIDs(ctx, uids)
+			menus, err = s.menuRepo.GetByIDs(ctx, uids)
+			if err != nil {
+				return nil, err
+			}
 			menus = s.menuRepo.BuildTree(menus)
 			// 收集权限标识（解析逗号分隔的多个权限码）
 			for _, m := range menus {

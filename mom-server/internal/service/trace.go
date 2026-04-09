@@ -35,34 +35,14 @@ func (s *TraceService) TraceByOrder(ctx context.Context, orderID int64) ([]model
 	return s.traceRepo.GetByOrderID(ctx, orderID)
 }
 
-type AndonService struct {
-	andonRepo *repository.AndonRepository
+// ForwardTrace 正向追溯 - 从原材料到成品
+func (s *TraceService) ForwardTrace(ctx context.Context, serialNumber string) ([]model.TraceRecord, error) {
+	return s.traceRepo.GetForwardTrace(ctx, serialNumber)
 }
 
-func NewAndonService(andonRepo *repository.AndonRepository) *AndonService {
-	return &AndonService{andonRepo: andonRepo}
-}
-
-func (s *AndonService) List(ctx context.Context, status int, callNo string) ([]model.AndonCall, int64, error) {
-	return s.andonRepo.List(ctx, 0, status, callNo)
-}
-
-func (s *AndonService) Create(ctx context.Context, call *model.AndonCall) error {
-	return s.andonRepo.Create(ctx, call)
-}
-
-func (s *AndonService) Response(ctx context.Context, id uint) error {
-	return s.andonRepo.Update(ctx, id, map[string]interface{}{
-		"status":          2,
-		"response_time": time.Now(),
-	})
-}
-
-func (s *AndonService) Resolve(ctx context.Context, id uint) error {
-	return s.andonRepo.Update(ctx, id, map[string]interface{}{
-		"status":        3,
-		"resolve_time": time.Now(),
-	})
+// BackwardTrace 反向追溯 - 从成品到原材料
+func (s *TraceService) BackwardTrace(ctx context.Context, serialNumber string) ([]model.TraceRecord, error) {
+	return s.traceRepo.GetBackwardTrace(ctx, serialNumber)
 }
 
 type EnergyService struct {

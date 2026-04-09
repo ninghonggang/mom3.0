@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"math"
 	"mom-server/internal/model"
 	"mom-server/internal/repository"
 )
@@ -72,4 +73,70 @@ func (s *SPCDataService) GetChartData(ctx context.Context, query SPCChartQuery) 
 		query.Limit = 100
 	}
 	return s.repo.GetChartData(ctx, 1, query.EquipmentID, query.ProcessID, query.StationID, query.CheckItem, query.Limit)
+}
+
+// SPCStats SPC统计结果
+type SPCStats struct {
+	Mean   float64 `json:"mean"`
+	StdDev float64 `json:"std_dev"`
+	Cp     float64 `json:"cp"`
+	Cpk    float64 `json:"cpk"`
+	Ca     float64 `json:"ca"`
+	Count  int     `json:"count"`
+}
+
+// CalculateCPK 计算Cp/Cpk
+func CalculateCPK(values []float64, usl, lsl float64) SPCStats {
+	n := len(values)
+	if n == 0 {
+		return SPCStats{}
+	}
+
+	// 计算均值
+	var sum, sumSq float64
+	for _, v := range values {
+		sum += v
+		sumSq += v * v
+	}
+	mean := sum / float64(n)
+
+	// 计算标准差 (总体标准差)
+	variance := (sumSq / float64(n)) - (mean * mean)
+	if variance < 0 {
+		variance = 0
+	}
+	stdDev := math.Sqrt(variance)
+
+	// Cp = (USL - LSL) / (6 * sigma)
+	tolerance := usl - lsl
+	var cp float64
+	if stdDev > 0 {
+		cp = tolerance / (6 * stdDev)
+	}
+
+	// Ca = (Mean - CL) / (Tolerane / 2)
+	cl := (usl + lsl) / 2
+	var ca float64
+	if tolerance > 0 {
+		ca = (mean - cl) / (tolerance / 2)
+	}
+
+	// Cpu = (USL - Mean) / (3 * sigma)
+	// Cpl = (Mean - LSL) / (3 * sigma)
+	cpu := 0.0
+	cpl := 0.0
+	if stdDev > 0 {
+		cpu = (usl - mean) / (3 * stdDev)
+		cpl = (mean - lsl) / (3 * stdDev)
+	}
+	cpk := math.Min(cpu, cpl)
+
+	return SPCStats{
+		Mean:   mean,
+		StdDev: stdDev,
+		Cp:     cp,
+		Cpk:    cpk,
+		Ca:     ca,
+		Count:  n,
+	}
 }

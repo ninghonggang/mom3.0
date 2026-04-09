@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"gorm.io/gorm"
 	"mom-server/internal/model"
 	"mom-server/internal/repository"
 )
@@ -18,7 +19,10 @@ func NewTenantService(tenantRepo *repository.TenantRepository) *TenantService {
 
 func (s *TenantService) Create(ctx context.Context, req *model.Tenant) error {
 	// 检查TenantKey唯一性
-	existing, _ := s.tenantRepo.FindByKey(ctx, req.TenantKey)
+	existing, err := s.tenantRepo.FindByKey(ctx, req.TenantKey)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
 	if existing != nil && existing.ID != 0 {
 		return errors.New("租户标识已存在")
 	}
