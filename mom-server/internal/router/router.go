@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
+	"mom-server/internal/handler/andon"
 	"mom-server/internal/handler/aps"
 	"mom-server/internal/handler/business"
 	"mom-server/internal/handler/dc"
@@ -12,6 +13,8 @@ import (
 	"mom-server/internal/handler/supplier"
 	"mom-server/internal/handler/system"
 	"mom-server/internal/handler/trace"
+	"mom-server/internal/handler/ai"
+	"mom-server/internal/handler/container"
 	"mom-server/internal/handler/wms"
 	"mom-server/internal/middleware"
 	"mom-server/internal/pkg/jwt"
@@ -40,8 +43,8 @@ type Router struct {
 	scheduleHandler     *aps.ScheduleHandler
 	workCenterHandler  *aps.WorkCenterHandler
 	traceHandler       *trace.TraceHandler
-	andonHandler       *trace.AndonHandler
 	energyHandler      *trace.EnergyHandler
+	equipmentHandler  *equipment.EquipmentHandler
 	checkHandler       *equipment.EquipmentCheckHandler
 	maintHandler       *equipment.EquipmentMaintenanceHandler
 	repairHandler      *equipment.EquipmentRepairHandler
@@ -68,9 +71,36 @@ type Router struct {
 	workshopHandler    *mdm.WorkshopHandler
 	operLogHandler     *system.OperLogHandler
 	oeeHandler       *equipment.OEEHandler
+	teepDataHandler   *equipment.TEEPDataHandler
+	moldHandler       *equipment.MoldHandler
+	moldMaintenanceHandler *equipment.MoldMaintenanceHandler
+	moldRepairHandler *equipment.MoldRepairHandler
+	gaugeHandler     *equipment.GaugeHandler
+	gaugeCalibrationHandler *equipment.GaugeCalibrationHandler
 	firstLastInspectHandler *production.FirstLastInspectHandler
 	packageHandler     *production.PackageHandler
 	dcHandler          *dc.DataCollectionHandler
+	electronicSOPHandler *production.ElectronicSOPHandler
+	codeRuleHandler    *production.CodeRuleHandler
+	flowCardHandler   *production.FlowCardHandler
+	noticeHandler     *system.NoticeHandler
+	printTemplateHandler *system.PrintTemplateHandler
+	capacityAnalysisHandler *aps.CapacityAnalysisHandler
+	deliveryRateHandler *aps.DeliveryRateHandler
+	changeoverMatrixHandler *aps.ChangeoverMatrixHandler
+	rollingScheduleHandler *aps.RollingScheduleHandler
+	jitDemandHandler *aps.JITDemandHandler
+	transferOrderHandler *wms.TransferOrderHandler
+	stockCheckHandler *wms.StockCheckHandler
+	sideLocationHandler *wms.SideLocationHandler
+	kanbanPullHandler *wms.KanbanPullHandler
+	containerHandler  *container.ContainerHandler
+	aiConfigHandler  *ai.AIConfigHandler
+	aiChatHandler    *ai.AIChatHandler
+	andonCallHandler   *andon.CallHandler
+	andonRuleHandler  *andon.RuleHandler
+	workshopConfigHandler *mdm.WorkshopConfigHandler
+	workingCalendarHandler *mdm.WorkingCalendarHandler
 }
 
 // New 创建路由
@@ -94,8 +124,8 @@ func New(
 	scheduleHandler *aps.ScheduleHandler,
 	workCenterHandler *aps.WorkCenterHandler,
 	traceHandler *trace.TraceHandler,
-	andonHandler *trace.AndonHandler,
 	energyHandler *trace.EnergyHandler,
+	equipmentHandler *equipment.EquipmentHandler,
 	checkHandler *equipment.EquipmentCheckHandler,
 	maintHandler *equipment.EquipmentMaintenanceHandler,
 	repairHandler *equipment.EquipmentRepairHandler,
@@ -122,10 +152,37 @@ func New(
 	workshopHandler *mdm.WorkshopHandler,
 	operLogHandler *system.OperLogHandler,
 	oeeHandler *equipment.OEEHandler,
+	teepDataHandler *equipment.TEEPDataHandler,
+	moldHandler *equipment.MoldHandler,
+	moldMaintenanceHandler *equipment.MoldMaintenanceHandler,
+	moldRepairHandler *equipment.MoldRepairHandler,
+	gaugeHandler *equipment.GaugeHandler,
+	gaugeCalibrationHandler *equipment.GaugeCalibrationHandler,
 	importHandler *system.ImportHandler,
 	firstLastInspectHandler *production.FirstLastInspectHandler,
 	packageHandler *production.PackageHandler,
 	dcHandler *dc.DataCollectionHandler,
+	electronicSOPHandler *production.ElectronicSOPHandler,
+	codeRuleHandler *production.CodeRuleHandler,
+	flowCardHandler *production.FlowCardHandler,
+	noticeHandler *system.NoticeHandler,
+	printTemplateHandler *system.PrintTemplateHandler,
+	capacityAnalysisHandler *aps.CapacityAnalysisHandler,
+	deliveryRateHandler *aps.DeliveryRateHandler,
+	changeoverMatrixHandler *aps.ChangeoverMatrixHandler,
+	rollingScheduleHandler *aps.RollingScheduleHandler,
+	jitDemandHandler *aps.JITDemandHandler,
+	transferOrderHandler *wms.TransferOrderHandler,
+	stockCheckHandler *wms.StockCheckHandler,
+	sideLocationHandler *wms.SideLocationHandler,
+	kanbanPullHandler *wms.KanbanPullHandler,
+	containerHandler *container.ContainerHandler,
+	aiConfigHandler *ai.AIConfigHandler,
+	aiChatHandler *ai.AIChatHandler,
+	andonCallHandler *andon.CallHandler,
+	andonRuleHandler *andon.RuleHandler,
+	workshopConfigHandler *mdm.WorkshopConfigHandler,
+	workingCalendarHandler *mdm.WorkingCalendarHandler,
 ) *Router {
 	return &Router{
 		jwtUtil:             jwtUtil,
@@ -147,8 +204,8 @@ func New(
 		scheduleHandler:      scheduleHandler,
 		workCenterHandler:   workCenterHandler,
 		traceHandler:        traceHandler,
-		andonHandler:        andonHandler,
 		energyHandler:       energyHandler,
+		equipmentHandler:    equipmentHandler,
 		checkHandler:        checkHandler,
 		maintHandler:        maintHandler,
 		repairHandler:       repairHandler,
@@ -175,10 +232,33 @@ func New(
 		workshopHandler:       workshopHandler,
 		operLogHandler:         operLogHandler,
 		oeeHandler:            oeeHandler,
+			teepDataHandler:       teepDataHandler,
+			moldHandler:           moldHandler,
+			moldMaintenanceHandler: moldMaintenanceHandler,
+			moldRepairHandler:     moldRepairHandler,
+			gaugeHandler:          gaugeHandler,
+			gaugeCalibrationHandler: gaugeCalibrationHandler,
 		importHandler:         importHandler,
 			firstLastInspectHandler: firstLastInspectHandler,
 			packageHandler:          packageHandler,
 			dcHandler:               dcHandler,
+			electronicSOPHandler:    electronicSOPHandler,
+			codeRuleHandler:          codeRuleHandler,
+			flowCardHandler:          flowCardHandler,
+			noticeHandler:           noticeHandler,
+			printTemplateHandler:     printTemplateHandler,
+			capacityAnalysisHandler:  capacityAnalysisHandler,
+			deliveryRateHandler:      deliveryRateHandler,
+			changeoverMatrixHandler:  changeoverMatrixHandler,
+			rollingScheduleHandler:   rollingScheduleHandler,
+			jitDemandHandler:          jitDemandHandler,
+		containerHandler:           containerHandler,
+		aiConfigHandler:            aiConfigHandler,
+		aiChatHandler:              aiChatHandler,
+		andonCallHandler:          andonCallHandler,
+		andonRuleHandler:         andonRuleHandler,
+		workshopConfigHandler:     workshopConfigHandler,
+		workingCalendarHandler:   workingCalendarHandler,
 		}
 }
 
@@ -439,6 +519,7 @@ func (r *Router) Init(engine *gin.Engine) {
 		{
 			spc.POST("/data", r.spcHandler.Create)
 			spc.GET("/chart", r.spcHandler.GetChartData)
+			spc.GET("/stats", r.spcHandler.GetStats)
 			spc.GET("/list", r.spcHandler.List)
 			spc.GET("/:id", r.spcHandler.Get)
 			spc.PUT("/:id", r.spcHandler.Update)
@@ -467,9 +548,11 @@ func (r *Router) Init(engine *gin.Engine) {
 				schedule.GET("/list", r.scheduleHandler.List)
 				schedule.POST("", r.scheduleHandler.Create)
 				schedule.PUT("/:id/execute", r.scheduleHandler.Execute)
+				schedule.POST("/execute-constrained", r.scheduleHandler.ExecuteConstrained)
 				schedule.GET("/:id/results", r.scheduleHandler.GetResults)
 				schedule.DELETE("/:id", r.scheduleHandler.Delete)
 				schedule.PUT("/drag-update", r.scheduleHandler.DragUpdate)
+				schedule.GET("/suggestions/:plan_id", r.scheduleHandler.GetSuggestions)
 			}
 			workCenter := aps.Group("/work-center")
 			{
@@ -509,6 +592,48 @@ func (r *Router) Init(engine *gin.Engine) {
 				inventory.PUT("/:id", r.warehouseHandler.UpdateInventory)
 				inventory.DELETE("/:id", r.warehouseHandler.DeleteInventory)
 			}
+
+			// 调拨管理
+			transfer := wms.Group("/transfer")
+			{
+				transfer.GET("/list", r.transferOrderHandler.List)
+				transfer.GET("/:id", r.transferOrderHandler.Get)
+				transfer.POST("", r.transferOrderHandler.Create)
+				transfer.PUT("/:id", r.transferOrderHandler.Update)
+				transfer.DELETE("/:id", r.transferOrderHandler.Delete)
+				transfer.POST("/item", r.transferOrderHandler.AddItem)
+			}
+
+			// 盘点管理
+			stockcheck := wms.Group("/stock-check")
+			{
+				stockcheck.GET("/list", r.stockCheckHandler.List)
+				stockcheck.GET("/:id", r.stockCheckHandler.Get)
+				stockcheck.POST("", r.stockCheckHandler.Create)
+				stockcheck.PUT("/:id", r.stockCheckHandler.Update)
+				stockcheck.POST("/item", r.stockCheckHandler.AddItem)
+				stockcheck.PUT("/item/:id", r.stockCheckHandler.UpdateItem)
+			}
+
+			// 线边库位
+			sideloc := wms.Group("/side-location")
+			{
+				sideloc.GET("/list", r.sideLocationHandler.List)
+				sideloc.GET("/:id", r.sideLocationHandler.Get)
+				sideloc.POST("", r.sideLocationHandler.Create)
+				sideloc.PUT("/:id", r.sideLocationHandler.Update)
+				sideloc.DELETE("/:id", r.sideLocationHandler.Delete)
+			}
+
+			// 看板拉动
+			kanban := wms.Group("/kanban")
+			{
+				kanban.GET("/list", r.kanbanPullHandler.List)
+				kanban.GET("/:id", r.kanbanPullHandler.Get)
+				kanban.POST("", r.kanbanPullHandler.Create)
+				kanban.PUT("/:id", r.kanbanPullHandler.Update)
+				kanban.DELETE("/:id", r.kanbanPullHandler.Delete)
+			}
 		}
 
 		// 追溯管理
@@ -517,18 +642,35 @@ func (r *Router) Init(engine *gin.Engine) {
 			trace.GET("/serial", r.traceHandler.TraceBySerial)
 			trace.GET("/batch", r.traceHandler.TraceByBatch)
 			trace.GET("/order/:id", r.traceHandler.TraceByOrder)
+			trace.GET("/forward", r.traceHandler.ForwardTrace)
+			trace.GET("/backward", r.traceHandler.BackwardTrace)
 		}
 
 		// 安东呼叫
 		andon := protected.Group("/andon")
 		{
-			call := andon.Group("/call")
+			call := andon.Group("/calls")
 			{
-				call.GET("/list", r.andonHandler.List)
-				call.POST("", r.andonHandler.Create)
-				call.PUT("/:id/response", r.andonHandler.Response)
-				call.PUT("/:id/resolve", r.andonHandler.Resolve)
+				call.GET("/list", r.andonCallHandler.List)
+				call.GET("/:id", r.andonCallHandler.Get)
+				call.POST("", r.andonCallHandler.Create)
+				call.PUT("/:id/respond", r.andonCallHandler.Respond)
+				call.PUT("/:id/resolve", r.andonCallHandler.Resolve)
+				call.PUT("/:id/escalate", r.andonCallHandler.Escalate)
 			}
+
+			// 升级规则管理
+			rules := andon.Group("/escalation-rules")
+			{
+				rules.GET("/list", r.andonRuleHandler.List)
+				rules.GET("/:id", r.andonRuleHandler.Get)
+				rules.POST("", r.andonRuleHandler.Create)
+				rules.PUT("/:id", r.andonRuleHandler.Update)
+				rules.DELETE("/:id", r.andonRuleHandler.Delete)
+			}
+
+			// 统计分析
+			andon.GET("/statistics", r.andonCallHandler.GetStatistics)
 		}
 
 		// 能源管理
@@ -541,6 +683,17 @@ func (r *Router) Init(engine *gin.Engine) {
 			}
 			energy.GET("/stats", r.energyHandler.GetStats)
 			energy.GET("/trend", r.energyHandler.GetTrend)
+		}
+
+		// 设备管理
+		equipment := protected.Group("/equipment")
+		{
+			equipment.GET("/list", r.equipmentHandler.List)
+			equipment.GET("/:id", r.equipmentHandler.Get)
+			equipment.POST("", r.equipmentHandler.Create)
+			equipment.PUT("/:id", r.equipmentHandler.Update)
+			equipment.DELETE("/:id", r.equipmentHandler.Delete)
+			equipment.GET("/status", r.equipmentHandler.Status)
 		}
 
 		// 设备点检
@@ -571,6 +724,42 @@ func (r *Router) Init(engine *gin.Engine) {
 			oee.DELETE("/:id", r.oeeHandler.Delete)
 		}
 
+		// TEEP分析
+		teep := protected.Group("/equipment/teep")
+		{
+			teep.GET("/list", r.teepDataHandler.List)
+			teep.GET("/:id", r.teepDataHandler.Get)
+			teep.POST("", r.teepDataHandler.Create)
+			teep.PUT("/:id", r.teepDataHandler.Update)
+			teep.DELETE("/:id", r.teepDataHandler.Delete)
+		}
+
+		// 模具管理
+		mold := protected.Group("/equipment/mold")
+		{
+			mold.GET("/list", r.moldHandler.List)
+			mold.GET("/:id", r.moldHandler.Get)
+			mold.POST("", r.moldHandler.Create)
+			mold.PUT("/:id", r.moldHandler.Update)
+			mold.DELETE("/:id", r.moldHandler.Delete)
+			mold.GET("/maintenance/list", r.moldMaintenanceHandler.List)
+			mold.POST("/maintenance", r.moldMaintenanceHandler.Create)
+			mold.GET("/repair/list", r.moldRepairHandler.List)
+			mold.POST("/repair", r.moldRepairHandler.Create)
+		}
+
+		// 量检具管理
+		gauge := protected.Group("/equipment/gauge")
+		{
+			gauge.GET("/list", r.gaugeHandler.List)
+			gauge.GET("/:id", r.gaugeHandler.Get)
+			gauge.POST("", r.gaugeHandler.Create)
+			gauge.PUT("/:id", r.gaugeHandler.Update)
+			gauge.DELETE("/:id", r.gaugeHandler.Delete)
+			gauge.GET("/calibration/list", r.gaugeCalibrationHandler.List)
+			gauge.POST("/calibration", r.gaugeCalibrationHandler.Create)
+		}
+
 		// 生产线
 		line := protected.Group("/mdm/line")
 		{
@@ -587,15 +776,6 @@ func (r *Router) Init(engine *gin.Engine) {
 			workstation.POST("", r.workstationHandler.Create)
 			workstation.PUT("/:id", r.workstationHandler.Update)
 			workstation.DELETE("/:id", r.workstationHandler.Delete)
-		}
-
-		// 班次 (旧版本)
-		shift := protected.Group("/mdm/shift")
-		{
-			shift.GET("/list", r.shiftHandler.List)
-			shift.POST("", r.shiftHandler.Create)
-			shift.PUT("/:id", r.shiftHandler.Update)
-			shift.DELETE("/:id", r.shiftHandler.Delete)
 		}
 
 		// MDM 物料管理
@@ -637,6 +817,22 @@ func (r *Router) Init(engine *gin.Engine) {
 			workshop.POST("", r.workshopHandler.Create)
 			workshop.PUT("/:id", r.workshopHandler.Update)
 			workshop.DELETE("/:id", r.workshopHandler.Delete)
+		}
+
+		// MDM 车间配置
+		workshopConfig := protected.Group("/mdm/workshop-config")
+		{
+			workshopConfig.GET("/:workshop_id", r.workshopConfigHandler.GetConfig)
+			workshopConfig.PUT("/:workshop_id", r.workshopConfigHandler.UpdateConfig)
+		}
+
+		// APS 工厂日历
+		calendar := protected.Group("/aps/calendar")
+		{
+			calendar.GET("", r.workingCalendarHandler.GetCalendars)
+			calendar.POST("", r.workingCalendarHandler.CreateCalendar)
+			calendar.PUT("/:id", r.workingCalendarHandler.UpdateCalendar)
+			calendar.DELETE("/:id", r.workingCalendarHandler.DeleteCalendar)
 		}
 
 		// MDM BOM管理
@@ -718,6 +914,143 @@ func (r *Router) Init(engine *gin.Engine) {
 		}
 
 		// TODO: 其他模块路由...
+
+		// 电子SOP
+		electronicSOP := protected.Group("/production/electronic-sop")
+		{
+			electronicSOP.GET("/list", r.electronicSOPHandler.List)
+			electronicSOP.GET("/:id", r.electronicSOPHandler.Get)
+			electronicSOP.POST("", r.electronicSOPHandler.Create)
+			electronicSOP.PUT("/:id", r.electronicSOPHandler.Update)
+			electronicSOP.DELETE("/:id", r.electronicSOPHandler.Delete)
+		}
+
+		// 编码规则
+		codeRule := protected.Group("/production/code-rule")
+		{
+			codeRule.GET("/list", r.codeRuleHandler.List)
+			codeRule.GET("/:id", r.codeRuleHandler.Get)
+			codeRule.POST("", r.codeRuleHandler.Create)
+			codeRule.PUT("/:id", r.codeRuleHandler.Update)
+			codeRule.DELETE("/:id", r.codeRuleHandler.Delete)
+			codeRule.GET("/generate", r.codeRuleHandler.GenerateCode)
+		}
+
+		// 生产指示单
+		flowCard := protected.Group("/production/flow-card")
+		{
+			flowCard.GET("/list", r.flowCardHandler.List)
+			flowCard.GET("/:id", r.flowCardHandler.Get)
+			flowCard.POST("", r.flowCardHandler.Create)
+			flowCard.PUT("/:id", r.flowCardHandler.Update)
+			flowCard.DELETE("/:id", r.flowCardHandler.Delete)
+		}
+
+		// 通知公告
+		notice := protected.Group("/system/notice")
+		{
+			notice.GET("/list", r.noticeHandler.List)
+			notice.GET("/:id", r.noticeHandler.Get)
+			notice.POST("", r.noticeHandler.Create)
+			notice.PUT("/:id", r.noticeHandler.Update)
+			notice.DELETE("/:id", r.noticeHandler.Delete)
+			notice.PUT("/:id/publish", r.noticeHandler.Publish)
+			notice.GET("/my", r.noticeHandler.GetMyNotices)
+		}
+
+		// 打印模板
+		printTemplate := protected.Group("/system/print-template")
+		{
+			printTemplate.GET("/list", r.printTemplateHandler.List)
+			printTemplate.GET("/:id", r.printTemplateHandler.Get)
+			printTemplate.POST("", r.printTemplateHandler.Create)
+			printTemplate.PUT("/:id", r.printTemplateHandler.Update)
+			printTemplate.DELETE("/:id", r.printTemplateHandler.Delete)
+		}
+
+		// APS产能分析
+		capacity := protected.Group("/aps/capacity")
+		{
+			capacity.GET("/list", r.capacityAnalysisHandler.List)
+			capacity.GET("/:id", r.capacityAnalysisHandler.Get)
+			capacity.POST("", r.capacityAnalysisHandler.Create)
+			capacity.PUT("/:id", r.capacityAnalysisHandler.Update)
+			capacity.GET("/stats", r.capacityAnalysisHandler.GetStats)
+		}
+
+		// 交付率
+		deliveryRate := protected.Group("/aps/delivery-rate")
+		{
+			deliveryRate.GET("/list", r.deliveryRateHandler.List)
+			deliveryRate.GET("/:id", r.deliveryRateHandler.Get)
+			deliveryRate.POST("", r.deliveryRateHandler.Create)
+			deliveryRate.PUT("/:id", r.deliveryRateHandler.Update)
+			deliveryRate.DELETE("/:id", r.deliveryRateHandler.Delete)
+		}
+
+		// 换型矩阵
+		changeover := protected.Group("/aps/changeover")
+		{
+			changeover.GET("/list", r.changeoverMatrixHandler.List)
+			changeover.GET("/:id", r.changeoverMatrixHandler.Get)
+			changeover.POST("", r.changeoverMatrixHandler.Create)
+			changeover.PUT("/:id", r.changeoverMatrixHandler.Update)
+			changeover.DELETE("/:id", r.changeoverMatrixHandler.Delete)
+		}
+
+		// 滚动排程
+		rolling := protected.Group("/aps/rolling")
+		{
+			rolling.GET("/list", r.rollingScheduleHandler.List)
+			rolling.GET("/:id", r.rollingScheduleHandler.Get)
+			rolling.POST("", r.rollingScheduleHandler.Create)
+			rolling.PUT("/:id", r.rollingScheduleHandler.Update)
+			rolling.DELETE("/:id", r.rollingScheduleHandler.Delete)
+		}
+
+		// JIT需求
+		jit := protected.Group("/aps/jit")
+		{
+			jit.GET("/list", r.jitDemandHandler.List)
+			jit.GET("/:id", r.jitDemandHandler.Get)
+			jit.POST("", r.jitDemandHandler.Create)
+			jit.PUT("/:id", r.jitDemandHandler.Update)
+			jit.DELETE("/:id", r.jitDemandHandler.Delete)
+		}
+
+		// 器具管理
+		container := protected.Group("/containers")
+		{
+			container.GET("/list", r.containerHandler.List)
+			container.GET("/:id", r.containerHandler.Get)
+			container.POST("", r.containerHandler.Create)
+			container.PUT("/:id", r.containerHandler.Update)
+			container.DELETE("/:id", r.containerHandler.Delete)
+			container.POST("/:id/in", r.containerHandler.In)
+			container.POST("/:id/out", r.containerHandler.Out)
+			container.POST("/:id/return", r.containerHandler.Return)
+			container.POST("/:id/transfer", r.containerHandler.Transfer)
+			container.POST("/:id/clean", r.containerHandler.Clean)
+			container.GET("/:id/movements", r.containerHandler.Movements)
+		}
+
+		// AI Chat
+		ai := protected.Group("/ai")
+		{
+			ai.GET("/config", r.aiConfigHandler.GetConfig)
+			ai.PUT("/config", r.aiConfigHandler.UpdateConfig)
+			ai.POST("/config/test", r.aiConfigHandler.TestConfig)
+			ai.GET("/schema", r.aiConfigHandler.GetSchema)
+
+			chat := ai.Group("/chat")
+			{
+				chat.GET("/conversations", r.aiChatHandler.ListConversations)
+				chat.GET("/conversations/:session_id", r.aiChatHandler.GetConversation)
+				chat.DELETE("/conversations/:session_id", r.aiChatHandler.DeleteConversation)
+				chat.POST("/send", r.aiChatHandler.SendMessage)
+				chat.POST("/execute", r.aiChatHandler.ExecuteOperation)
+			}
+		}
 	}
 }
 
