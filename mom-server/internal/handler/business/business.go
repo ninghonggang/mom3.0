@@ -3,6 +3,7 @@ package business
 import (
 	"strconv"
 
+	"mom-server/internal/middleware"
 	"mom-server/internal/model"
 	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
@@ -33,6 +34,12 @@ func (h *ProductionLineHandler) Create(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
+	// 设置默认租户ID
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	req.TenantID = tenantID
 	if err := h.svc.Create(c.Request.Context(), &req); err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -93,6 +100,12 @@ func (h *WorkstationHandler) Create(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
+	// 设置默认租户ID
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	req.TenantID = tenantID
 	if err := h.svc.Create(c.Request.Context(), &req); err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -153,6 +166,12 @@ func (h *ShiftHandler) Create(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
+	// 设置默认租户ID
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	req.TenantID = tenantID
 	if err := h.svc.Create(c.Request.Context(), &req); err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
