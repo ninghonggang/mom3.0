@@ -23,7 +23,7 @@
     </el-card>
 
     <el-card class="toolbar-card">
-      <el-button type="primary" @click="handleAdd">
+      <el-button type="primary" v-if="hasPermission('equipment:repair:add')" @click="handleAdd">
         <el-icon><Plus /></el-icon>新增
       </el-button>
     </el-card>
@@ -47,10 +47,10 @@
         <el-table-column prop="create_time" label="报修时间" width="160" />
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="warning" v-if="row.status === 1" @click="handleStart(row)">开始维修</el-button>
-            <el-button link type="success" v-if="row.status === 2" @click="handleComplete(row)">完成维修</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" v-if="hasPermission('equipment:repair:edit')" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="warning" v-if="hasPermission('equipment:repair:start') && row.status === 1" @click="handleStart(row)">开始维修</el-button>
+            <el-button link type="success" v-if="hasPermission('equipment:repair:complete') && row.status === 2" @click="handleComplete(row)">完成维修</el-button>
+            <el-button link type="danger" v-if="hasPermission('equipment:repair:delete')" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -109,6 +109,9 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
 import { getEquipmentRepairList, createEquipmentRepair, updateEquipmentRepair, deleteEquipmentRepair, startRepair, completeRepair } from '@/api/equipment'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -185,10 +188,14 @@ const handleComplete = async (row: any) => {
 }
 
 const handleDelete = async (row: any) => {
-  await ElMessageBox.confirm('确定删除该维修记录吗？', '提示', { type: 'warning' })
-  await deleteEquipmentRepair(row.id)
-  ElMessage.success('删除成功')
-  loadData()
+  try {
+    await ElMessageBox.confirm('确定删除该维修记录吗？', '提示', { type: 'warning' })
+    await deleteEquipmentRepair(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    // user cancelled or API error
+  }
 }
 
 const handleSubmit = async () => {

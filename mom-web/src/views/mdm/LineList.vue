@@ -16,7 +16,7 @@
     </el-card>
 
     <el-card class="toolbar-card">
-      <el-button type="primary" @click="handleAdd">
+      <el-button type="primary" v-if="hasPermission('mdm:line:add')" @click="handleAdd">
         <el-icon><Plus /></el-icon>新增
       </el-button>
     </el-card>
@@ -35,8 +35,8 @@
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" v-if="hasPermission('mdm:line:edit')" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" v-if="hasPermission('mdm:line:delete')" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -72,6 +72,9 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
 import { getProductionLineList, createProductionLine, updateProductionLine, deleteProductionLine } from '@/api/mdm'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -89,7 +92,16 @@ const handleSearch = () => { pagination.page = 1; loadData() }
 const handleReset = () => { searchForm.line_code = ''; searchForm.line_name = ''; handleSearch() }
 const handleAdd = () => { Object.assign(formData, { id: 0, line_code: '', line_name: '', workshop_id: 0, line_type: '', manager: '', status: 1 }); dialogVisible.value = true }
 const handleEdit = (row: any) => { Object.assign(formData, row); dialogVisible.value = true }
-const handleDelete = async (row: any) => { await ElMessageBox.confirm('确定删除该生产线吗？', '提示', { type: 'warning' }); await deleteProductionLine(row.id); ElMessage.success('删除成功'); loadData() }
+const handleDelete = async (row: any) => {
+  try {
+    await ElMessageBox.confirm('确定删除该生产线吗？', '提示', { type: 'warning' })
+    await deleteProductionLine(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    // user cancelled or API error
+  }
+}
 const handleSubmit = async () => { if (!formRef.value) return; await formRef.value.validate(); submitLoading.value = true; try { formData.id ? await updateProductionLine(formData.id, formData) : await createProductionLine(formData); ElMessage.success(formData.id ? '更新成功' : '创建成功'); dialogVisible.value = false; loadData() } finally { submitLoading.value = false } }
 onMounted(() => { loadData() })
 </script>

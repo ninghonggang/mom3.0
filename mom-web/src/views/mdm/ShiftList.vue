@@ -16,7 +16,7 @@
     </el-card>
 
     <el-card class="toolbar-card">
-      <el-button type="primary" @click="handleAdd">
+      <el-button type="primary" v-if="hasPermission('mdm:shift:add')" @click="handleAdd">
         <el-icon><Plus /></el-icon>新增班次
       </el-button>
     </el-card>
@@ -42,8 +42,8 @@
         <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" v-if="hasPermission('mdm:shift:edit')" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" v-if="hasPermission('mdm:shift:delete')" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -101,6 +101,9 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
 import { getMdmShiftList, createMdmShift, updateMdmShift, deleteMdmShift } from '@/api/mdm'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -160,10 +163,14 @@ const handleEdit = (row: any) => {
 }
 
 const handleDelete = async (row: any) => {
-  await ElMessageBox.confirm('确定删除该班次吗？', '提示', { type: 'warning' })
-  await deleteMdmShift(row.id)
-  ElMessage.success('删除成功')
-  loadData()
+  try {
+    await ElMessageBox.confirm('确定删除该班次吗？', '提示', { type: 'warning' })
+    await deleteMdmShift(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    // user cancelled or API error
+  }
 }
 
 const handleSubmit = async () => {

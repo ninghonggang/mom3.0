@@ -7,7 +7,7 @@
         <el-form-item><el-button type="primary" @click="handleSearch">查询</el-button><el-button @click="handleReset">重置</el-button></el-form-item>
       </el-form>
     </el-card>
-    <el-card class="toolbar-card"><el-button type="primary" @click="handleAdd"><el-icon><Plus /></el-icon>新增</el-button></el-card>
+    <el-card class="toolbar-card"><el-button type="primary" v-if="hasPermission('equipment:maintenance:add')" @click="handleAdd"><el-icon><Plus /></el-icon>新增</el-button></el-card>
     <el-card>
       <el-table v-loading="loading" :data="tableData">
         <el-table-column prop="equipment_code" label="设备编码" width="120" />
@@ -20,7 +20,7 @@
           <template #default="{ row }"><el-tag :type="row.status === 1 ? 'success' : 'warning'">{{ row.status === 1 ? '已完成' : '进行中' }}</el-tag></template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
-          <template #default="{ row }"><el-button link type="primary" @click="handleEdit(row)">编辑</el-button><el-button link type="danger" @click="handleDelete(row)">删除</el-button></template>
+          <template #default="{ row }"><el-button link type="primary" v-if="hasPermission('equipment:maintenance:edit')" @click="handleEdit(row)">编辑</el-button><el-button link type="danger" v-if="hasPermission('equipment:maintenance:delete')" @click="handleDelete(row)">删除</el-button></template>
         </el-table-column>
       </el-table>
       <div class="pagination"><el-pagination v-model:current-page="pagination.page" v-model:page-size="pagination.pageSize" :total="pagination.total" :page-sizes="[10, 20, 50]" layout="total, sizes, prev, pager, next, jumper" @size-change="loadData" @current-change="loadData" /></div>
@@ -42,6 +42,10 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
 import { getEquipmentMaintenanceList, createEquipmentMaintenance, updateEquipmentMaintenance, deleteEquipmentMaintenance } from '@/api/equipment'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
+
 const loading = ref(false), tableData = ref<any[]>([]), dialogVisible = ref(false), submitLoading = ref(false), formRef = ref<FormInstance>()
 const searchForm = reactive({ equipment_code: '', maintenance_date: '' })
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
@@ -53,7 +57,16 @@ const handleSearch = () => { pagination.page = 1; loadData() }
 const handleReset = () => { searchForm.equipment_code = ''; searchForm.maintenance_date = ''; handleSearch() }
 const handleAdd = () => { Object.assign(formData, { id: 0, equipment_id: 0, maintenance_item: '', maintenance_type: '', maintenance_user: '', maintenance_date: '', status: 1 }); dialogVisible.value = true }
 const handleEdit = (row: any) => { Object.assign(formData, row); dialogVisible.value = true }
-const handleDelete = async (row: any) => { await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' }); await deleteEquipmentMaintenance(row.id); ElMessage.success('删除成功'); loadData() }
+const handleDelete = async (row: any) => {
+  try {
+    await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' })
+    await deleteEquipmentMaintenance(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    // user cancelled or API error
+  }
+}
 const handleSubmit = async () => { if (!formRef.value) return; await formRef.value.validate(); submitLoading.value = true; try { formData.id ? await updateEquipmentMaintenance(formData.id, formData) : await createEquipmentMaintenance(formData); ElMessage.success(formData.id ? '更新成功' : '创建成功'); dialogVisible.value = false; loadData() } finally { submitLoading.value = false } }
 onMounted(() => { loadData() })
 </script>

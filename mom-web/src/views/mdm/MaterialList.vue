@@ -16,8 +16,14 @@
     </el-card>
 
     <el-card class="toolbar-card">
-      <el-button type="primary" @click="handleAdd">
+      <el-button type="primary" v-if="hasPermission('mdm:material:add')" @click="handleAdd">
         <el-icon><Plus /></el-icon>新增
+      </el-button>
+      <el-button type="success" v-if="hasPermission('mdm:material:import')" @click="handleImport">
+        <el-icon><Upload /></el-icon>批量导入
+      </el-button>
+      <el-button type="info" v-if="hasPermission('mdm:material:export')" @click="handleDownloadTemplate">
+        <el-icon><Download /></el-icon>下载模板
       </el-button>
     </el-card>
 
@@ -42,8 +48,8 @@
         <el-table-column prop="created_at" label="创建时间" width="180" />
         <el-table-column label="操作" width="150" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" v-if="hasPermission('mdm:material:edit')" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="danger" v-if="hasPermission('mdm:material:delete')" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -94,13 +100,85 @@
         <el-button type="primary" :loading="submitLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 导入对话框 -->
+    <el-dialog v-model="importDialogVisible" title="批量导入物料" width="600px">
+      <el-form ref="importFormRef" :model="importForm" label-width="100px">
+        <el-form-item label="选择文件">
+          <el-upload
+            ref="uploadRef"
+            :auto-upload="false"
+            :limit="1"
+            :on-change="handleFileChange"
+            :file-list="fileList"
+            accept=".xlsx,.xls"
+          >
+            <el-button type="primary">选择Excel文件</el-button>
+            <template #tip>
+              <div class="el-upload__tip">支持 .xlsx 或 .xls 格式的Excel文件</div>
+            </template>
+          </el-upload>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="importDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="importLoading" @click="handleDoImport">开始导入</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 导入结果对话框 -->
+    <el-dialog v-model="resultDialogVisible" title="导入结果" width="700px">
+      <div v-if="importResult" class="import-result">
+        <el-row :gutter="20" class="result-summary">
+          <el-col :span="6">
+            <div class="result-item">
+              <div class="result-label">总行数</div>
+              <div class="result-value">{{ importResult.total_rows }}</div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="result-item success">
+              <div class="result-label">成功</div>
+              <div class="result-value">{{ importResult.success_rows }}</div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="result-item danger">
+              <div class="result-label">失败</div>
+              <div class="result-value">{{ importResult.fail_rows }}</div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="result-item">
+              <div class="result-label">状态</div>
+              <div class="result-value">
+                <el-tag :type="importResult.status === 'SUCCESS' ? 'success' : 'danger'">
+                  {{ importResult.status === 'SUCCESS' ? '成功' : '部分失败' }}
+                </el-tag>
+              </div>
+            </div>
+          </el-col>
+        </el-row>
+
+        <el-divider v-if="importResult.fail_rows > 0" content-position="left">失败数据</el-divider>
+        <el-table v-if="importResult.fail_rows > 0" :data="failData" border max-height="300">
+          <el-table-column prop="row_num" label="行号" width="60" />
+          <el-table-column prop="material_code" label="物料编码" width="120" />
+          <el-table-column prop="material_name" label="物料名称" min-width="120" />
+          <el-table-column prop="error" label="错误原因" min-width="150" />
+        </el-table>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
-import { getMaterialList, createMaterial, updateMaterial, deleteMaterial } from '@/api/mdm'
+import { getMaterialList, createMaterial, updateMaterial, deleteMaterial, importMaterials, downloadMaterialTemplate, getImportTaskResult } from '@/api/mdm'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -108,9 +186,23 @@ const dialogVisible = ref(false)
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
+// 导入相关
+const importDialogVisible = ref(false)
+const resultDialogVisible = ref(false)
+const importLoading = ref(false)
+const importFormRef = ref<FormInstance>()
+const uploadRef = ref()
+const fileList = ref<any[]>([])
+const importFile = ref<File | null>(null)
+const importResult = ref<any>(null)
+const failData = ref<any[]>([])
+const currentTaskId = ref<number | null>(null)
+
 const searchForm = reactive({ material_code: '', material_name: '' })
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
 const formData = reactive({ id: 0, material_code: '', material_name: '', material_type: '', spec: '', unit: '', status: 1 })
+
+const importForm = reactive({})
 
 const rules: FormRules = {
   material_code: [{ required: true, message: '请输入物料编码', trigger: 'blur' }],
@@ -151,10 +243,14 @@ const handleEdit = (row: any) => {
 }
 
 const handleDelete = async (row: any) => {
-  await ElMessageBox.confirm('确定删除该物料吗？', '提示', { type: 'warning' })
-  await deleteMaterial(row.id)
-  ElMessage.success('删除成功')
-  loadData()
+  try {
+    await ElMessageBox.confirm('确定删除该物料吗？', '提示', { type: 'warning' })
+    await deleteMaterial(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    // user cancelled or API error
+  }
 }
 
 const handleSubmit = async () => {
@@ -169,6 +265,94 @@ const handleSubmit = async () => {
   } finally { submitLoading.value = false }
 }
 
+// 导入相关方法
+const handleImport = () => {
+  importFile.value = null
+  fileList.value = []
+  importDialogVisible.value = true
+}
+
+const handleFileChange = (file: any) => {
+  importFile.value = file.raw
+}
+
+const handleDoImport = async () => {
+  if (!importFile.value) {
+    ElMessage.warning('请选择要导入的文件')
+    return
+  }
+
+  importLoading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', importFile.value)
+
+    const res = await importMaterials(formData)
+    currentTaskId.value = res.data.task_id
+    ElMessage.success(res.data.message || '导入任务已创建')
+
+    importDialogVisible.value = false
+
+    // 轮询查询导入结果
+    await pollImportResult(currentTaskId.value)
+  } finally {
+    importLoading.value = false
+  }
+}
+
+const pollImportResult = async (taskId: number) => {
+  const maxAttempts = 30
+  let attempts = 0
+
+  const poll = async () => {
+    if (attempts >= maxAttempts) {
+      ElMessage.warning('导入时间过长，请稍后手动查询结果')
+      return
+    }
+
+    try {
+      const res = await getImportTaskResult(taskId)
+      const task = res.data
+
+      if (task.status === 'PROCESSING') {
+        attempts++
+        setTimeout(poll, 1000)
+      } else {
+        importResult.value = task
+        if (task.fail_data) {
+          try {
+            failData.value = JSON.parse(task.fail_data)
+          } catch {
+            failData.value = []
+          }
+        }
+        resultDialogVisible.value = true
+        loadData() // 刷新列表
+      }
+    } catch (error) {
+      ElMessage.error('查询导入结果失败')
+    }
+  }
+
+  await poll()
+}
+
+const handleDownloadTemplate = async () => {
+  try {
+    const res = await downloadMaterialTemplate()
+    const blob = new Blob([res as unknown as BlobPart], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = '物料导入模板.xlsx'
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('模板下载成功')
+  } catch (error) {
+    ElMessage.error('模板下载失败')
+  }
+}
+
 onMounted(() => { loadData() })
 </script>
 
@@ -177,5 +361,28 @@ onMounted(() => { loadData() })
   .search-card, .toolbar-card { margin-bottom: 16px; }
   .toolbar-card :deep(.el-card__body) { padding: 12px 16px; }
   .pagination { margin-top: 16px; display: flex; justify-content: flex-end; }
+}
+
+.import-result {
+  .result-summary {
+    margin-bottom: 20px;
+  }
+  .result-item {
+    text-align: center;
+    padding: 15px;
+    background: #f5f7fa;
+    border-radius: 4px;
+    .result-label {
+      font-size: 14px;
+      color: #909399;
+      margin-bottom: 8px;
+    }
+    .result-value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+    &.success .result-value { color: #67c23a; }
+    &.danger .result-value { color: #f56c6c; }
+  }
 }
 </style>

@@ -20,10 +20,10 @@
     </el-card>
 
     <el-card class="toolbar-card">
-      <el-button type="primary" @click="dialogVisible = true; formData = {}">
+      <el-button type="primary" v-if="hasPermission('aps:schedule:add')" @click="dialogVisible = true; formData = {}">
         <el-icon><Plus /></el-icon>新增
       </el-button>
-      <el-button type="success" @click="showGanttDialog = true" :disabled="!selectedPlan">
+      <el-button type="success" v-if="hasPermission('aps:schedule:gantt')" @click="showGanttDialog = true" :disabled="!selectedPlan">
         <el-icon><Histogram /></el-icon>甘特图
       </el-button>
     </el-card>
@@ -44,9 +44,9 @@
         <el-table-column prop="created_at" label="创建时间" width="180" />
         <el-table-column label="操作" width="210" fixed="right">
           <template #default="{ row }">
-            <el-button link type="success" size="small" @click.stop="handleExecute(row)" v-if="row.status === 1">执行</el-button>
-            <el-button link type="primary" size="small" @click.stop="handleResults(row)">结果</el-button>
-            <el-button link type="danger" size="small" @click.stop="handleDelete(row)">删除</el-button>
+            <el-button link type="success" size="small" v-if="hasPermission('aps:schedule:execute') && row.status === 1" @click.stop="handleExecute(row)">执行</el-button>
+            <el-button link type="primary" size="small" v-if="hasPermission('aps:schedule:results')" @click.stop="handleResults(row)">结果</el-button>
+            <el-button link type="danger" size="small" v-if="hasPermission('aps:schedule:delete')" @click.stop="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -197,6 +197,9 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getScheduleList, createSchedule, executeSchedule, deleteSchedule, dragUpdateSchedule, getScheduleResults } from '@/api/aps'
+import { useAuthStore } from '@/stores/auth'
+
+const { hasPermission } = useAuthStore()
 
 const loading = ref(false)
 const saveLoading = ref(false)
@@ -300,10 +303,14 @@ const handleResults = async (row: any) => {
 }
 
 const handleDelete = async (row: any) => {
-  await ElMessageBox.confirm('确定删除该计划吗？', '提示', { type: 'warning' })
-  await deleteSchedule(row.id)
-  ElMessage.success('删除成功')
-  loadData()
+  try {
+    await ElMessageBox.confirm('确定删除该计划吗？', '提示', { type: 'warning' })
+    await deleteSchedule(row.id)
+    ElMessage.success('删除成功')
+    loadData()
+  } catch (error) {
+    // user cancelled or API error
+  }
 }
 
 const loadGanttData = async () => {
