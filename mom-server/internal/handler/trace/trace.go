@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	"mom-server/internal/middleware"
 	"mom-server/internal/model"
 	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
@@ -65,6 +66,34 @@ func (h *TraceHandler) TraceByOrder(c *gin.Context) {
 	response.Success(c, gin.H{"list": list})
 }
 
+func (h *TraceHandler) ForwardTrace(c *gin.Context) {
+	sn := c.Query("serial_number")
+	if sn == "" {
+		response.BadRequest(c, "serial_number is required")
+		return
+	}
+	records, err := h.traceSvc.ForwardTrace(c.Request.Context(), sn)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, gin.H{"list": records})
+}
+
+func (h *TraceHandler) BackwardTrace(c *gin.Context) {
+	sn := c.Query("serial_number")
+	if sn == "" {
+		response.BadRequest(c, "serial_number is required")
+		return
+	}
+	records, err := h.traceSvc.BackwardTrace(c.Request.Context(), sn)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, gin.H{"list": records})
+}
+
 type AndonHandler struct {
 	andonSvc *service.AndonService
 }
@@ -74,9 +103,20 @@ func NewAndonHandler(andonSvc *service.AndonService) *AndonHandler {
 }
 
 func (h *AndonHandler) List(c *gin.Context) {
-	status, _ := strconv.Atoi(c.DefaultQuery("status", "0"))
+	tenantID := middleware.GetTenantID(c)
+	status := c.Query("status")
 	callNo := c.Query("call_no")
-	list, total, err := h.andonSvc.List(c.Request.Context(), status, callNo)
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
+	query := &service.AndonQuery{
+		TenantID: tenantID,
+		Status:   status,
+		Page:     page,
+		PageSize: pageSize,
+		CallNo:   callNo,
+	}
+	list, total, err := h.andonSvc.List(c.Request.Context(), query)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -90,8 +130,14 @@ func (h *AndonHandler) Create(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
+	// 设置默认租户ID
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	req.TenantID = tenantID
 	req.CallTime = time.Now()
-	req.Status = 1
+	req.Status = "CALLING"
 	if err := h.andonSvc.Create(c.Request.Context(), &req); err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -101,12 +147,13 @@ func (h *AndonHandler) Create(c *gin.Context) {
 
 func (h *AndonHandler) Response(c *gin.Context) {
 	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid id")
 		return
 	}
-	if err := h.andonSvc.Response(c.Request.Context(), uint(id)); err != nil {
+	responseBy := c.Query("response_by")
+	if err := h.andonSvc.Respond(c.Request.Context(), id, responseBy, ""); err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
 	}
@@ -115,12 +162,12 @@ func (h *AndonHandler) Response(c *gin.Context) {
 
 func (h *AndonHandler) Resolve(c *gin.Context) {
 	idStr := c.Param("id")
-	id, err := strconv.ParseUint(idStr, 10, 64)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		response.BadRequest(c, "invalid id")
 		return
 	}
-	if err := h.andonSvc.Resolve(c.Request.Context(), uint(id)); err != nil {
+	if err := h.andonSvc.Resolve(c.Request.Context(), id, "RESOLVED", "", nil, nil); err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
 	}
@@ -193,6 +240,12 @@ func (h *EnergyHandler) Create(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
+	// 设置默认租户ID
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	req.TenantID = tenantID
 	if err := h.energySvc.Create(c.Request.Context(), &req); err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
