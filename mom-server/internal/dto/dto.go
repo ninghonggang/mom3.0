@@ -236,6 +236,7 @@ type RoleListReq struct {
 
 // MaterialListReq 物料列表请求
 type MaterialListReq struct {
+	TenantID      int64  `json:"tenant_id"`
 	Page          int    `form:"page"`
 	PageSize      int    `form:"page_size"`
 	MaterialCode  string `form:"material_code"`

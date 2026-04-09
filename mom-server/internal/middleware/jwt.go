@@ -71,7 +71,18 @@ func GetTenantID(c *gin.Context) int64 {
 			return tenantID
 		}
 	}
-	return 0
+	return 1 // 默认返回租户1，避免0值问题
+}
+
+// IsSuperAdmin 判断是否为超级管理员
+func IsSuperAdmin(c *gin.Context) bool {
+	roles := GetRoles(c)
+	for _, role := range roles {
+		if role == "super_admin" || role == "admin" {
+			return true
+		}
+	}
+	return false
 }
 
 // GetUsername 获取用户名
