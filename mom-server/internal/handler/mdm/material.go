@@ -1,7 +1,8 @@
 package mdm
 
 import (
-	"mom-server/internal/dto"
+	"mom-server/internal/middleware"
+	"mom-server/internal/model"
 	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
 
@@ -39,9 +40,20 @@ func (h *MaterialHandler) Get(c *gin.Context) {
 }
 
 func (h *MaterialHandler) Create(c *gin.Context) {
-	var req dto.MaterialListReq
+	var req model.Material
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
+		return
+	}
+	// 设置租户ID
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	req.TenantID = tenantID
+
+	if err := h.materialService.Create(c.Request.Context(), &req); err != nil {
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 	response.Success(c, req)
@@ -49,7 +61,17 @@ func (h *MaterialHandler) Create(c *gin.Context) {
 
 func (h *MaterialHandler) Update(c *gin.Context) {
 	id := c.Param("id")
-	response.Success(c, id)
+	var req model.Material
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	if err := h.materialService.Update(c.Request.Context(), id, &req); err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, nil)
 }
 
 func (h *MaterialHandler) Delete(c *gin.Context) {
@@ -93,12 +115,38 @@ func (h *WorkshopHandler) Get(c *gin.Context) {
 }
 
 func (h *WorkshopHandler) Create(c *gin.Context) {
-	response.Success(c, nil)
+	var req model.Workshop
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	// 设置租户ID
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	req.TenantID = tenantID
+
+	if err := h.workshopService.Create(c.Request.Context(), &req); err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, req)
 }
 
 func (h *WorkshopHandler) Update(c *gin.Context) {
 	id := c.Param("id")
-	response.Success(c, id)
+	var req model.Workshop
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	if err := h.workshopService.Update(c.Request.Context(), id, &req); err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, nil)
 }
 
 func (h *WorkshopHandler) Delete(c *gin.Context) {

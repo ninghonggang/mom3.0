@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"mom-server/internal/dto"
+	"mom-server/internal/middleware"
 	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
 
@@ -67,6 +68,12 @@ func (h *BOMHandler) Create(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
+	// 设置默认租户ID
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	req.TenantID = tenantID
 	if err := h.bomService.Create(c.Request.Context(), &req); err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
