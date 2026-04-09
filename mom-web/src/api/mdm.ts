@@ -168,3 +168,79 @@ export const updateMdmShift = (id: number, data: any) => {
 export const deleteMdmShift = (id: number) => {
   return request.delete(`/mdm/mdm-shift/${id}`)
 }
+
+// 客户管理
+export const getCustomerList = (params?: any) => {
+  return request.get('/mdm/customer/list', { params })
+}
+
+export const getCustomerById = (id: number) => {
+  return request.get(`/mdm/customer/${id}`)
+}
+
+export const createCustomer = (data: any) => {
+  return request.post('/mdm/customer', data)
+}
+
+export const updateCustomer = (id: number, data: any) => {
+  return request.put(`/mdm/customer/${id}`, data)
+}
+
+export const deleteCustomer = (id: number) => {
+  return request.delete(`/mdm/customer/${id}`)
+}
+
+// 物料分类
+export const getMaterialCategoryList = (params?: any) => {
+  return request.get('/mdm/material-category/list', { params })
+}
+
+export const getMaterialCategoryTree = (params?: any) => {
+  return request.get('/mdm/material-category/tree', { params })
+}
+
+export const getMaterialCategoryById = (id: number) => {
+  return request.get(`/mdm/material-category/${id}`)
+}
+
+export const createMaterialCategory = (data: any) => {
+  return request.post('/mdm/material-category', data)
+}
+
+export const updateMaterialCategory = (id: number, data: any) => {
+  return request.put(`/mdm/material-category/${id}`, data)
+}
+
+export const deleteMaterialCategory = (id: number) => {
+  return request.delete(`/mdm/material-category/${id}`)
+}
+
+// 物料导入
+export const importMaterials = (data: FormData) => {
+  return request.post('/mdm/material/import', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+export const downloadMaterialTemplate = () => {
+  return request.get('/mdm/material/template', { responseType: 'blob' })
+}
+
+export const getImportTask = (id: number) => {
+  return request.get(`/system/import-task/${id}`)
+}
+
+export const getImportTaskResult = (id: number) => {
+  return request.get(`/system/import-task/${id}/result`)
+}
+
+// BOM导入
+export const importBOMs = (data: FormData) => {
+  return request.post('/mdm/bom/import', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+export const downloadBOMTemplate = () => {
+  return request.get('/mdm/bom/template', { responseType: 'blob' })
+}
