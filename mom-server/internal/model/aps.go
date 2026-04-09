@@ -117,12 +117,19 @@ func (Resource) TableName() string {
 // WorkCenter 工作中心
 type WorkCenter struct {
 	BaseModel
-	TenantID      int64   `json:"tenant_id" gorm:"index;not null"`
-	WorkCenterCode string `json:"work_center_code" gorm:"size:50;not null;uniqueIndex:idx_tenant_wc"`
-	WorkCenterName string `json:"work_center_name" gorm:"size:100;not null"`
-	WorkshopID    int64   `json:"workshop_id"`
-	Capacity      float64 `json:"capacity" gorm:"type:decimal(18,2)"`
-	Status        int     `json:"status" gorm:"default:1"`
+	TenantID         int64   `json:"tenant_id" gorm:"index;not null"`
+	WorkCenterCode   string  `json:"work_center_code" gorm:"size:50;not null;uniqueIndex:idx_tenant_wc"`
+	WorkCenterName   string  `json:"work_center_name" gorm:"size:100;not null"`
+	WorkCenterType   string  `json:"work_center_type" gorm:"size:20;default:LINE"`
+	WorkshopID       int64   `json:"workshop_id"`
+	CapacityUnit     string  `json:"capacity_unit" gorm:"size:20;default:HOUR"`
+	StandardCapacity float64 `json:"standard_capacity" gorm:"type:decimal(18,3);default:1"`
+	MaxCapacity      float64 `json:"max_capacity" gorm:"type:decimal(18,3);default:1"`
+	EfficiencyFactor float64 `json:"efficiency_factor" gorm:"type:decimal(5,2);default:100"`
+	UtilizationTarget float64 `json:"utilization_target" gorm:"type:decimal(5,2);default:85"`
+	SetupTime        int     `json:"setup_time" gorm:"default:0"`
+	Status           string  `json:"status" gorm:"size:20;default:ACTIVE"`
+	Description      string  `json:"description" gorm:"size:500"`
 }
 
 func (WorkCenter) TableName() string {

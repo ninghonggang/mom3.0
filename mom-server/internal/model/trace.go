@@ -54,34 +54,6 @@ func (TraceRecord) TableName() string {
 	return "tra_trace_record"
 }
 
-// ========== 安东系统 ==========
-
-// AndonCall 安东呼叫
-type AndonCall struct {
-	BaseModel
-	TenantID      int64      `json:"tenant_id" gorm:"index;not null"`
-	CallNo        string     `json:"call_no" gorm:"size:50;not null;uniqueIndex:idx_tenant_andon"`
-	LineID        int64      `json:"line_id"`
-	LineName      string     `json:"line_name" gorm:"size:100"`
-	StationID     *int64     `json:"station_id"`
-	StationName   *string    `json:"station_name" gorm:"size:100"`
-	CallType      string     `json:"call_type" gorm:"size:20"` // 物料/质量/设备/安全
-	CallLevel     int        `json:"call_level" gorm:"default:1"` // 1轻微/2一般/3严重
-	CallDesc      string     `json:"call_desc" gorm:"size:500"`
-	CallUserID    int64      `json:"call_user_id"`
-	CallUserName  *string    `json:"call_user_name" gorm:"size:50"`
-	CallTime      time.Time  `json:"call_time"`
-	ResponseUserID *int64    `json:"response_user_id"` // 响应人
-	ResponseTime  *time.Time `json:"response_time"`
-	ResolveTime   *time.Time `json:"resolve_time"` // 解决时间
-	Status        int        `json:"status" gorm:"default:1"` // 1待响应/2已响应/3处理中/4已解决
-	Remark        *string    `json:"remark" gorm:"size:500"`
-}
-
-func (AndonCall) TableName() string {
-	return "tra_andon_call"
-}
-
 // ========== 数据采集 ==========
 
 // DataCollection 数据采集

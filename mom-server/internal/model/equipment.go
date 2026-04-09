@@ -120,3 +120,45 @@ type SparePart struct {
 func (SparePart) TableName() string {
 	return "equ_spare_part"
 }
+
+// OEE 设备综合效率
+type OEE struct {
+	BaseModel
+	TenantID       int64   `json:"tenant_id" gorm:"index;not null"`
+	EquipmentID    int64   `json:"equipment_id"`
+	EquipmentCode  string  `json:"equipment_code" gorm:"size:50"`
+	EquipmentName  string  `json:"equipment_name" gorm:"size:200"`
+	WorkshopID     int64   `json:"workshop_id"`
+	RecordDate     string  `json:"record_date" gorm:"size:10"` // 记录日期 YYYY-MM-DD
+	PlanTime       int     `json:"plan_time" gorm:"default:0"`         // 计划时间(分钟)
+	RunTime        int     `json:"run_time" gorm:"default:0"`          // 运行时间(分钟)
+	DownTime       int     `json:"down_time" gorm:"default:0"`         // 停机时间(分钟)
+	IdleTime       int     `json:"idle_time" gorm:"default:0"`         // 空闲时间(分钟)
+	PlanStopTime   int     `json:"plan_stop_time" gorm:"default:0"`    // 计划停机时间(分钟)
+	OutputQty      int     `json:"output_qty" gorm:"default:0"`        // 产出数量
+	QualifiedQty   int     `json:"qualified_qty" gorm:"default:0"`     // 合格数量
+	Availability   float64 `json:"availability" gorm:"type:decimal(5,2);default:0"` // 可用率
+	Performance    float64 `json:"performance" gorm:"type:decimal(5,2);default:0"`  // 性能率
+	Quality        float64 `json:"quality" gorm:"type:decimal(5,2);default:0"`       // 质量率
+	OEE            float64 `json:"oee" gorm:"type:decimal(5,2);default:0"`           // OEE综合效率
+}
+
+func (OEE) TableName() string {
+	return "equ_oee"
+}
+
+// OEEEvent OEE事件记录
+type OEEEvent struct {
+	BaseModel
+	TenantID  int64  `json:"tenant_id" gorm:"index;not null"`
+	OEEID     int64  `json:"oee_id"`
+	EventType string `json:"event_type" gorm:"size:20"` // down_time/idle_time/plan_stop
+	StartTime string `json:"start_time" gorm:"size:19"` // 开始时间
+	EndTime   string `json:"end_time" gorm:"size:19"`    // 结束时间
+	Duration  int    `json:"duration"`                  // 持续时长(分钟)
+	Reason    string `json:"reason" gorm:"size:500"`   // 原因说明
+}
+
+func (OEEEvent) TableName() string {
+	return "equ_oee_record"
+}

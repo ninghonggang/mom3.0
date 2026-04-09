@@ -31,12 +31,13 @@ func (Material) TableName() string {
 // MaterialCategory 物料分类
 type MaterialCategory struct {
 	BaseModel
-	TenantID   int64   `json:"tenant_id" gorm:"index;not null"`
-	ParentID   int64   `json:"parent_id" gorm:"default:0"`
+	TenantID   int64  `json:"tenant_id" gorm:"index;not null"`
+	ParentID   int64  `json:"parent_id" gorm:"default:0;index"`
 	CategoryName string `json:"category_name" gorm:"size:100;not null"`
 	CategoryCode string `json:"category_code" gorm:"size:50"`
 	Sort       int     `json:"sort" gorm:"default:0"`
 	Status     int     `json:"status" gorm:"default:1"`
+	Children   []MaterialCategory `json:"children" gorm:"-"`
 }
 
 func (MaterialCategory) TableName() string {

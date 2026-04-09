@@ -119,3 +119,21 @@ type Dispatch struct {
 func (Dispatch) TableName() string {
 	return "pro_dispatch"
 }
+
+// ProductionOrderChangeLog 生产工单变更日志
+type ProductionOrderChangeLog struct {
+	BaseModel
+	TenantID      int64  `json:"tenant_id" gorm:"index;not null"`
+	OrderID       int64  `json:"order_id" gorm:"index;not null"`
+	OrderNo       string `json:"order_no" gorm:"size:50"`
+	ChangeType    string `json:"change_type" gorm:"size:32;not null"` // QUANTITY_CHANGE, DATE_CHANGE, PRIORITY_CHANGE, LINE_CHANGE, STATUS_CHANGE
+	OldValue      string `json:"old_value" gorm:"type:text"`
+	NewValue      string `json:"new_value" gorm:"type:text"`
+	ChangeReason  string `json:"change_reason" gorm:"size:256"`
+	ChangedBy     string `json:"changed_by" gorm:"size:50"`
+	ChangedAt     string `json:"changed_at" gorm:"size:50"`
+}
+
+func (ProductionOrderChangeLog) TableName() string {
+	return "mes_production_order_change_log"
+}
