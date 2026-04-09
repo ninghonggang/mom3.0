@@ -47,6 +47,10 @@ export const adjustInventory = (data: any) => {
   return request.post('/wms/inventory/adjust', data)
 }
 
+export const deleteInventory = (id: number) => {
+  return request.delete(`/wms/inventory/${id}`)
+}
+
 // 收货单
 export const getReceiveOrderList = (params?: any) => {
   return request.get('/wms/receive/list', { params })

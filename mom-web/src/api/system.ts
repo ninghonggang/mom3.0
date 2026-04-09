@@ -204,3 +204,53 @@ export const cleanOperLog = () => {
 export const exportOperLog = () => {
   return request.get('/system/operlog/export')
 }
+
+// 通知公告
+export const getNoticeList = (params?: any) => {
+  return request.get('/system/notice/list', { params })
+}
+
+export const getNotice = (id: number) => {
+  return request.get(`/system/notice/${id}`)
+}
+
+export const createNotice = (data: any) => {
+  return request.post('/system/notice', data)
+}
+
+export const updateNotice = (id: number, data: any) => {
+  return request.put(`/system/notice/${id}`, data)
+}
+
+export const deleteNotice = (id: number) => {
+  return request.delete(`/system/notice/${id}`)
+}
+
+export const publishNotice = (id: number) => {
+  return request.put(`/system/notice/${id}/publish`)
+}
+
+export const getMyNotices = () => {
+  return request.get('/system/notice/my')
+}
+
+// 打印模板
+export const getPrintTemplateList = (params?: any) => {
+  return request.get('/system/print-template/list', { params })
+}
+
+export const getPrintTemplate = (id: number) => {
+  return request.get(`/system/print-template/${id}`)
+}
+
+export const createPrintTemplate = (data: any) => {
+  return request.post('/system/print-template', data)
+}
+
+export const updatePrintTemplate = (id: number, data: any) => {
+  return request.put(`/system/print-template/${id}`, data)
+}
+
+export const deletePrintTemplate = (id: number) => {
+  return request.delete(`/system/print-template/${id}`)
+}

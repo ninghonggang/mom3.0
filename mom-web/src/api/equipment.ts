@@ -84,13 +84,25 @@ export const deleteEquipmentRepair = (id: number) => {
   return request.delete(`/equipment/repair/${id}`)
 }
 
-// OEE
-export const getEquipmentOEE = (params: any) => {
-  return request.get('/equipment/oee', { params })
+// OEE设备综合效率
+export const getOEEList = (params?: any) => {
+  return request.get('/equipment/oee/list', { params })
 }
 
-export const getOEERealTime = (equipmentId: number) => {
-  return request.get(`/equipment/${equipmentId}/oee/realtime`)
+export const getOEEById = (id: number) => {
+  return request.get(`/equipment/oee/${id}`)
+}
+
+export const calculateOEE = (data: any) => {
+  return request.post('/equipment/oee/calculate', data)
+}
+
+export const getOEEChart = (params?: any) => {
+  return request.get('/equipment/oee/chart', { params })
+}
+
+export const deleteOEE = (id: number) => {
+  return request.delete(`/equipment/oee/${id}`)
 }
 
 // 备件管理

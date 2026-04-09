@@ -18,12 +18,40 @@ export const getMRPList = (params?: any) => {
   return request.get('/aps/mrp/list', { params })
 }
 
+export const getMRP = (id: number) => {
+  return request.get(`/aps/mrp/${id}`)
+}
+
+export const createMRP = (data: any) => {
+  return request.post('/aps/mrp', data)
+}
+
+export const updateMRP = (id: number, data: any) => {
+  return request.put(`/aps/mrp/${id}`, data)
+}
+
+export const deleteMRP = (id: number) => {
+  return request.delete(`/aps/mrp/${id}`)
+}
+
 export const calculateMRP = (id: number) => {
   return request.put(`/aps/mrp/${id}/calculate`)
 }
 
-export const runMRP = (data: any) => {
+export const runMRP = (data: { id: number; plan_month?: string }) => {
   return request.post('/aps/mrp/run', data)
+}
+
+export const getMRPResults = (id: number) => {
+  return request.get(`/aps/mrp/${id}/results`)
+}
+
+export const getMRPShortage = (id: number) => {
+  return request.get(`/aps/mrp/${id}/shortage`)
+}
+
+export const getMRPPurchaseSuggestion = (id: number) => {
+  return request.get(`/aps/mrp/${id}/purchase-suggestion`)
 }
 
 // 排程
@@ -58,8 +86,20 @@ export const getWorkCenterList = (params?: any) => {
   return request.get('/aps/workcenter/list', { params })
 }
 
+export const getWorkCenter = (id: number) => {
+  return request.get(`/aps/workcenter/${id}`)
+}
+
 export const createWorkCenter = (data: any) => {
   return request.post('/aps/workcenter', data)
+}
+
+export const updateWorkCenter = (id: number, data: any) => {
+  return request.put(`/aps/workcenter/${id}`, data)
+}
+
+export const deleteWorkCenter = (id: number) => {
+  return request.delete(`/aps/workcenter/${id}`)
 }
 
 // 资源（APS模块）

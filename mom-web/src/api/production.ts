@@ -143,3 +143,70 @@ export const deleteFirstLastInspect = (id: number) => {
 export const getFirstLastInspectOverdue = () => {
   return request.get('/production/first-last-inspect/overdue')
 }
+
+// 电子SOP
+export const getElectronicSOPList = (params?: any) => {
+  return request.get('/production/electronic-sop/list', { params })
+}
+
+export const getElectronicSOP = (id: number) => {
+  return request.get(`/production/electronic-sop/${id}`)
+}
+
+export const createElectronicSOP = (data: any) => {
+  return request.post('/production/electronic-sop', data)
+}
+
+export const updateElectronicSOP = (id: number, data: any) => {
+  return request.put(`/production/electronic-sop/${id}`, data)
+}
+
+export const deleteElectronicSOP = (id: number) => {
+  return request.delete(`/production/electronic-sop/${id}`)
+}
+
+// 编码规则
+export const getCodeRuleList = (params?: any) => {
+  return request.get('/production/code-rule/list', { params })
+}
+
+export const getCodeRule = (id: number) => {
+  return request.get(`/production/code-rule/${id}`)
+}
+
+export const createCodeRule = (data: any) => {
+  return request.post('/production/code-rule', data)
+}
+
+export const updateCodeRule = (id: number, data: any) => {
+  return request.put(`/production/code-rule/${id}`, data)
+}
+
+export const deleteCodeRule = (id: number) => {
+  return request.delete(`/production/code-rule/${id}`)
+}
+
+export const generateCode = (ruleCode: string) => {
+  return request.get('/production/code-rule/generate', { params: { rule_code: ruleCode } })
+}
+
+// 生产指示单
+export const getFlowCardList = (params?: any) => {
+  return request.get('/production/flow-card/list', { params })
+}
+
+export const getFlowCard = (id: number) => {
+  return request.get(`/production/flow-card/${id}`)
+}
+
+export const createFlowCard = (data: any) => {
+  return request.post('/production/flow-card', data)
+}
+
+export const updateFlowCard = (id: number, data: any) => {
+  return request.put(`/production/flow-card/${id}`, data)
+}
+
+export const deleteFlowCard = (id: number) => {
+  return request.delete(`/production/flow-card/${id}`)
+}
