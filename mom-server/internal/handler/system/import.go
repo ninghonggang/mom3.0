@@ -252,8 +252,70 @@ func (h *ImportHandler) DoImport(c *gin.Context) {
 
 // ImportBOM 上传并解析BOM导入
 func (h *ImportHandler) ImportBOM(c *gin.Context) {
-	// TODO: 实现BOM导入
-	response.SuccessWithMsg(c, "BOM导入功能开发中", nil)
+	// 获取租户ID
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+
+	// 获取当前用户
+	username := ""
+	if user, exists := c.Get("username"); exists {
+		username = user.(string)
+	}
+
+	// 解析表单
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		response.BadRequest(c, "请选择要导入的文件")
+		return
+	}
+	defer file.Close()
+
+	// 验证文件类型
+	if !strings.HasSuffix(strings.ToLower(header.Filename), ".xlsx") && !strings.HasSuffix(strings.ToLower(header.Filename), ".xls") {
+		response.BadRequest(c, "只支持 .xlsx 或 .xls 格式的Excel文件")
+		return
+	}
+
+	// 保存上传的文件
+	uploadDir := "./uploads/import"
+	filePath, err := h.importService.SaveUploadedFile(file, header, uploadDir)
+	if err != nil {
+		response.ErrorMsg(c, fmt.Sprintf("保存文件失败: %v", err))
+		return
+	}
+
+	// 创建导入任务
+	task, err := h.importService.CreateImportTask(c.Request.Context(), tenantID, model.ImportTypeBom, header.Filename, filePath, username)
+	if err != nil {
+		response.ErrorMsg(c, fmt.Sprintf("创建导入任务失败: %v", err))
+		return
+	}
+
+	// 解析BOM Excel
+	rows, err := h.importService.ParseBOMExcel(filePath)
+	if err != nil {
+		response.ErrorMsg(c, fmt.Sprintf("解析Excel失败: %v", err))
+		return
+	}
+
+	if len(rows) == 0 {
+		response.BadRequest(c, "Excel文件中没有数据行")
+		return
+	}
+
+	// 启动导入（异步）
+	go func() {
+		_ = h.importService.ImportBOMs(c.Request.Context(), uint(task.ID), rows, tenantID)
+	}()
+
+	response.Success(c, gin.H{
+		"task_id": task.ID,
+		"task_no": task.TaskNo,
+		"total":   len(rows),
+		"message": "导入任务已创建，正在处理中...",
+	})
 }
 
 // DownloadBOMTemplate 下载BOM导入模板

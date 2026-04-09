@@ -94,6 +94,9 @@ func (h *UserHandler) Create(c *gin.Context) {
 	}
 
 	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
 	err := h.userSvc.Create(c.Request.Context(), tenantID, req)
 	if err != nil {
 		response.Error(c, 40001, err.Error())
