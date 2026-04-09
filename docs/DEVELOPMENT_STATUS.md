@@ -1,6 +1,6 @@
 # MOM3.0 开发进度记录
 
-**版本**: V1.0 | **更新日期**: 2026-04-06 | **项目**: 峰梅动力MOM3.0
+**版本**: V1.6 | **更新日期**: 2026-04-08 | **项目**: 闻荫科技MOM3.0
 
 > 本文档记录所有待开发功能清单，按优先级分组。开发完成后在此更新状态。
 
@@ -10,8 +10,9 @@
 
 | 功能 | 模块 | 说明 | 状态 | 开发日期 |
 |------|------|------|------|----------|
-| BOM批量导入完整实现 | M02 | 当前返回"开发中"，需实现ParseBOMExcel + ImportBOMs | ❌ 未开发 | - |
-| 质量模块前端连接API | M05 | IQC/IPQC/FQC/OQC/NCR/DefectRecord的增删改需连接真实API | ❌ 未开发 | - |
+| BOM批量导入完整实现 | M02 | ParseBOMExcel + ImportBOMs已实现，含BOMItem嵌套解析 | ✅ 已完成 | 2026-04-06 |
+| 首末件检验 | M03 | mes_first_last_inspect表+API+前端页面完整CRUD | ✅ 已完成 | 2026-04-07 |
+| 质量模块前端连接API | M05 | IQC/IPQC/FQC/OQC/NCR/DefectRecord/DefectCode增删改已完整实现 | ✅ 已完成 | 2026-04-07 |
 
 ---
 
@@ -20,49 +21,49 @@
 ### M01 系统管理
 | 功能 | 说明 | 状态 | 开发日期 |
 |------|------|------|----------|
-| 多车间管理 | WorkshopConfig + sys_workshop扩展字段 | ❌ 未开发 | - |
-| 打印模板管理 | PrintTemplate + sys_print_template表 | ❌ 未开发 | - |
-| 通知公告 | Notice + sys_notice表 | ❌ 未开发 | - |
+| 多车间管理 | WorkshopConfig + 工厂日历 + 车间配置API | ✅ 已完成 | 2026-04-08 |
+| 打印模板管理 | PrintTemplate + sys_print_template表 | ✅ 已完成 | 2026-04-08 |
+| 通知公告 | Notice + sys_notice表 | ✅ 已完成 | 2026-04-08 |
 
 ### M02 主数据管理
 | 功能 | 说明 | 状态 | 开发日期 |
 |------|------|------|----------|
-| BOM金蝶同步逻辑 | ErpBomCode等字段已有，需实现同步Worker | ⚠️ 字段已加 | - |
+| BOM金蝶同步逻辑 | ErpBomCode等字段已有，需实现同步Worker | ✅ 已完成 | 2026-04-08 |
 
 ### M03 生产执行
 | 功能 | 说明 | 状态 | 开发日期 |
 |------|------|------|----------|
-| 首末件检验对话框 | 当前handleAdd/Edit是ElMessage.info | ⚠️ 部分完成 | - |
-| 电子SOP | ElectronicSOP | ❌ 未开发 | - |
-| 批次号编码规则 | mes_code_rule | ❌ 未开发 | - |
-| 生产指示单(流程卡) | FlowCard | ❌ 未开发 | - |
+| 首末件检验对话框 | 当前handleAdd/Edit是ElMessage.info | ✅ 已完成 | 2026-04-07 |
+| 电子SOP | ElectronicSOP | ✅ 已完成 | 2026-04-07 |
+| 批次号编码规则 | mes_code_rule | ✅ 已完成 | 2026-04-07 |
+| 生产指示单(流程卡) | FlowCard | ✅ 已完成 | 2026-04-07 |
 
 ### M04 APS
 | 功能 | 说明 | 状态 | 开发日期 |
 |------|------|------|----------|
-| APS-008 产能分析看板 | Capacity Analysis | ❌ 未开发 | - |
-| APS-010 交付率/达成率 | Delivery Rate | ❌ 未开发 | - |
-| APS-011 换型矩阵管理 | Changeover Matrix | ❌ 未开发 | - |
-| APS-012 滚动排程 | Rolling Schedule | ❌ 未开发 | - |
-| APS-013 JIT/JIS接入 | JIT/JIS Demand | ❌ 未开发 | - |
-| AI智能排程完善 | OR-Tools/GA集成 | ⚠️ 仅基础规则 | - |
+| APS-008 产能分析看板 | Capacity Analysis | ✅ 已完成 | 2026-04-08 |
+| APS-010 交付率/达成率 | Delivery Rate | ✅ 已完成 | 2026-04-08 |
+| APS-011 换型矩阵管理 | Changeover Matrix | ✅ 已完成 | 2026-04-08 |
+| APS-012 滚动排程 | Rolling Schedule | ✅ 已完成 | 2026-04-08 |
+| APS-013 JIT/JIS接入 | JIT/JIS Demand | ✅ 已完成 | 2026-04-08 |
+| AI智能排程完善 | 8种规则+约束排程+换型感知+产品族聚类 | ✅ 已完成 | 2026-04-08 |
 
 ### M06 设备管理
 | 功能 | 说明 | 状态 | 开发日期 |
 |------|------|------|----------|
-| TEEP分析 | TEEP Calculation | ❌ 未开发 | - |
-| 模具管理 | Mold Management | ❌ 未开发 | - |
-| 量检具管理 | Gauge Management | ❌ 未开发 | - |
+| TEEP分析 | TEEP Calculation | ✅ 已完成 | 2026-04-08 |
+| 模具管理 | Mold Management | ✅ 已完成 | 2026-04-08 |
+| 量检具管理 | Gauge Management | ✅ 已完成 | 2026-04-08 |
 
 ### M07 WMS仓储
 | 功能 | 说明 | 状态 | 开发日期 |
 |------|------|------|----------|
-| 调拨管理 | Transfer Order | ❌ 未开发 | - |
-| 盘点管理 | Stock Check | ❌ 未开发 | - |
-| JIT物料拉动 | JIT Pull | ❌ 未开发 | - |
-| 电子看板拉动 | Kanban Pull | ❌ 未开发 | - |
-| 线边库位管理 | Side Location | ❌ 未开发 | - |
-| InventoryList.handleDelete | 当前是stub | ⚠️ 需修复 | - |
+| 调拨管理 | Transfer Order | ✅ 已完成 | 2026-04-08 |
+| 盘点管理 | Stock Check | ✅ 已完成 | 2026-04-08 |
+| JIT物料拉动 | JIT Pull | ✅ 已完成 | 2026-04-08 |
+| 电子看板拉动 | Kanban Pull | ✅ 已完成 | 2026-04-08 |
+| 线边库位管理 | Side Location | ✅ 已完成 | 2026-04-08 |
+| InventoryList.handleDelete | 当前是stub | ✅ 已修复，调用真实deleteInventory API | 2026-04-06 |
 
 ---
 
@@ -71,11 +72,11 @@
 ### M05 质量管理
 | 功能 | 说明 | 状态 | 开发日期 |
 |------|------|------|----------|
-| SPC CP/CPK计算 | SPC Lab Capability Indices | ❌ 未开发 | - |
+| SPC CP/CPK计算 | SPC CPK计算 + /spc/stats路由 | ✅ 已完成 | 2026-04-08 |
 | 蓝牙量具接口 | Bluetooth Gauge | ❌ 未开发 | - |
 | 检验标准管理 | Inspect Standard | ❌ 未开发 | - |
 | Andon升级机制 | Escalation + 多级通知 | ❌ 未开发 | - |
-| 追溯API完善 | /trace/forward/backward路由 | ⚠️ 方法存在无路由 | - |
+| 追溯API完善 | /trace/forward/backward路由 | ✅ 已完成 | 2026-04-08 |
 
 ### M12 器具管理
 | 功能 | 说明 | 状态 | 开发日期 |
@@ -113,6 +114,15 @@
 | ✅ BOM金蝶同步字段 | M02 | ErpBomCode/ErpSyncTime/ErpSyncStatus/IsCurrent |
 | ✅ BOM批量导入骨架 | M02 | 模板下载/上传接口(解析逻辑TODO) |
 
+### P1 已完成 (2026-04-08)
+| 功能 | 模块 | 说明 |
+|------|------|------|
+| ✅ 电子SOP | M03 | mes_electronic_sop表+CRUD+前端页面 |
+| ✅ 编码规则 | M03 | mes_code_rule表+GenerateCode+前端页面 |
+| ✅ 生产指示单 | M03 | mes_flow_card表+CRUD+前端页面 |
+| ✅ 打印模板管理 | M01 | sys_print_template表+CRUD+前端页面 |
+| ✅ 通知公告 | M01 | sys_notice表+CRUD+发布+前端页面 |
+
 ### 更早已完成
 | 功能 | 模块 |
 |------|------|
@@ -121,7 +131,7 @@
 | ✅ 客户管理 | M02 |
 | ✅ 物料批量导入(完整) | M02 |
 | ✅ 工单/派工/报工 | M03 |
-| ✅ APS甘特图/工作中心/缺料分析 | M04 |
+| ✅ APS甘特图/工作中心/缺料分析/产能分析/交付率/换型矩阵/滚动排程/JIT需求 | M04 |
 | ✅ OEE分析 | M06 |
 | ✅ 仓库/库位/库存/收货/发货 | M07 |
 | ✅ IQC/IPQC/FQC/OQC/NCR/SPC列表API | M05 |
@@ -136,3 +146,7 @@
 | 日期 | 版本 | 更新内容 |
 |------|------|---------|
 | 2026-04-06 | V1.0 | 初始化开发状态文档，记录所有P0/P1/P2待开发功能 |
+| 2026-04-08 | V1.2 | P1 M04 APS五个功能完成：产能分析/交付率/换型矩阵/滚动排程/JIT需求 |
+| 2026-04-08 | V1.3 | P2 M05 SPC CPK计算、追溯forward/backward路由完成 |
+| 2026-04-08 | V1.4 | P2 M06 TEEP分析、模具管理、量检具管理完成 |
+| 2026-04-08 | V1.6 | P1 M04 APS全部完成(产能/交付率/换型矩阵/滚动排程/JIT)、P1 M07 WMS调拨/盘点/线边库位/看板拉动完成、API验证通过 |
