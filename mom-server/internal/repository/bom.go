@@ -72,3 +72,13 @@ func (r *BOMItemRepository) Create(ctx context.Context, item *model.MdmBOMItem) 
 func (r *BOMItemRepository) DeleteByBOMID(ctx context.Context, bomID uint) error {
 	return r.db.WithContext(ctx).Where("bom_id = ?", bomID).Delete(&model.MdmBOMItem{}).Error
 }
+
+// GetByMaterialID 根据物料ID获取BOM
+func (r *BOMRepository) GetByMaterialID(ctx context.Context, materialID int64) (*model.MdmBOM, error) {
+	var bom model.MdmBOM
+	err := r.db.WithContext(ctx).Where("material_id = ? AND status = ?", materialID, "ACTIVE").First(&bom).Error
+	if err != nil {
+		return nil, err
+	}
+	return &bom, nil
+}

@@ -44,6 +44,18 @@ func (r *MPSRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&model.MPS{}, id).Error
 }
 
+// ListByStatus 根据状态获取MPS列表
+func (r *MPSRepository) ListByStatus(ctx context.Context, status int) ([]model.MPS, int64, error) {
+	var list []model.MPS
+	var total int64
+	err := r.db.WithContext(ctx).Model(&model.MPS{}).Where("status = ?", status).Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	err = r.db.WithContext(ctx).Where("status = ?", status).Order("id DESC").Find(&list).Error
+	return list, total, err
+}
+
 type MRPRepository struct {
 	db *gorm.DB
 }
@@ -85,6 +97,18 @@ func (r *MRPRepository) GetItemsByMRPID(ctx context.Context, mrpID int64) ([]mod
 	var items []model.MRPItem
 	err := r.db.WithContext(ctx).Where("mrp_id = ?", mrpID).Find(&items).Error
 	return items, err
+}
+
+func (r *MRPRepository) DeleteItemsByMRPID(ctx context.Context, mrpID int64) error {
+	return r.db.WithContext(ctx).Where("mrp_id = ?", mrpID).Delete(&model.MRPItem{}).Error
+}
+
+func (r *MRPRepository) UpdateItem(ctx context.Context, id uint, updates map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&model.MRPItem{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (r *MRPRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&model.MRP{}, id).Error
 }
 
 type ScheduleRepository struct {

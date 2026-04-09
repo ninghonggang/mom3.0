@@ -19,12 +19,16 @@ func (r *WorkshopRepository) List(ctx context.Context, tenantID int64) ([]model.
 	var list []model.Workshop
 	var total int64
 
-	err := r.db.WithContext(ctx).Model(&model.Workshop{}).Count(&total).Error
+	query := r.db.WithContext(ctx).Model(&model.Workshop{})
+	if tenantID > 0 {
+		query = query.Where("tenant_id = ?", tenantID)
+	}
+	err := query.Count(&total).Error
 	if err != nil {
 		return nil, 0, err
 	}
 
-	err = r.db.WithContext(ctx).Order("id DESC").Find(&list).Error
+	err = query.Order("id DESC").Find(&list).Error
 	return list, total, err
 }
 

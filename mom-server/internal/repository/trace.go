@@ -39,45 +39,18 @@ func (r *TraceRepository) GetByOrderID(ctx context.Context, orderID int64) ([]mo
 	return list, err
 }
 
-type AndonRepository struct {
-	db *gorm.DB
+// GetForwardTrace 正向追溯 - 从当前工序往前追溯所有工序
+func (r *TraceRepository) GetForwardTrace(ctx context.Context, serialNumber string) ([]model.TraceRecord, error) {
+	var records []model.TraceRecord
+	// 按时间顺序获取所有追溯记录
+	err := r.db.WithContext(ctx).Where("serial_number = ?", serialNumber).Order("operate_time ASC").Find(&records).Error
+	return records, err
 }
 
-func NewAndonRepository(db *gorm.DB) *AndonRepository {
-	return &AndonRepository{db: db}
-}
-
-func (r *AndonRepository) List(ctx context.Context, tenantID int64, status int, callNo string) ([]model.AndonCall, int64, error) {
-	var list []model.AndonCall
-	var total int64
-	query := r.db.WithContext(ctx).Model(&model.AndonCall{})
-	if tenantID > 0 {
-		query = query.Where("tenant_id = ?", tenantID)
-	}
-	if status > 0 {
-		query = query.Where("status = ?", status)
-	}
-	if callNo != "" {
-		query = query.Where("call_no LIKE ?", "%"+callNo+"%")
-	}
-	err := query.Count(&total).Error
-	if err != nil {
-		return nil, 0, err
-	}
-	err = query.Order("id DESC").Find(&list).Error
-	return list, total, err
-}
-
-func (r *AndonRepository) GetByID(ctx context.Context, id uint) (*model.AndonCall, error) {
-	var call model.AndonCall
-	err := r.db.WithContext(ctx).First(&call, id).Error
-	return &call, err
-}
-
-func (r *AndonRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
-	return r.db.WithContext(ctx).Model(&model.AndonCall{}).Where("id = ?", id).Updates(updates).Error
-}
-
-func (r *AndonRepository) Create(ctx context.Context, call *model.AndonCall) error {
-	return r.db.WithContext(ctx).Create(call).Error
+// GetBackwardTrace 反向追溯 - 从当前工序往后追溯所有工序
+func (r *TraceRepository) GetBackwardTrace(ctx context.Context, serialNumber string) ([]model.TraceRecord, error) {
+	var records []model.TraceRecord
+	// 按时间倒序获取所有追溯记录
+	err := r.db.WithContext(ctx).Where("serial_number = ?", serialNumber).Order("operate_time DESC").Find(&records).Error
+	return records, err
 }

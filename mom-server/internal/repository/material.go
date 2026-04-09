@@ -45,3 +45,9 @@ func (r *MaterialRepository) Update(ctx context.Context, id uint, updates map[st
 func (r *MaterialRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&model.Material{}, id).Error
 }
+
+func (r *MaterialRepository) GetByCode(ctx context.Context, code string) (*model.Material, error) {
+	var material model.Material
+	err := r.db.WithContext(ctx).Where("material_code = ?", code).First(&material).Error
+	return &material, err
+}

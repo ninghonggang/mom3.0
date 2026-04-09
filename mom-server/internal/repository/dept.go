@@ -17,7 +17,12 @@ func NewDeptRepository(db *gorm.DB) *DeptRepository {
 
 func (r *DeptRepository) List(ctx context.Context, tenantID int64) ([]model.Dept, error) {
 	var depts []model.Dept
-	err := r.db.WithContext(ctx).Where("tenant_id = ?", tenantID).Order("dept_sort ASC").Find(&depts).Error
+	query := r.db.WithContext(ctx).Model(&model.Dept{})
+	// tenantID <= 0 表示查询所有租户（超级管理员）
+	if tenantID > 0 {
+		query = query.Where("tenant_id = ?", tenantID)
+	}
+	err := query.Order("dept_sort ASC").Find(&depts).Error
 	return depts, err
 }
 
@@ -66,9 +71,4 @@ func (r *DeptRepository) Update(ctx context.Context, id uint, updates map[string
 
 func (r *DeptRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&model.Dept{}, id).Error
-}
-
-// Add Children field to Dept model for tree structure
-func init() {
-	// This is handled in the model definition
 }

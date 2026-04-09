@@ -33,16 +33,25 @@ func (r *MenuRepository) BuildTree(menus []model.Menu) []model.Menu {
 	var result []*model.Menu
 	menuMap := make(map[int64]*model.Menu)
 
-	for i := range menus {
-		menuMap[menus[i].ID] = &menus[i]
+	// 过滤掉按钮类型的菜单(F)和链接类型的菜单(L)
+	filtered := make([]model.Menu, 0)
+	for _, m := range menus {
+		if m.MenuType == "F" || m.MenuType == "L" {
+			continue // 跳过按钮和链接
+		}
+		filtered = append(filtered, m)
 	}
 
-	for i := range menus {
-		if menus[i].ParentID == 0 {
-			result = append(result, &menus[i])
+	for i := range filtered {
+		menuMap[filtered[i].ID] = &filtered[i]
+	}
+
+	for i := range filtered {
+		if filtered[i].ParentID == 0 {
+			result = append(result, &filtered[i])
 		} else {
-			if parent, ok := menuMap[menus[i].ParentID]; ok {
-				parent.Children = append(parent.Children, menus[i])
+			if parent, ok := menuMap[filtered[i].ParentID]; ok {
+				parent.Children = append(parent.Children, filtered[i])
 			}
 		}
 	}

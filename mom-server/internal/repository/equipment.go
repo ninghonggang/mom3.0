@@ -73,6 +73,20 @@ func (r *EquipmentCheckRepository) Create(ctx context.Context, check *model.Equi
 	return r.db.WithContext(ctx).Create(check).Error
 }
 
+func (r *EquipmentCheckRepository) GetByID(ctx context.Context, id uint) (*model.EquipmentCheck, error) {
+	var check model.EquipmentCheck
+	err := r.db.WithContext(ctx).First(&check, id).Error
+	return &check, err
+}
+
+func (r *EquipmentCheckRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&model.EquipmentCheck{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (r *EquipmentCheckRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&model.EquipmentCheck{}, id).Error
+}
+
 type EquipmentMaintenanceRepository struct {
 	db *gorm.DB
 }
@@ -100,6 +114,16 @@ func (r *EquipmentMaintenanceRepository) Create(ctx context.Context, m *model.Eq
 
 func (r *EquipmentMaintenanceRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
 	return r.db.WithContext(ctx).Model(&model.EquipmentMaintenance{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (r *EquipmentMaintenanceRepository) GetByID(ctx context.Context, id uint) (*model.EquipmentMaintenance, error) {
+	var m model.EquipmentMaintenance
+	err := r.db.WithContext(ctx).First(&m, id).Error
+	return &m, err
+}
+
+func (r *EquipmentMaintenanceRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&model.EquipmentMaintenance{}, id).Error
 }
 
 type EquipmentRepairRepository struct {
@@ -137,6 +161,10 @@ func (r *EquipmentRepairRepository) Update(ctx context.Context, id uint, updates
 	return r.db.WithContext(ctx).Model(&model.EquipmentRepair{}).Where("id = ?", id).Updates(updates).Error
 }
 
+func (r *EquipmentRepairRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&model.EquipmentRepair{}, id).Error
+}
+
 type SparePartRepository struct {
 	db *gorm.DB
 }
@@ -162,4 +190,18 @@ func (r *SparePartRepository) List(ctx context.Context, tenantID int64) ([]model
 
 func (r *SparePartRepository) Create(ctx context.Context, sp *model.SparePart) error {
 	return r.db.WithContext(ctx).Create(sp).Error
+}
+
+func (r *SparePartRepository) GetByID(ctx context.Context, id uint) (*model.SparePart, error) {
+	var sp model.SparePart
+	err := r.db.WithContext(ctx).First(&sp, id).Error
+	return &sp, err
+}
+
+func (r *SparePartRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&model.SparePart{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (r *SparePartRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&model.SparePart{}, id).Error
 }
