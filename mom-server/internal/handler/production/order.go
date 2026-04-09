@@ -1,6 +1,7 @@
 package production
 
 import (
+	"mom-server/internal/middleware"
 	"mom-server/internal/model"
 	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
@@ -45,6 +46,13 @@ func (h *ProductionOrderHandler) Create(c *gin.Context) {
 		return
 	}
 
+	// 设置默认租户ID
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	req.TenantID = tenantID
+
 	err := h.service.Create(c.Request.Context(), &req)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
@@ -62,7 +70,10 @@ func (h *ProductionOrderHandler) Update(c *gin.Context) {
 		return
 	}
 
-	err := h.service.Update(c.Request.Context(), id, &req)
+	// 获取当前用户名
+	username := middleware.GetUsername(c)
+
+	err := h.service.Update(c.Request.Context(), id, &req, username)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -83,7 +94,8 @@ func (h *ProductionOrderHandler) Delete(c *gin.Context) {
 
 func (h *ProductionOrderHandler) Start(c *gin.Context) {
 	id := c.Param("id")
-	err := h.service.Start(c.Request.Context(), id)
+	username := middleware.GetUsername(c)
+	err := h.service.Start(c.Request.Context(), id, username)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -93,7 +105,8 @@ func (h *ProductionOrderHandler) Start(c *gin.Context) {
 
 func (h *ProductionOrderHandler) Complete(c *gin.Context) {
 	id := c.Param("id")
-	err := h.service.Complete(c.Request.Context(), id)
+	username := middleware.GetUsername(c)
+	err := h.service.Complete(c.Request.Context(), id, username)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
