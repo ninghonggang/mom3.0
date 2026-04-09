@@ -1,6 +1,8 @@
 package system
 
 import (
+	"strconv"
+
 	"mom-server/internal/middleware"
 	"mom-server/internal/model"
 	"mom-server/internal/pkg/response"
@@ -28,7 +30,13 @@ func (h *DeptHandler) List(c *gin.Context) {
 }
 
 func (h *DeptHandler) Tree(c *gin.Context) {
-	tenantID := middleware.GetTenantID(c)
+	// 超级管理员(tenantID<=0)可以查看所有租户的数据
+	var tenantID int64
+	if middleware.IsSuperAdmin(c) {
+		tenantID = 0 // 0表示查所有租户
+	} else {
+		tenantID = middleware.GetTenantID(c)
+	}
 	depts, err := h.deptService.Tree(c.Request.Context(), tenantID)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
@@ -49,6 +57,9 @@ func (h *DeptHandler) Get(c *gin.Context) {
 
 func (h *DeptHandler) Create(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c)
+	if tenantID == 0 {
+		tenantID = 1 // 默认租户1，防止0值
+	}
 	var req model.Dept
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
@@ -90,4 +101,13 @@ func (h *DeptHandler) Delete(c *gin.Context) {
 		return
 	}
 	response.Success(c, nil)
+}
+
+// Helper function to parse ID
+func parseID(idStr string) (uint, error) {
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return uint(id), nil
 }

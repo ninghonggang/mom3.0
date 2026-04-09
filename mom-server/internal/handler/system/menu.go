@@ -54,6 +54,13 @@ func (h *MenuHandler) Create(c *gin.Context) {
 		return
 	}
 
+	// 设置默认租户ID
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	req.TenantID = tenantID
+
 	err := h.menuService.Create(c.Request.Context(), &req)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
