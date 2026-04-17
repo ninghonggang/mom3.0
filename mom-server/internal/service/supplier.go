@@ -15,8 +15,8 @@ func NewSupplierService(repo *repository.SupplierRepository) *SupplierService {
 	return &SupplierService{repo: repo}
 }
 
-func (s *SupplierService) List(ctx context.Context) ([]model.Supplier, int64, error) {
-	return s.repo.List(ctx, 0)
+func (s *SupplierService) List(ctx context.Context, tenantID int64) ([]model.Supplier, int64, error) {
+	return s.repo.List(ctx, tenantID)
 }
 
 func (s *SupplierService) GetByID(ctx context.Context, id string) (*model.Supplier, error) {

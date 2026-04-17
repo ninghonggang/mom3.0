@@ -6,11 +6,31 @@ export type FontFamily = 'default' | 'helvetica' | 'pingfang' | 'microsoft'
 
 const STORAGE_KEY = 'app_settings'
 
+// Design spec colors
+const DESIGN_COLORS = {
+  primary: '#2563eb',
+  primaryLight3: '#60a5fa',
+  primaryLight5: '#93c5fd',
+  primaryLight7: '#bfdbfe',
+  primaryLight8: '#dbeafe',
+  primaryLight9: '#eff6ff',
+  primaryDark2: '#1d4ed8',
+  success: '#10b981',
+  warning: '#f59e0b',
+  danger: '#ef4444',
+  info: '#6b7280',
+  headerBg: '#1e293b',
+  sidebarBg: '#1f2937',
+  pageBg: '#f1f5f9',
+  cardBg: '#ffffff',
+  borderColor: '#e2e8f0'
+} as const
+
 export const useSettingsStore = defineStore('settings', () => {
   const stored = localStorage.getItem(STORAGE_KEY)
   const defaultSettings = stored ? JSON.parse(stored) : {
     theme: 'light' as Theme,
-    customThemeColor: '#409eff',
+    customThemeColor: '#2563eb',
     fontFamily: 'default' as FontFamily,
     sidebarCollapsed: false,
     logoUrl: ''
@@ -47,20 +67,37 @@ export const useSettingsStore = defineStore('settings', () => {
   })
 
   const effectiveThemeColor = computed(() => {
-    return theme.value === 'custom' ? customThemeColor.value : getDefaultThemeColor(theme.value)
+    return theme.value === 'custom' ? customThemeColor.value : DESIGN_COLORS.primary
   })
-
-  const getDefaultThemeColor = (t: Theme) => {
-    return t === 'dark' ? '#1f1f1f' : '#409eff'
-  }
 
   const sidebarBgColor = computed(() => {
     if (theme.value === 'custom') return '#2b3a4b'
-    return isDark.value ? '#1f1f1f' : '#304156'
+    return theme.value === 'dark' ? '#0f172a' : DESIGN_COLORS.sidebarBg
   })
 
   const sidebarTextColor = computed(() => {
-    return isDark.value ? '#e0e0e0' : '#bfcbd9'
+    return theme.value === 'dark' ? '#e2e8f0' : '#94a3b8'
+  })
+
+  const sidebarActiveTextColor = computed(() => {
+    return DESIGN_COLORS.primary
+  })
+
+  const headerBgColor = computed(() => {
+    if (theme.value === 'custom') return '#1e293b'
+    return theme.value === 'dark' ? '#0f172a' : DESIGN_COLORS.headerBg
+  })
+
+  const headerTextColor = computed(() => {
+    return theme.value === 'dark' ? '#f1f5f9' : '#ffffff'
+  })
+
+  const pageBgColor = computed(() => {
+    return theme.value === 'dark' ? '#0f172a' : DESIGN_COLORS.pageBg
+  })
+
+  const cardBgColor = computed(() => {
+    return theme.value === 'dark' ? '#1e293b' : DESIGN_COLORS.cardBg
   })
 
   const setTheme = (newTheme: Theme) => {
@@ -87,15 +124,35 @@ export const useSettingsStore = defineStore('settings', () => {
   const applyTheme = () => {
     document.documentElement.setAttribute('data-theme', theme.value)
     document.body.classList.toggle('dark', isDark.value)
-    // Apply custom theme color
+
+    // Apply primary color
     document.documentElement.style.setProperty('--el-color-primary', effectiveThemeColor.value)
+    document.documentElement.style.setProperty('--el-color-primary-light-3', DESIGN_COLORS.primaryLight3)
+    document.documentElement.style.setProperty('--el-color-primary-light-5', DESIGN_COLORS.primaryLight5)
+    document.documentElement.style.setProperty('--el-color-primary-light-7', DESIGN_COLORS.primaryLight7)
+    document.documentElement.style.setProperty('--el-color-primary-light-8', DESIGN_COLORS.primaryLight8)
+    document.documentElement.style.setProperty('--el-color-primary-light-9', DESIGN_COLORS.primaryLight9)
+    document.documentElement.style.setProperty('--el-color-primary-dark-2', DESIGN_COLORS.primaryDark2)
+
+    // Apply semantic colors
+    document.documentElement.style.setProperty('--el-color-success', DESIGN_COLORS.success)
+    document.documentElement.style.setProperty('--el-color-warning', DESIGN_COLORS.warning)
+    document.documentElement.style.setProperty('--el-color-danger', DESIGN_COLORS.danger)
+    document.documentElement.style.setProperty('--el-color-info', DESIGN_COLORS.info)
+
+    // Apply layout colors
+    document.documentElement.style.setProperty('--header-bg', headerBgColor.value)
+    document.documentElement.style.setProperty('--sidebar-bg', sidebarBgColor.value)
+    document.documentElement.style.setProperty('--page-bg', pageBgColor.value)
+    document.documentElement.style.setProperty('--card-bg', cardBgColor.value)
+    document.documentElement.style.setProperty('--border-color', DESIGN_COLORS.borderColor)
   }
 
   const applyFontFamily = () => {
     document.documentElement.style.setProperty('--el-font-family', fontFamilyCSS.value)
   }
 
-  // 初始化
+  // Initialize theme on load
   applyTheme()
   applyFontFamily()
 
@@ -110,6 +167,11 @@ export const useSettingsStore = defineStore('settings', () => {
     effectiveThemeColor,
     sidebarBgColor,
     sidebarTextColor,
+    sidebarActiveTextColor,
+    headerBgColor,
+    headerTextColor,
+    pageBgColor,
+    cardBgColor,
     setTheme,
     setCustomThemeColor,
     setFontFamily,

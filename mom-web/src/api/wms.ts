@@ -106,12 +106,60 @@ export const getStockCheckList = (params?: any) => {
   return request.get('/wms/stock-check/list', { params })
 }
 
+export const getStockCheckById = (id: number) => {
+  return request.get(`/wms/stock-check/${id}`)
+}
+
 export const createStockCheck = (data: any) => {
   return request.post('/wms/stock-check', data)
 }
 
-export const submitStockCheck = (id: number, data: any) => {
-  return request.put(`/wms/stock-check/${id}/submit`, data)
+export const updateStockCheck = (id: number, data: any) => {
+  return request.put(`/wms/stock-check/${id}`, data)
+}
+
+export const deleteStockCheck = (id: number) => {
+  return request.delete(`/wms/stock-check/${id}`)
+}
+
+export const submitStockCheck = (id: number) => {
+  return request.post(`/wms/stock-check/${id}/submit`)
+}
+
+export const startStockCheck = (id: number) => {
+  return request.post(`/wms/stock-check/${id}/start`)
+}
+
+export const completeStockCheck = (id: number) => {
+  return request.post(`/wms/stock-check/${id}/complete`)
+}
+
+export const approveStockCheck = (id: number, data: any) => {
+  return request.post(`/wms/stock-check/${id}/approve`, data)
+}
+
+export const addStockCheckItem = (data: any) => {
+  return request.post('/wms/stock-check/item', data)
+}
+
+export const updateStockCheckItem = (id: number, data: any) => {
+  return request.put(`/wms/stock-check/item/${id}`, data)
+}
+
+export const countStockCheckItem = (checkId: number, itemId: number, data: any) => {
+  return request.post(`/wms/stock-check/${checkId}/items/${itemId}/count`, data)
+}
+
+export const handleStockCheckVariance = (checkId: number, itemId: number, data: any) => {
+  return request.post(`/wms/stock-check/${checkId}/items/${itemId}/handle`, data)
+}
+
+export const recountStockCheckItem = (checkId: number, itemId: number, data: any) => {
+  return request.post(`/wms/stock-check/${checkId}/items/${itemId}/recount`, data)
+}
+
+export const getStockCheckVariance = (id: number) => {
+  return request.get(`/wms/stock-check/${id}/variance`)
 }
 
 // 数据采集点
@@ -147,4 +195,61 @@ export const createScanLog = (data: any) => {
 // 采集记录
 export const getCollectRecordList = (params?: any) => {
   return request.get('/dc/collect-record/list', { params })
+}
+
+// ========== 调拨管理 ==========
+export const getTransferOrderList = (params?: any) => {
+  return request.get('/wms/transfer/list', { params })
+}
+
+export const getTransferOrderById = (id: number) => {
+  return request.get(`/wms/transfer/${id}`)
+}
+
+export const createTransferOrder = (data: any) => {
+  return request.post('/wms/transfer', data)
+}
+
+export const updateTransferOrder = (id: number, data: any) => {
+  return request.put(`/wms/transfer/${id}`, data)
+}
+
+export const deleteTransferOrder = (id: number) => {
+  return request.delete(`/wms/transfer/${id}`)
+}
+
+export const addTransferOrderItem = (data: any) => {
+  return request.post('/wms/transfer/item', data)
+}
+
+export const submitTransferOrder = (id: number) => {
+  return request.post(`/wms/transfer/${id}/submit`)
+}
+
+export const approveTransferOrder = (id: number, data: any) => {
+  return request.post(`/wms/transfer/${id}/approve`, data)
+}
+
+export const startTransferOrder = (id: number) => {
+  return request.post(`/wms/transfer/${id}/start`)
+}
+
+export const shipTransferOrder = (id: number, data: any) => {
+  return request.post(`/wms/transfer/${id}/ship`, data)
+}
+
+export const receiveTransferOrder = (id: number, data: any) => {
+  return request.post(`/wms/transfer/${id}/receive`, data)
+}
+
+export const completeTransferOrder = (id: number) => {
+  return request.post(`/wms/transfer/${id}/complete`)
+}
+
+export const cancelTransferOrder = (id: number, reason?: string) => {
+  return request.post(`/wms/transfer/${id}/cancel`, { reason })
+}
+
+export const getTransferOrderTrace = (id: number) => {
+  return request.get(`/wms/transfer/${id}/trace`)
 }

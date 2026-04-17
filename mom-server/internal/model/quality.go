@@ -189,3 +189,77 @@ type SPCData struct {
 func (SPCData) TableName() string {
 	return "qc_spc_data"
 }
+
+// InspectionCharacteristic 检验特性
+type InspectionCharacteristic struct {
+	ID               uint    `json:"id" gorm:"primarykey"`
+	Code             string  `json:"code" gorm:"size:50;uniqueIndex;not null"`
+	Name             string  `json:"name" gorm:"size:100;not null"`
+	Type             string  `json:"type" gorm:"size:20"`                      // QUANTITATIVE/QUALITATIVE
+	SpecLower        float64 `json:"spec_lower" gorm:"type:decimal(18,4)"`
+	SpecUpper        float64 `json:"spec_upper" gorm:"type:decimal(18,4)"`
+	USL              float64 `json:"usl" gorm:"type:decimal(18,4)"`
+	LSL              float64 `json:"lsl" gorm:"type:decimal(18,4)"`
+	Target           float64 `json:"target" gorm:"type:decimal(18,4)"`
+	Unit             string  `json:"unit" gorm:"size:20"`
+	AQL              float64 `json:"aql" gorm:"type:decimal(5,2)"`
+	InspectionMethod string  `json:"inspection_method" gorm:"size:100"`
+	TenantID         int64   `json:"tenant_id" gorm:"index"`
+	Status           int     `json:"status" gorm:"default:1"`
+}
+
+func (InspectionCharacteristic) TableName() string {
+	return "qc_inspection_characteristic"
+}
+
+// AQLLevel AQL级别定义
+type AQLLevel struct {
+	BaseModel
+	TenantID int64  `json:"tenant_id" gorm:"index;not null"`
+	Level   string `json:"level" gorm:"size:10;not null"`
+	Name    string `json:"name" gorm:"size:50;not null"`
+	Type    string `json:"type" gorm:"size:20"`
+	Order   int    `json:"order" gorm:"default:0"`
+	Status  int    `json:"status" gorm:"default:1"`
+	Remark  *string `json:"remark" gorm:"size:500"`
+}
+
+func (AQLLevel) TableName() string {
+	return "qc_aql_level"
+}
+
+// AQLTableRow AQL标准表行
+type AQLTableRow struct {
+	BaseModel
+	TenantID   int64  `json:"tenant_id" gorm:"index;not null"`
+	AQLLevelID int64  `json:"aql_level_id" gorm:"index;not null"`
+	AQLValue   string `json:"aql_value" gorm:"size:10"`
+	BatchMin   int    `json:"batch_min"`
+	BatchMax   int    `json:"batch_max"`
+	SampleSize int    `json:"sample_size"`
+	Ac         int    `json:"ac"`
+	Re         int    `json:"re"`
+}
+
+func (AQLTableRow) TableName() string {
+	return "qc_aql_table_row"
+}
+
+// SamplingPlan 抽样方案
+type SamplingPlan struct {
+	BaseModel
+	TenantID       int64   `json:"tenant_id" gorm:"index;not null"`
+	Code           string  `json:"code" gorm:"size:50;not null;uniqueIndex:idx_tenant_plan_code"`
+	Name           string  `json:"name" gorm:"size:100;not null"`
+	InspectionType string  `json:"inspection_type" gorm:"size:20"`
+	AQLLevelID    int64   `json:"aql_level_id"`
+	DefaultAQL    float64 `json:"default_aql" gorm:"type:decimal(5,2)"`
+	MinBatchSize  int     `json:"min_batch_size" gorm:"default:0"`
+	MaxBatchSize  int     `json:"max_batch_size" gorm:"default:0"`
+	Status        int     `json:"status" gorm:"default:1"`
+	Remark        *string `json:"remark" gorm:"size:500"`
+}
+
+func (SamplingPlan) TableName() string {
+	return "qc_sampling_plan"
+}

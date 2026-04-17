@@ -289,6 +289,79 @@ func (s *SchedulingService) ExecuteScheduling(ctx context.Context, tasks []TaskI
 	return s.scheduler.Schedule(tasks, resources, direction)
 }
 
+// CalculateOrder 计算工单优先级得分（供约束排程使用）
+// 返回值越小优先级越高
+func CalculateOrder(order ScheduleOrder, algorithmType string) float64 {
+	switch SchedulingRule(algorithmType) {
+	case RuleFamily:
+		// FAMILY: 按产品族分组，族内按优先级
+		if order.FamilyCode == "" {
+			return 999 // 无产品族信息优先级最低
+		}
+		return float64(order.Priority) * 1000 // 族内按优先级排序
+
+	case RuleBottleneck:
+		// BOTTLENECK: 瓶颈工序优先，然后按优先级
+		if order.Bottleneck {
+			return float64(order.Priority)
+		}
+		return float64(order.Priority) + 1000 // 非瓶颈排后面
+
+	case RuleCR:
+		// CR (Critical Ratio): (交期-当前)/剩余工时
+		// 值越小越紧急
+		if order.StandardHours <= 0 {
+			return 999
+		}
+		now := time.Now()
+		hoursUntilDue := order.DueDate.Sub(now).Hours()
+		if hoursUntilDue < 0 {
+			hoursUntilDue = 0 // 已逾期，标记为最紧急
+		}
+		return hoursUntilDue / order.StandardHours
+
+	case RuleJITFirst:
+		// JIT_FIRST: JIT需求时间优先
+		if order.JITTime == nil {
+			return float64(order.Priority) * 10000 // 无JIT时间按优先级
+		}
+		now := time.Now()
+		// JIT时间距离现在越近，优先级越高
+		hoursUntilJIT := order.JITTime.Sub(now).Hours()
+		if hoursUntilJIT < 0 {
+			hoursUntilJIT = 0 // JIT时间已过，标记为最紧急
+		}
+		return hoursUntilJIT
+
+	case RuleEDD:
+		// EDD: 最早交付日期优先
+		return float64(order.DueDate.Unix())
+
+	case RuleSPT:
+		// SPT: 最短加工时间优先
+		return order.StandardHours
+
+	case RuleLPT:
+		// LPT: 最长加工时间优先
+		return -order.StandardHours
+
+	case RuleFIFO:
+		// FIFO: 按工单ID顺序
+		return float64(order.OrderID)
+
+	default:
+		return float64(order.Priority) * 10000
+	}
+}
+
+// CompareOrders 比较两个工单的优先级
+// 返回true表示o1比o2优先级高(应该排在前面的)
+func CompareOrders(o1, o2 ScheduleOrder, algorithmType string) bool {
+	score1 := CalculateOrder(o1, algorithmType)
+	score2 := CalculateOrder(o2, algorithmType)
+	return score1 < score2
+}
+
 // ConvertToScheduleResults 转换为数据库模型
 func ConvertToScheduleResults(planID int64, result *SchedulingResult) []*model.ScheduleResult {
 	results := make([]*model.ScheduleResult, len(result.Tasks))

@@ -86,6 +86,18 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/system/AiConfigView.vue'),
         meta: { title: 'AI助手配置', icon: 'ChatDotRound' }
       },
+      {
+        path: 'system/notice',
+        name: 'NoticeList',
+        component: () => import('@/views/system/NoticeList.vue'),
+        meta: { title: '通知公告', icon: 'Bell' }
+      },
+      {
+        path: 'system/print-template',
+        name: 'PrintTemplateList',
+        component: () => import('@/views/system/PrintTemplateList.vue'),
+        meta: { title: '打印模板', icon: 'Printer' }
+      },
       // 主数据管理
       {
         path: 'mdm/material',
@@ -141,6 +153,36 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/mdm/CustomerList.vue'),
         meta: { title: '客户管理', icon: 'User' }
       },
+      {
+        path: 'mdm/supplier',
+        name: 'SupplierList',
+        component: () => import('@/views/mdm/SupplierList.vue'),
+        meta: { title: '供应商管理', icon: 'OfficeBuilding' }
+      },
+      {
+        path: 'mdm/contact',
+        name: 'ContactList',
+        component: () => import('@/views/mdm/ContactList.vue'),
+        meta: { title: '联系人管理', icon: 'UserFilled' }
+      },
+      {
+        path: 'mdm/bank-account',
+        name: 'BankAccountList',
+        component: () => import('@/views/mdm/BankAccountList.vue'),
+        meta: { title: '银行账户', icon: 'CreditCard' }
+      },
+      {
+        path: 'mdm/attachment',
+        name: 'AttachmentList',
+        component: () => import('@/views/mdm/AttachmentList.vue'),
+        meta: { title: '附件管理', icon: 'Folder' }
+      },
+      {
+        path: 'mdm/delivery-address',
+        name: 'DeliveryAddressList',
+        component: () => import('@/views/mdm/DeliveryAddressList.vue'),
+        meta: { title: '收货地址', icon: 'Location' }
+      },
       // 生产执行
       {
         path: 'production/sales-order',
@@ -189,6 +231,24 @@ const routes: RouteRecordRaw[] = [
         name: 'FirstLastInspectList',
         component: () => import('@/views/production/FirstLastInspectList.vue'),
         meta: { title: '首末件检验', icon: 'Check' }
+      },
+      {
+        path: 'production/electronic-sop',
+        name: 'ElectronicSOPList',
+        component: () => import('@/views/production/ElectronicSOPList.vue'),
+        meta: { title: '电子SOP', icon: 'Document' }
+      },
+      {
+        path: 'production/flow-card',
+        name: 'FlowCardList',
+        component: () => import('@/views/production/FlowCardList.vue'),
+        meta: { title: '流转卡', icon: 'List' }
+      },
+      {
+        path: 'production/code-rule',
+        name: 'CodeRuleList',
+        component: () => import('@/views/production/CodeRuleList.vue'),
+        meta: { title: '编码规则', icon: 'Key' }
       },
       // 设备管理
       {
@@ -363,6 +423,375 @@ const routes: RouteRecordRaw[] = [
         name: 'EnergyMonitor',
         component: () => import('@/views/energy/EnergyMonitor.vue'),
         meta: { title: '能源监控', icon: 'Lightning' }
+      },
+      // 供应链管理
+      {
+        path: 'scp/purchase',
+        name: 'PurchaseOrderList',
+        component: () => import('@/views/scp/PurchaseOrderList.vue'),
+        meta: { title: '采购订单', icon: 'ShoppingCart' }
+      },
+      {
+        path: 'scp/rfq',
+        name: 'RFQList',
+        component: () => import('@/views/scp/RFQList.vue'),
+        meta: { title: '询价单', icon: 'PriceTag' }
+      },
+      {
+        path: 'scp/supplier-quote',
+        name: 'SupplierQuoteList',
+        component: () => import('@/views/scp/SupplierQuoteList.vue'),
+        meta: { title: '供应商报价', icon: 'Document' }
+      },
+      {
+        path: 'scp/sales-order',
+        name: 'SCPSalesOrderList',
+        component: () => import('@/views/scp/SCPSalesOrderList.vue'),
+        meta: { title: '销售订单', icon: 'DocumentCopy' }
+      },
+      {
+        path: 'scp/supplier-kpi',
+        name: 'SupplierKPIList',
+        component: () => import('@/views/scp/SupplierKPIList.vue'),
+        meta: { title: '供应商绩效', icon: 'DataLine' }
+      },
+      {
+        path: 'scp/customer-inquiry',
+        name: 'CustomerInquiryList',
+        component: () => import('@/views/scp/CustomerInquiryList.vue'),
+        meta: { title: '客户询价', icon: 'Message' }
+      },
+      // 统一告警
+      {
+        path: 'alert/rules',
+        name: 'AlertRulesList',
+        component: () => import('@/views/alert/AlertRulesList.vue'),
+        meta: { title: '告警规则', icon: 'SetUp' }
+      },
+      {
+        path: 'alert/records',
+        name: 'AlertRecordsList',
+        component: () => import('@/views/alert/AlertRecordsList.vue'),
+        meta: { title: '告警记录', icon: 'List' }
+      },
+      {
+        path: 'alert/escalation',
+        name: 'AlertEscalationList',
+        component: () => import('@/views/alert/AlertEscalationList.vue'),
+        meta: { title: '升级规则', icon: 'Top' }
+      },
+      {
+        path: 'alert/statistics',
+        name: 'AlertStatistics',
+        component: () => import('@/views/alert/AlertStatistics.vue'),
+        meta: { title: '告警统计', icon: 'DataAnalysis' }
+      },
+      {
+        path: 'alert/notification',
+        name: 'AlertNotification',
+        component: () => import('@/views/alert/AlertNotification.vue'),
+        meta: { title: '告警通知', icon: 'Message' }
+      },
+      // 流程管理
+      {
+        path: 'bpm/process',
+        name: 'BPMProcessList',
+        component: () => import('@/views/bpm/ProcessList.vue'),
+        meta: { title: '流程模型', icon: 'FlowChart' }
+      },
+      {
+        path: 'bpm/instance',
+        name: 'BPMInstanceList',
+        component: () => import('@/views/bpm/InstanceList.vue'),
+        meta: { title: '流程实例', icon: 'Connection' }
+      },
+      {
+        path: 'bpm/task',
+        name: 'BPMTaskList',
+        component: () => import('@/views/bpm/TaskList.vue'),
+        meta: { title: '任务实例', icon: 'Tickets' }
+      },
+      // APS扩展
+      {
+        path: 'aps/rolling-config',
+        name: 'RollingConfigList',
+        component: () => import('@/views/aps/RollingConfigList.vue'),
+        meta: { title: '滚动排程', icon: 'Refresh' }
+      },
+      {
+        path: 'aps/delivery-analysis',
+        name: 'DeliveryAnalysisList',
+        component: () => import('@/views/aps/DeliveryAnalysisList.vue'),
+        meta: { title: '交付分析', icon: 'TrendCharts' }
+      },
+      {
+        path: 'aps/material-shortage',
+        name: 'MaterialShortageList',
+        component: () => import('@/views/aps/MaterialShortageList.vue'),
+        meta: { title: '缺料分析', icon: 'Warning' }
+      },
+      {
+        path: 'aps/shortage-rule',
+        name: 'ShortageRuleList',
+        component: () => import('@/views/aps/ShortageRuleList.vue'),
+        meta: { title: '缺料规则', icon: 'SetUp' }
+      },
+      {
+        path: 'aps/changeover-matrix',
+        name: 'ChangeoverMatrixList',
+        component: () => import('@/views/aps/ChangeoverMatrixList.vue'),
+        meta: { title: '换型矩阵', icon: 'Grid' }
+      },
+      {
+        path: 'aps/product-family',
+        name: 'ProductFamilyList',
+        component: () => import('@/views/aps/ProductFamilyList.vue'),
+        meta: { title: '产品族', icon: 'Collection' }
+      },
+      // WMS扩展
+      {
+        path: 'wms/transfer',
+        name: 'TransferOrderList',
+        component: () => import('@/views/wms/TransferOrderList.vue'),
+        meta: { title: '调拨管理', icon: 'Switch' }
+      },
+      {
+        path: 'wms/stock-check',
+        name: 'StockCheckList',
+        component: () => import('@/views/wms/StockCheckList.vue'),
+        meta: { title: '盘点管理', icon: 'DocumentChecked' }
+      },
+      // 质量扩展
+      {
+        path: 'quality/qrci',
+        name: 'QRCIList',
+        component: () => import('@/views/quality/QRCIList.vue'),
+        meta: { title: 'QRCI质量闭环', icon: 'CircleCheck' }
+      },
+      {
+        path: 'quality/lpa',
+        name: 'LPAStandardList',
+        component: () => import('@/views/quality/LPAStandardList.vue'),
+        meta: { title: 'LPA分层审核', icon: 'Checked' }
+      },
+      {
+        path: 'quality/dynamic-rule',
+        name: 'DynamicRuleList',
+        component: () => import('@/views/quality/DynamicRuleList.vue'),
+        meta: { title: '动态规则', icon: 'Setting' }
+      },
+      {
+        path: 'quality/aql',
+        name: 'AQLList',
+        component: () => import('@/views/quality/AQLList.vue'),
+        meta: { title: 'AQL抽样标准', icon: 'DataLine' }
+      },
+      {
+        path: 'quality/inspection-plans',
+        name: 'QualityInspectionPlanList',
+        component: () => import('@/views/quality/InspectionPlanList.vue'),
+        meta: { title: '检验计划', icon: 'Schedule' }
+      },
+      {
+        path: 'quality/lab/samples',
+        name: 'LabSampleList',
+        component: () => import('@/views/quality/lab/LabSampleList.vue'),
+        meta: { title: '检测样品', icon: 'Box' }
+      },
+      {
+        path: 'quality/lab/reports',
+        name: 'LabReportList',
+        component: () => import('@/views/quality/lab/LabReportList.vue'),
+        meta: { title: '检测报告', icon: 'Document' }
+      },
+      {
+        path: 'quality/lab-instrument',
+        name: 'LabInstrumentList',
+        component: () => import('@/views/quality/lab/LabInstrumentList.vue'),
+        meta: { title: '检测仪器', icon: 'Scale' }
+      },
+      // EAM模块
+      {
+        path: 'eam/factory',
+        name: 'FactoryList',
+        component: () => import('@/views/eam/FactoryList.vue'),
+        meta: { title: '厂区管理', icon: 'OfficeBuilding' }
+      },
+      {
+        path: 'eam/equipment-org',
+        name: 'EquipmentOrgList',
+        component: () => import('@/views/eam/EquipmentOrgList.vue'),
+        meta: { title: '设备层级', icon: 'Grid' }
+      },
+      {
+        path: 'eam/downtime',
+        name: 'DowntimeList',
+        component: () => import('@/views/eam/DowntimeList.vue'),
+        meta: { title: '停机记录', icon: 'Warning' }
+      },
+      // 供应商ASN
+      {
+        path: 'supplier/asn',
+        name: 'ASNList',
+        component: () => import('@/views/supplier/ASNList.vue'),
+        meta: { title: 'ASN到货通知', icon: 'Bell' }
+      },
+      // 财务模块
+      {
+        path: 'fin/purchase-settlement',
+        name: 'PurchaseSettlementList',
+        component: () => import('@/views/fin/PurchaseSettlementList.vue'),
+        meta: { title: '采购结算', icon: 'Document' }
+      },
+      {
+        path: 'fin/sales-settlement',
+        name: 'SalesSettlementList',
+        component: () => import('@/views/fin/SalesSettlementList.vue'),
+        meta: { title: '销售结算', icon: 'DocumentCopy' }
+      },
+      {
+        path: 'fin/payment-request',
+        name: 'PaymentRequestList',
+        component: () => import('@/views/fin/PaymentRequestList.vue'),
+        meta: { title: '付款申请', icon: 'Money' }
+      },
+      // 生产扩展
+      {
+        path: 'production/issue',
+        name: 'ProductionIssueList',
+        component: () => import('@/views/production/ProductionIssueList.vue'),
+        meta: { title: '生产发料', icon: 'Upload' }
+      },
+      {
+        path: 'production/return',
+        name: 'ProductionReturnList',
+        component: () => import('@/views/production/ProductionReturnList.vue'),
+        meta: { title: '生产退料', icon: 'Download' }
+      },
+      // 设备扩展
+      {
+        path: 'equipment/inspection/templates',
+        name: 'InspectionTemplateList',
+        component: () => import('@/views/equipment/InspectionTemplateList.vue'),
+        meta: { title: '点检模板', icon: 'Tickets' }
+      },
+      {
+        path: 'equipment/inspection/plans',
+        name: 'InspectionPlanList',
+        component: () => import('@/views/equipment/InspectionPlanList.vue'),
+        meta: { title: '点检计划', icon: 'Schedule' }
+      },
+      {
+        path: 'equipment/inspection/records',
+        name: 'InspectionRecordList',
+        component: () => import('@/views/equipment/InspectionRecordList.vue'),
+        meta: { title: '点检记录', icon: 'Document' }
+      },
+      {
+        path: 'equipment/inspection/defects',
+        name: 'InspectionDefectList',
+        component: () => import('@/views/equipment/InspectionDefectList.vue'),
+        meta: { title: '点检缺陷', icon: 'Warning' }
+      },
+      {
+        path: 'equipment/gauge',
+        name: 'GaugeList',
+        component: () => import('@/views/equipment/GaugeList.vue'),
+        meta: { title: '量检具管理', icon: 'Scale' }
+      },
+      // 报表模块
+      {
+        path: 'report/production-daily',
+        name: 'ProductionDailyReport',
+        component: () => import('@/views/report/ProductionDailyReport.vue'),
+        meta: { title: '生产日报', icon: 'DataLine' }
+      },
+      {
+        path: 'report/quality-weekly',
+        name: 'QualityWeeklyReport',
+        component: () => import('@/views/report/QualityWeeklyReport.vue'),
+        meta: { title: '质量周报', icon: 'DataAnalysis' }
+      },
+      {
+        path: 'report/oee',
+        name: 'OEEReport',
+        component: () => import('@/views/report/OEEReport.vue'),
+        meta: { title: 'OEE报表', icon: 'TrendCharts' }
+      },
+      {
+        path: 'report/delivery',
+        name: 'DeliveryReport',
+        component: () => import('@/views/report/DeliveryReport.vue'),
+        meta: { title: '交付报表', icon: ' Truck' }
+      },
+      {
+        path: 'report/andon',
+        name: 'AndonReport',
+        component: () => import('@/views/report/AndonReport.vue'),
+        meta: { title: '安东报表', icon: 'Bell' }
+      },
+      // MES模块
+      {
+        path: 'mes/team',
+        name: 'TeamList',
+        component: () => import('@/views/mes/TeamList.vue'),
+        meta: { title: '班组管理', icon: 'User' }
+      },
+      {
+        path: 'mes/process-routes',
+        name: 'ProcessRouteList',
+        component: () => import('@/views/mes/ProcessRouteList.vue'),
+        meta: { title: '工艺路线', icon: 'Guide' }
+      },
+      {
+        path: 'mes/person-skill',
+        name: 'PersonSkillList',
+        component: () => import('@/views/mes/PersonSkillList.vue'),
+        meta: { title: '人员能力', icon: 'Star' }
+      },
+      {
+        path: 'mes/offline',
+        name: 'OfflineList',
+        component: () => import('@/views/mes/OfflineList.vue'),
+        meta: { title: '产品离线', icon: 'Warning' }
+      },
+      {
+        path: 'mes/material-trace',
+        name: 'MaterialTrace',
+        component: () => import('@/views/mes/MaterialTrace.vue'),
+        meta: { title: '物料追溯', icon: 'Search' }
+      },
+      // AGV模块
+      {
+        path: 'agv/task',
+        name: 'AGVTaskList',
+        component: () => import('@/views/agv/TaskList.vue'),
+        meta: { title: 'AGV任务', icon: 'Document' }
+      },
+      {
+        path: 'agv/device',
+        name: 'AGVDeviceList',
+        component: () => import('@/views/agv/DeviceList.vue'),
+        meta: { title: 'AGV设备', icon: 'Processor' }
+      },
+      {
+        path: 'agv/location',
+        name: 'AGVLocationList',
+        component: () => import('@/views/agv/LocationList.vue'),
+        meta: { title: '库位映射', icon: 'Location' }
+      },
+      // 系统集成
+      {
+        path: 'integration/interface-config',
+        name: 'InterfaceConfigList',
+        component: () => import('@/views/integration/InterfaceConfigList.vue'),
+        meta: { title: '接口配置', icon: 'Interface' }
+      },
+      {
+        path: 'integration/execution-log',
+        name: 'ExecutionLogList',
+        component: () => import('@/views/integration/ExecutionLogList.vue'),
+        meta: { title: '执行日志', icon: 'List' }
       }
     ]
   },

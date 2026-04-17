@@ -40,7 +40,9 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await getUserInfo()
       userInfo.value = res.data
     } catch (error) {
-      logoutAction()
+      // 只清除用户信息，保留登录状态和token
+      // 避免因临时网络错误导致已登录用户被登出
+      userInfo.value = null
     }
   }
 

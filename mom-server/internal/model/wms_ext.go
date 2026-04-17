@@ -1,89 +1,135 @@
 package model
 
-// TransferOrderItem 调拨单明细
-type TransferOrderItem struct {
+import (
+	"time"
+)
+
+// PickList 配料单
+type PickList struct {
 	BaseModel
-	TenantID       int64   `json:"tenant_id" gorm:"index;not null"`
-	TransferID    int64   `json:"transfer_id"`
-	MaterialID    int64   `json:"material_id"`
-	MaterialCode  string  `json:"material_code" gorm:"size:50"`
-	MaterialName  string  `json:"material_name" gorm:"size:100"`
-	Quantity      float64 `json:"quantity"` // 调拨数量
-	OutQuantity   float64 `json:"out_quantity"` // 已出库数量
-	InQuantity    float64 `json:"in_quantity"` // 已入库数量
-	Unit          *string `json:"unit" gorm:"size:20"`
-	BatchNo       *string `json:"batch_no" gorm:"size:50"`
-	Remark        *string `json:"remark" gorm:"size:500"`
+	TenantID       int64      `json:"tenant_id" gorm:"index;not null"`
+	PickNo        string     `json:"pick_no" gorm:"size:50;not null;uniqueIndex:idx_tenant_pick"`
+	OrderID       int64      `json:"order_id"` // 关联工单ID
+	OrderNo       string     `json:"order_no" gorm:"size:50"` // 工单号
+	WorkshopID    int64      `json:"workshop_id"`
+	WorkshopName  *string    `json:"workshop_name" gorm:"size:100"`
+	Status        int        `json:"status" gorm:"default:1"` // 1待配料/2配料中/3已完成
+	PickerID      *int64     `json:"picker_id"`
+	PickerName    *string    `json:"picker_name" gorm:"size:50"`
+	PickTime     *time.Time `json:"pick_time"`
+	Remark       *string    `json:"remark" gorm:"size:500"`
 }
 
-func (TransferOrderItem) TableName() string {
-	return "wms_transfer_order_item"
+func (PickList) TableName() string {
+	return "wms_pick_list"
 }
 
-// StockCheckItem 盘点明细
-type StockCheckItem struct {
+// PickListItem 配料单明细
+type PickListItem struct {
 	BaseModel
-	TenantID     int64   `json:"tenant_id" gorm:"index;not null"`
-	CheckID      int64   `json:"check_id"`
+	PickID       int64   `json:"pick_id" gorm:"index"`
 	MaterialID   int64   `json:"material_id"`
 	MaterialCode string  `json:"material_code" gorm:"size:50"`
 	MaterialName string  `json:"material_name" gorm:"size:100"`
-	LocationID   *int64  `json:"location_id"`
-	LocationName *string `json:"location_name" gorm:"size:100"`
+	Unit         string  `json:"unit" gorm:"size:20"`
+	RequiredQty  float64 `json:"required_qty" gorm:"type:decimal(18,4)"` // 需求数量
+	PickedQty    float64 `json:"picked_qty" gorm:"type:decimal(18,4);default:0"` // 已配数量
+	WarehouseID  int64   `json:"warehouse_id"`
+	WarehouseName *string `json:"warehouse_name" gorm:"size:100"`
+	LocationID   int64   `json:"location_id"`
+	LocationCode *string `json:"location_code" gorm:"size:50"`
 	BatchNo      *string `json:"batch_no" gorm:"size:50"`
-	StockQty     float64 `json:"stock_qty"` // 账面数量
-	CheckQty     float64 `json:"check_qty"` // 盘点数量
-	DiffQty      float64 `json:"diff_qty"` // 差异数量
-	Unit         *string `json:"unit" gorm:"size:20"`
-	HandleResult *string `json:"handle_result" gorm:"size:100"` // 处理方式
 	Remark       *string `json:"remark" gorm:"size:500"`
 }
 
-func (StockCheckItem) TableName() string {
-	return "wms_stock_check_item"
+func (PickListItem) TableName() string {
+	return "wms_pick_list_item"
 }
 
-// SideLocation 线边库位
-type SideLocation struct {
+// GoodsReceipt 完工收货单（MES工单完工后WMS自动生成）
+type GoodsReceipt struct {
 	BaseModel
-	TenantID     int64   `json:"tenant_id" gorm:"index;not null"`
-	LocationCode string  `json:"location_code" gorm:"size:50;not null;uniqueIndex:idx_tenant_sideloc"`
-	LocationName string  `json:"location_name" gorm:"size:100"`
-	WorkshopID   int64   `json:"workshop_id"`
-	WorkshopName *string `json:"workshop_name" gorm:"size:100"`
-	LineID      *int64  `json:"line_id"`
-	LineName    *string `json:"line_name" gorm:"size:100"`
-	StationID   *int64  `json:"station_id"`
-	StationName *string `json:"station_name" gorm:"size:100"`
-	LocationType string  `json:"location_type" gorm:"size:20"` // 原料/成品/工装
-	MaxCapacity *float64 `json:"max_capacity"` // 最大容量
-	CurrentQty  float64  `json:"current_qty"` // 当前数量
-	Status      int       `json:"status" gorm:"default:1"` // 1启用/2停用
-	Remark      *string  `json:"remark" gorm:"size:500"`
+	TenantID       int64      `json:"tenant_id" gorm:"index;not null"`
+	ReceiptNo      string     `json:"receipt_no" gorm:"size:50;not null;uniqueIndex:idx_tenant_receipt"`
+	SourceType     string     `json:"source_type" gorm:"size:20"` // MES_ORDER
+	SourceID       int64      `json:"source_id"` // 来源单ID（工单ID）
+	SourceNo       string     `json:"source_no" gorm:"size:50"` // 来源单号（工单号）
+	MaterialID     int64      `json:"material_id"`
+	MaterialCode   string     `json:"material_code" gorm:"size:50"`
+	MaterialName   string     `json:"material_name" gorm:"size:100"`
+	WarehouseID    int64      `json:"warehouse_id"`
+	WarehouseName  *string    `json:"warehouse_name" gorm:"size:100"`
+	LocationID     int64      `json:"location_id"`
+	LocationCode   *string    `json:"location_code" gorm:"size:50"`
+	Quantity       float64    `json:"quantity" gorm:"type:decimal(18,4)"` // 收货数量
+	QualifiedQty   float64    `json:"qualified_qty" gorm:"type:decimal(18,4);default:0"` // 合格数量
+	RejectedQty    float64    `json:"rejected_qty" gorm:"type:decimal(18,4);default:0"` // 不良数量
+	ReceiptDate    *time.Time `json:"receipt_date"`
+	ReceiverID     *int64     `json:"receiver_id"`
+	ReceiverName   *string    `json:"receiver_name" gorm:"size:50"`
+	Status         int        `json:"status" gorm:"default:1"` // 1待入库/2入库中/3已完成
+	InspectStatus  int        `json:"inspect_status" gorm:"default:0"` // 0无需检验/1待检验/2检验中/3已检验
+	Remark         *string    `json:"remark" gorm:"size:500"`
 }
 
-func (SideLocation) TableName() string {
-	return "wms_side_location"
+func (GoodsReceipt) TableName() string {
+	return "wms_goods_receipt"
 }
 
-// KanbanPull 看板拉动
-type KanbanPull struct {
-	BaseModel
-	TenantID      int64     `json:"tenant_id" gorm:"index;not null"`
-	KanbanNo     string    `json:"kanban_no" gorm:"size:50;not null;uniqueIndex:idx_tenant_kanban"`
-	MaterialID   int64     `json:"material_id"`
-	MaterialCode string    `json:"material_code" gorm:"size:50"`
-	MaterialName string    `json:"material_name" gorm:"size:100"`
-	FromLocationID int64   `json:"from_location_id"` // 物料来源(线边库位)
-	ToLocationID  int64    `json:"to_location_id"` // 物料去向(工位)
-	KanbanQty    float64   `json:"kanban_qty"` // 看板数量
-	TriggerQty   float64   `json:"trigger_qty"` // 触发数量
-	CurrentQty   float64  `json:"current_qty"` // 当前库存
-	LeadTime     int       `json:"lead_time"` // 提前期(分钟)
-	Status       int       `json:"status" gorm:"default:1"` // 1启用/2停用
-	Remark       *string   `json:"remark" gorm:"size:500"`
+// EventLogPayload 事件载荷基础结构
+type EventLogPayload struct {
+	TenantID    int64                  `json:"tenant_id"`
+	OperatorID  int64                  `json:"operator_id"`
+	OperatorName string                `json:"operator_name"`
+	Remark      string                 `json:"remark"`
 }
 
-func (KanbanPull) TableName() string {
-	return "wms_kanban_pull"
+// MESOrderStartedPayload MES工单开工事件载荷
+type MESOrderStartedPayload struct {
+	EventLogPayload
+	OrderID     int64   `json:"order_id"`
+	OrderNo     string  `json:"order_no"`
+	MaterialID  int64   `json:"material_id"`
+	MaterialCode string `json:"material_code"`
+	MaterialName string `json:"material_name"`
+	Quantity    float64 `json:"quantity"`
+	WorkshopID  int64   `json:"workshop_id"`
+	WorkshopName string `json:"workshop_name"`
+}
+
+// MESOrderReportedPayload MES工单报工完成事件载荷
+type MESOrderReportedPayload struct {
+	EventLogPayload
+	OrderID     int64   `json:"order_id"`
+	OrderNo     string  `json:"order_no"`
+	ReportQty   float64 `json:"report_qty"`
+	QualifiedQty float64 `json:"qualified_qty"`
+	RejectedQty float64 `json:"rejected_qty"`
+}
+
+// WMSPurchaseReceivedPayload WMS采购收货事件载荷
+type WMSPurchaseReceivedPayload struct {
+	EventLogPayload
+	ReceiveID   int64   `json:"receive_id"`
+	ReceiveNo   string  `json:"receive_no"`
+	SupplierID  int64   `json:"supplier_id"`
+	SupplierName string `json:"supplier_name"`
+	Items       []struct {
+		MaterialID   int64   `json:"material_id"`
+		MaterialCode string  `json:"material_code"`
+		MaterialName string  `json:"material_name"`
+		Quantity     float64 `json:"quantity"`
+		BatchNo      string  `json:"batch_no"`
+	} `json:"items"`
+}
+
+// QMSInspectionCompletedPayload QMS检验完成事件载荷
+type QMSInspectionCompletedPayload struct {
+	EventLogPayload
+	IQCID       int64   `json:"iqc_id"`
+	IQCNo       string  `json:"iqc_no"`
+	ReceiveNo   string  `json:"receive_no"` // 关联收货单号
+	Result      int     `json:"result"` // 2合格/3不合格
+	QualifiedQty float64 `json:"qualified_qty"`
+	RejectedQty float64 `json:"rejected_qty"`
 }

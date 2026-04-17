@@ -5,17 +5,28 @@ import (
 	"mom-server/internal/handler/andon"
 	"mom-server/internal/handler/aps"
 	"mom-server/internal/handler/business"
+	"mom-server/internal/handler/container"
 	"mom-server/internal/handler/dc"
 	"mom-server/internal/handler/equipment"
+	"mom-server/internal/handler/alert"
+	"mom-server/internal/handler/bpm"
+	"mom-server/internal/handler/eam"
+	"mom-server/internal/handler/fin"
 	"mom-server/internal/handler/mdm"
+	"mom-server/internal/handler/scp"
 	"mom-server/internal/handler/production"
 	"mom-server/internal/handler/quality"
-	"mom-server/internal/handler/supplier"
+"mom-server/internal/handler/supplier"
+	"mom-server/internal/handler/supplier_asn"
 	"mom-server/internal/handler/system"
 	"mom-server/internal/handler/trace"
 	"mom-server/internal/handler/ai"
-	"mom-server/internal/handler/container"
 	"mom-server/internal/handler/wms"
+	"mom-server/internal/handler/agv"
+	"mom-server/internal/handler/erp_sync"
+	"mom-server/internal/handler/integration"
+	"mom-server/internal/handler/mes"
+	"mom-server/internal/handler/report"
 	"mom-server/internal/middleware"
 	"mom-server/internal/pkg/jwt"
 )
@@ -64,8 +75,9 @@ type Router struct {
 	defectRecordHandler *quality.DefectRecordHandler
 	ncrHandler        *quality.NCRHandler
 	spcHandler        *quality.SPCHandler
-	supplierHandler    *supplier.SupplierHandler
-	materialHandler    *mdm.MaterialHandler
+	supplierHandler       *supplier.SupplierHandler
+	supplierASNHandler    *supplier_asn.SupplierASNHandler
+	materialHandler       *mdm.MaterialHandler
 	materialCategoryHandler *mdm.MaterialCategoryHandler
 	customerHandler   *mdm.CustomerHandler
 	workshopHandler    *mdm.WorkshopHandler
@@ -101,6 +113,49 @@ type Router struct {
 	andonRuleHandler  *andon.RuleHandler
 	workshopConfigHandler *mdm.WorkshopConfigHandler
 	workingCalendarHandler *mdm.WorkingCalendarHandler
+	finHandler             *fin.FinHandler
+	equipmentPartHandler     *equipment.EquipmentPartHandler
+	equipmentDocumentHandler *equipment.EquipmentDocumentHandler
+	equipmentDowntimeHandler *eam.EquipmentDowntimeHandler
+	alertHandler            *alert.AlertHandler
+	bpmHandler              *bpm.BPMHandler
+	rfqHandler              *scp.RFQHandler
+	purchaseOrderHandler     *scp.PurchaseOrderHandler
+	scpSalesOrderHandler     *scp.SalesOrderHandler
+	supplierKPIHandler      *scp.SupplierKPIHandler
+	supplierQuoteHandler    *scp.SupplierQuoteHandler
+	customerInquiryHandler   *scp.CustomerInquiryHandler
+	contactHandler                   *mdm.ContactHandler
+	bankAccountHandler                *mdm.BankAccountHandler
+	attachmentHandler                 *mdm.AttachmentHandler
+	supplierMaterialHandler           *supplier.SupplierMaterialHandler
+	containerLifecycleHandler         *container.ContainerLifecycleHandler
+	visualInspectionHandler           *ai.VisualInspectionHandler
+	labSampleHandler                 *quality.LabSampleHandler
+	labTestItemHandler               *quality.LabTestItemHandler
+	labReportHandler                 *quality.LabReportHandler
+	labInstrumentHandler             *quality.LabInstrumentHandler
+	inspectionFeatureHandler         *quality.InspectionFeatureHandler
+	inspectionCharacteristicHandler  *quality.InspectionCharacteristicHandler
+	aqlHandler                       *quality.AQLHandler
+	mesTeamHandler                   *mes.TeamHandler
+	mesProcessHandler                *mes.ProcessHandler
+	mesOfflineHandler                *mes.OfflineHandler
+	productionIssueHandler           *production.ProductionIssueHandler
+	productionReturnHandler          *production.ProductionReturnHandler
+	productionCompleteHandler        *production.ProductionCompleteHandler
+	purchaseReturnHandler            *wms.PurchaseReturnHandler
+	salesReturnHandler               *wms.SalesReturnHandler
+	mesHandler                       *mes.MesHandler
+	personSkillHandler               *mes.PersonSkillHandler
+	productionDailyReportHandler     *report.ProductionDailyReportHandler
+	qualityWeeklyReportHandler       *report.QualityWeeklyReportHandler
+	oeeReportHandler                 *report.OEEReportHandler
+	deliveryReportHandler            *report.DeliveryReportHandler
+	andonReportHandler               *report.AndonReportHandler
+	integrationHandler              *integration.IntegrationHandler
+	agvHandler                    *agv.AGVHandler
+	erpSyncHandler                *erp_sync.ERPSyncHandler
 }
 
 // New 创建路由
@@ -146,6 +201,7 @@ func New(
 	ncrHandler *quality.NCRHandler,
 	spcHandler *quality.SPCHandler,
 	supplierHandler *supplier.SupplierHandler,
+	supplierASNHandler *supplier_asn.SupplierASNHandler,
 	materialHandler *mdm.MaterialHandler,
 	materialCategoryHandler *mdm.MaterialCategoryHandler,
 	customerHandler *mdm.CustomerHandler,
@@ -183,6 +239,49 @@ func New(
 	andonRuleHandler *andon.RuleHandler,
 	workshopConfigHandler *mdm.WorkshopConfigHandler,
 	workingCalendarHandler *mdm.WorkingCalendarHandler,
+	finHandler *fin.FinHandler,
+	equipmentPartHandler *equipment.EquipmentPartHandler,
+	equipmentDocumentHandler *equipment.EquipmentDocumentHandler,
+	equipmentDowntimeHandler *eam.EquipmentDowntimeHandler,
+	alertHandler *alert.AlertHandler,
+	bpmHandler *bpm.BPMHandler,
+	rfqHandler *scp.RFQHandler,
+	purchaseOrderHandler *scp.PurchaseOrderHandler,
+	scpSalesOrderHandler *scp.SalesOrderHandler,
+	supplierKPIHandler *scp.SupplierKPIHandler,
+	supplierQuoteHandler *scp.SupplierQuoteHandler,
+	customerInquiryHandler *scp.CustomerInquiryHandler,
+	contactHandler *mdm.ContactHandler,
+	bankAccountHandler *mdm.BankAccountHandler,
+	attachmentHandler *mdm.AttachmentHandler,
+	supplierMaterialHandler *supplier.SupplierMaterialHandler,
+	containerLifecycleHandler *container.ContainerLifecycleHandler,
+	visualInspectionHandler *ai.VisualInspectionHandler,
+	labSampleHandler *quality.LabSampleHandler,
+	labTestItemHandler *quality.LabTestItemHandler,
+	labReportHandler *quality.LabReportHandler,
+	labInstrumentHandler *quality.LabInstrumentHandler,
+	inspectionFeatureHandler *quality.InspectionFeatureHandler,
+	inspectionCharacteristicHandler *quality.InspectionCharacteristicHandler,
+	aqlHandler *quality.AQLHandler,
+	mesTeamHandler *mes.TeamHandler,
+	mesProcessHandler *mes.ProcessHandler,
+	mesOfflineHandler *mes.OfflineHandler,
+	productionIssueHandler *production.ProductionIssueHandler,
+	productionReturnHandler *production.ProductionReturnHandler,
+	productionCompleteHandler *production.ProductionCompleteHandler,
+	purchaseReturnHandler *wms.PurchaseReturnHandler,
+	salesReturnHandler *wms.SalesReturnHandler,
+	mesHandler *mes.MesHandler,
+	personSkillHandler *mes.PersonSkillHandler,
+	productionDailyReportHandler *report.ProductionDailyReportHandler,
+	qualityWeeklyReportHandler *report.QualityWeeklyReportHandler,
+	oeeReportHandler *report.OEEReportHandler,
+	deliveryReportHandler *report.DeliveryReportHandler,
+	andonReportHandler *report.AndonReportHandler,
+	integrationHandler *integration.IntegrationHandler,
+	agvHandler *agv.AGVHandler,
+	erpSyncHandler *erp_sync.ERPSyncHandler,
 ) *Router {
 	return &Router{
 		jwtUtil:             jwtUtil,
@@ -226,32 +325,33 @@ func New(
 		ncrHandler:            ncrHandler,
 		spcHandler:            spcHandler,
 		supplierHandler:       supplierHandler,
+		supplierASNHandler:    supplierASNHandler,
 		materialHandler:       materialHandler,
 		materialCategoryHandler: materialCategoryHandler,
 		customerHandler:     customerHandler,
 		workshopHandler:       workshopHandler,
 		operLogHandler:         operLogHandler,
 		oeeHandler:            oeeHandler,
-			teepDataHandler:       teepDataHandler,
-			moldHandler:           moldHandler,
-			moldMaintenanceHandler: moldMaintenanceHandler,
-			moldRepairHandler:     moldRepairHandler,
-			gaugeHandler:          gaugeHandler,
-			gaugeCalibrationHandler: gaugeCalibrationHandler,
+		teepDataHandler:       teepDataHandler,
+		moldHandler:           moldHandler,
+		moldMaintenanceHandler: moldMaintenanceHandler,
+		moldRepairHandler:     moldRepairHandler,
+		gaugeHandler:          gaugeHandler,
+		gaugeCalibrationHandler: gaugeCalibrationHandler,
 		importHandler:         importHandler,
-			firstLastInspectHandler: firstLastInspectHandler,
-			packageHandler:          packageHandler,
-			dcHandler:               dcHandler,
-			electronicSOPHandler:    electronicSOPHandler,
-			codeRuleHandler:          codeRuleHandler,
-			flowCardHandler:          flowCardHandler,
-			noticeHandler:           noticeHandler,
-			printTemplateHandler:     printTemplateHandler,
-			capacityAnalysisHandler:  capacityAnalysisHandler,
-			deliveryRateHandler:      deliveryRateHandler,
-			changeoverMatrixHandler:  changeoverMatrixHandler,
-			rollingScheduleHandler:   rollingScheduleHandler,
-			jitDemandHandler:          jitDemandHandler,
+		firstLastInspectHandler: firstLastInspectHandler,
+		packageHandler:          packageHandler,
+		dcHandler:               dcHandler,
+		electronicSOPHandler:    electronicSOPHandler,
+		codeRuleHandler:          codeRuleHandler,
+		flowCardHandler:          flowCardHandler,
+		noticeHandler:           noticeHandler,
+		printTemplateHandler:     printTemplateHandler,
+		capacityAnalysisHandler:  capacityAnalysisHandler,
+		deliveryRateHandler:      deliveryRateHandler,
+		changeoverMatrixHandler:  changeoverMatrixHandler,
+		rollingScheduleHandler:   rollingScheduleHandler,
+		jitDemandHandler:          jitDemandHandler,
 		containerHandler:           containerHandler,
 		aiConfigHandler:            aiConfigHandler,
 		aiChatHandler:              aiChatHandler,
@@ -259,7 +359,49 @@ func New(
 		andonRuleHandler:         andonRuleHandler,
 		workshopConfigHandler:     workshopConfigHandler,
 		workingCalendarHandler:   workingCalendarHandler,
-		}
+		finHandler:               finHandler,
+		equipmentPartHandler:       equipmentPartHandler,
+		equipmentDocumentHandler:   equipmentDocumentHandler,
+		equipmentDowntimeHandler:   equipmentDowntimeHandler,
+		alertHandler:              alertHandler,
+		bpmHandler:                bpmHandler,
+		rfqHandler:                rfqHandler,
+		purchaseOrderHandler:       purchaseOrderHandler,
+		scpSalesOrderHandler:      scpSalesOrderHandler,
+		supplierKPIHandler:        supplierKPIHandler,
+		supplierQuoteHandler:      supplierQuoteHandler,
+		contactHandler:             contactHandler,
+		bankAccountHandler:        bankAccountHandler,
+		attachmentHandler:         attachmentHandler,
+		supplierMaterialHandler:   supplierMaterialHandler,
+		containerLifecycleHandler: containerLifecycleHandler,
+		visualInspectionHandler:   visualInspectionHandler,
+		labSampleHandler:          labSampleHandler,
+		labTestItemHandler:        labTestItemHandler,
+		labReportHandler:          labReportHandler,
+		labInstrumentHandler:      labInstrumentHandler,
+		inspectionFeatureHandler:  inspectionFeatureHandler,
+		inspectionCharacteristicHandler: inspectionCharacteristicHandler,
+		aqlHandler:               aqlHandler,
+		mesTeamHandler:           mesTeamHandler,
+		mesProcessHandler:        mesProcessHandler,
+		mesOfflineHandler:        mesOfflineHandler,
+		productionIssueHandler:   productionIssueHandler,
+		productionReturnHandler:  productionReturnHandler,
+		productionCompleteHandler: productionCompleteHandler,
+		purchaseReturnHandler:    purchaseReturnHandler,
+		salesReturnHandler:       salesReturnHandler,
+		mesHandler:               mesHandler,
+		personSkillHandler:       personSkillHandler,
+		productionDailyReportHandler:  productionDailyReportHandler,
+		qualityWeeklyReportHandler:    qualityWeeklyReportHandler,
+		oeeReportHandler:              oeeReportHandler,
+		deliveryReportHandler:         deliveryReportHandler,
+		andonReportHandler:            andonReportHandler,
+		integrationHandler:           integrationHandler,
+		agvHandler:                  agvHandler,
+		erpSyncHandler:              erpSyncHandler,
+	}
 }
 
 // Init 初始化路由
@@ -410,6 +552,120 @@ func (r *Router) Init(engine *gin.Engine) {
 			report.POST("", r.reportHandler.Create)
 		}
 
+		// 生产日报
+		prodDaily := protected.Group("/report/production-daily")
+		{
+			prodDaily.GET("/list", r.productionDailyReportHandler.ListProductionDailyReports)
+			prodDaily.GET("/:id", r.productionDailyReportHandler.GetProductionDailyReport)
+			prodDaily.POST("/generate", r.productionDailyReportHandler.GenerateDailyReport)
+			prodDaily.GET("/summary", r.productionDailyReportHandler.GetDailyReportSummary)
+		}
+
+		// 质量周报
+		qualityWeekly := protected.Group("/report/quality-weekly")
+		{
+			qualityWeekly.GET("/list", r.qualityWeeklyReportHandler.ListQualityWeeklyReports)
+			qualityWeekly.GET("/:id", r.qualityWeeklyReportHandler.GetQualityWeeklyReport)
+			qualityWeekly.POST("/generate", r.qualityWeeklyReportHandler.GenerateWeeklyReport)
+		}
+
+		// OEE报表
+		oeeReport := protected.Group("/report/oee")
+		{
+			oeeReport.GET("/list", r.oeeReportHandler.ListOEEReports)
+			oeeReport.GET("/:id", r.oeeReportHandler.GetOEEReport)
+			oeeReport.POST("/generate", r.oeeReportHandler.GenerateOEEReport)
+		}
+
+		// 交付率报表
+		deliveryReport := protected.Group("/report/delivery")
+		{
+			deliveryReport.GET("/list", r.deliveryReportHandler.ListDeliveryReports)
+			deliveryReport.GET("/:id", r.deliveryReportHandler.GetDeliveryReport)
+			deliveryReport.POST("/generate", r.deliveryReportHandler.GenerateDeliveryReport)
+		}
+
+		// 安东报表
+		andonReport := protected.Group("/report/andon")
+		{
+			andonReport.GET("/list", r.andonReportHandler.ListAndonReports)
+			andonReport.GET("/:id", r.andonReportHandler.GetAndonReport)
+			andonReport.POST("/generate", r.andonReportHandler.GenerateAndonReport)
+		}
+
+		// 系统集成 - 接口配置
+		integration := protected.Group("/integration")
+		{
+			integration.GET("/interface-config/list", r.integrationHandler.ListConfigs)
+			integration.GET("/interface-config/:id", r.integrationHandler.GetConfig)
+			integration.POST("/interface-config", r.integrationHandler.CreateConfig)
+			integration.PUT("/interface-config/:id", r.integrationHandler.UpdateConfig)
+			integration.DELETE("/interface-config/:id", r.integrationHandler.DeleteConfig)
+			integration.POST("/interface-config/:id/execute", r.integrationHandler.ExecuteConfig)
+			integration.POST("/interface-config/:id/test", r.integrationHandler.TestConfig)
+
+			// 字段映射
+			integration.GET("/interface-config/:id/field-maps", r.integrationHandler.ListFieldMaps)
+			integration.POST("/interface-config/:id/field-maps", r.integrationHandler.CreateFieldMap)
+			integration.PUT("/field-map/:id", r.integrationHandler.UpdateFieldMap)
+			integration.DELETE("/field-map/:id", r.integrationHandler.DeleteFieldMap)
+
+			// 触发器
+			integration.GET("/interface-config/:id/triggers", r.integrationHandler.ListTriggers)
+			integration.POST("/interface-config/:id/triggers", r.integrationHandler.CreateTrigger)
+			integration.PUT("/trigger/:id", r.integrationHandler.UpdateTrigger)
+			integration.DELETE("/trigger/:id", r.integrationHandler.DeleteTrigger)
+
+			// 执行日志
+			integration.GET("/execution-log/list", r.integrationHandler.ListExecutionLogs)
+			integration.GET("/execution-log/:id", r.integrationHandler.GetExecutionLog)
+
+			// 枚举选项
+			integration.GET("/options", r.integrationHandler.GetConstantOptions)
+
+			// ERP同步
+			integration.GET("/erp/sync-log/list", r.erpSyncHandler.ListSyncLogs)
+			integration.GET("/erp/sync-log/:id", r.erpSyncHandler.GetSyncLog)
+			integration.GET("/erp/status/:syncId", r.erpSyncHandler.GetSyncStatus)
+			integration.POST("/erp/bom/sync", r.erpSyncHandler.SyncBOM)
+			integration.POST("/erp/order/sync", r.erpSyncHandler.SyncProductionOrder)
+			integration.POST("/erp/stock/sync", r.erpSyncHandler.SyncStock)
+			integration.POST("/erp/report/push", r.erpSyncHandler.PushReport)
+			integration.POST("/erp/stockin/push", r.erpSyncHandler.PushStockIn)
+			integration.POST("/erp/quality/push", r.erpSyncHandler.PushQualityData)
+		}
+
+		// AGV管理
+		agv := protected.Group("/agv")
+		{
+			// AGV任务
+			agv.GET("/task/list", r.agvHandler.ListTasks)
+			agv.GET("/task/:id", r.agvHandler.GetTask)
+			agv.POST("/task", r.agvHandler.CreateTask)
+			agv.PUT("/task/:id/cancel", r.agvHandler.CancelTask)
+			agv.PUT("/task/:id/assign", r.agvHandler.AssignTask)
+			agv.PUT("/task/:id/complete", r.agvHandler.CompleteTask)
+			agv.PUT("/task/:id/start", r.agvHandler.StartTask)
+
+			// AGV设备
+			agv.GET("/device/list", r.agvHandler.ListDevices)
+			agv.GET("/device/:id", r.agvHandler.GetDevice)
+			agv.POST("/device", r.agvHandler.CreateDevice)
+			agv.PUT("/device/:id/status", r.agvHandler.UpdateDeviceStatus)
+			agv.GET("/device/available", r.agvHandler.GetAvailableAGVs)
+
+			// AGV库位映射
+			agv.GET("/location/list", r.agvHandler.ListLocations)
+			agv.GET("/location/:id", r.agvHandler.GetLocation)
+			agv.POST("/location", r.agvHandler.CreateLocation)
+			agv.PUT("/location/:id", r.agvHandler.UpdateLocation)
+			agv.DELETE("/location/:id", r.agvHandler.DeleteLocation)
+
+			// AGV回调
+			agv.POST("/callback/heartbeat", r.agvHandler.Heartbeat)
+			agv.POST("/callback/task", r.agvHandler.TaskCallback)
+		}
+
 		// 派工
 		dispatch := protected.Group("/production/dispatch")
 		{
@@ -430,6 +686,75 @@ func (r *Router) Init(engine *gin.Engine) {
 			order.DELETE("/:id", r.productionOrderHandler.Delete)
 			order.PUT("/:id/start", r.productionOrderHandler.Start)
 			order.PUT("/:id/complete", r.productionOrderHandler.Complete)
+		}
+
+		// 人员技能矩阵
+		personSkill := protected.Group("/mes/person-skill")
+		{
+			personSkill.GET("/list", r.personSkillHandler.ListPersonSkills)
+			personSkill.GET("/:id", r.personSkillHandler.GetPersonSkill)
+			personSkill.POST("", r.personSkillHandler.CreatePersonSkill)
+			personSkill.PUT("/:id", r.personSkillHandler.UpdatePersonSkill)
+			personSkill.DELETE("/:id", r.personSkillHandler.DeletePersonSkill)
+			personSkill.GET("/detail/:person_id", r.personSkillHandler.GetPersonSkillDetail)
+			personSkill.POST("/evaluate", r.personSkillHandler.EvaluateSkill)
+			personSkill.GET("/capability/:person_id", r.personSkillHandler.GetPersonCapability)
+		}
+
+		// MES班组管理
+		team := protected.Group("/mes/team")
+		{
+			team.GET("/list", r.mesTeamHandler.List)
+			team.GET("/:id", r.mesTeamHandler.Get)
+			team.POST("", r.mesTeamHandler.Create)
+			team.PUT("/:id", r.mesTeamHandler.Update)
+			team.DELETE("/:id", r.mesTeamHandler.Delete)
+			team.GET("/:id/members", r.mesTeamHandler.ListMembers)
+			team.POST("/:id/members", r.mesTeamHandler.AddMember)
+			team.PUT("/members/:member_id", r.mesTeamHandler.UpdateMember)
+			team.DELETE("/members/:member_id", r.mesTeamHandler.RemoveMember)
+			team.GET("/:id/shifts", r.mesTeamHandler.ListShifts)
+			team.POST("/:id/shifts", r.mesTeamHandler.CreateShift)
+			team.PUT("/shifts/:shift_id", r.mesTeamHandler.UpdateShift)
+			team.DELETE("/shifts/:shift_id", r.mesTeamHandler.DeleteShift)
+		}
+
+		// MES工艺路线
+		process := protected.Group("/mes/process-routes")
+		{
+			process.GET("/list", r.mesProcessHandler.List)
+			process.GET("/:id", r.mesProcessHandler.Get)
+			process.GET("/material/:material_code", r.mesProcessHandler.GetByMaterial)
+			process.POST("", r.mesProcessHandler.Create)
+			process.PUT("/:id", r.mesProcessHandler.Update)
+			process.DELETE("/:id", r.mesProcessHandler.Delete)
+			process.PUT("/:id/status", r.mesProcessHandler.UpdateStatus)
+			process.POST("/:id/copy", r.mesProcessHandler.Copy)
+			process.POST("/validate", r.mesProcessHandler.Validate)
+		}
+
+		// MES产品离线
+		offline := protected.Group("/mes/offline")
+		{
+			offline.GET("/list", r.mesOfflineHandler.List)
+			offline.GET("/:id", r.mesOfflineHandler.Get)
+			offline.POST("", r.mesOfflineHandler.Create)
+			offline.PUT("/:id", r.mesOfflineHandler.Update)
+			offline.DELETE("/:id", r.mesOfflineHandler.Delete)
+			offline.POST("/:id/handle", r.mesOfflineHandler.Handle)
+			offline.GET("/:id/items", r.mesOfflineHandler.GetItems)
+		}
+
+		// 生产完工
+		productionComplete := protected.Group("/production/complete")
+		{
+			productionComplete.GET("/list", r.productionCompleteHandler.List)
+			productionComplete.GET("/:id", r.productionCompleteHandler.Get)
+			productionComplete.POST("", r.productionCompleteHandler.Create)
+			productionComplete.POST("/:id/submit-inspect", r.productionCompleteHandler.SubmitForInspect)
+			productionComplete.POST("/:id/qualify", r.productionCompleteHandler.Qualify)
+			productionComplete.POST("/:id/stock-in", r.productionCompleteHandler.StockIn)
+			productionComplete.GET("/stock-in/list", r.productionCompleteHandler.ListStockIn)
 		}
 
 		// 包装条码
@@ -524,6 +849,30 @@ func (r *Router) Init(engine *gin.Engine) {
 			spc.GET("/:id", r.spcHandler.Get)
 			spc.PUT("/:id", r.spcHandler.Update)
 			spc.DELETE("/:id", r.spcHandler.Delete)
+		}
+
+		// 实验室仪器
+		labInstrument := protected.Group("/quality/lab-instrument")
+		{
+			labInstrument.GET("/list", r.labInstrumentHandler.ListLabInstruments)
+			labInstrument.GET("/:id", r.labInstrumentHandler.GetLabInstrument)
+			labInstrument.POST("", r.labInstrumentHandler.CreateLabInstrument)
+			labInstrument.PUT("/:id", r.labInstrumentHandler.UpdateLabInstrument)
+			labInstrument.DELETE("/:id", r.labInstrumentHandler.DeleteLabInstrument)
+			labInstrument.GET("/:id/calibrations", r.labInstrumentHandler.GetLabInstrumentCalibrations)
+			labInstrument.POST("/:id/calibrate", r.labInstrumentHandler.RecordCalibration)
+		}
+
+		// 检验特性
+		inspectionFeature := protected.Group("/quality/inspection-feature")
+		{
+			inspectionFeature.GET("/list", r.inspectionFeatureHandler.ListInspectionFeatures)
+			inspectionFeature.GET("/:id", r.inspectionFeatureHandler.GetInspectionFeature)
+			inspectionFeature.POST("", r.inspectionFeatureHandler.CreateInspectionFeature)
+			inspectionFeature.PUT("/:id", r.inspectionFeatureHandler.UpdateInspectionFeature)
+			inspectionFeature.DELETE("/:id", r.inspectionFeatureHandler.DeleteInspectionFeature)
+			inspectionFeature.POST("/batch", r.inspectionFeatureHandler.BatchCreateInspectionFeature)
+			inspectionFeature.GET("/product/:product_id", r.inspectionFeatureHandler.GetFeaturesByProduct)
 		}
 
 		// APS计划
@@ -633,6 +982,36 @@ func (r *Router) Init(engine *gin.Engine) {
 				kanban.POST("", r.kanbanPullHandler.Create)
 				kanban.PUT("/:id", r.kanbanPullHandler.Update)
 				kanban.DELETE("/:id", r.kanbanPullHandler.Delete)
+			}
+
+			// 采购退货
+			purchaseReturn := wms.Group("/purchase-return")
+			{
+				purchaseReturn.GET("/list", r.purchaseReturnHandler.ListPurchaseReturns)
+				purchaseReturn.GET("/:id", r.purchaseReturnHandler.GetPurchaseReturn)
+				purchaseReturn.POST("", r.purchaseReturnHandler.CreatePurchaseReturn)
+				purchaseReturn.PUT("/:id", r.purchaseReturnHandler.UpdatePurchaseReturn)
+				purchaseReturn.DELETE("/:id", r.purchaseReturnHandler.DeletePurchaseReturn)
+				purchaseReturn.POST("/:id/submit", r.purchaseReturnHandler.SubmitPurchaseReturn)
+				purchaseReturn.POST("/:id/approve", r.purchaseReturnHandler.ApprovePurchaseReturn)
+				purchaseReturn.POST("/:id/start-return", r.purchaseReturnHandler.StartReturnPurchaseReturn)
+				purchaseReturn.POST("/:id/confirm", r.purchaseReturnHandler.ConfirmPurchaseReturn)
+				purchaseReturn.POST("/:id/cancel", r.purchaseReturnHandler.CancelPurchaseReturn)
+			}
+
+			// 销售退货
+			salesReturn := wms.Group("/sales-return")
+			{
+				salesReturn.GET("/list", r.salesReturnHandler.ListSalesReturns)
+				salesReturn.GET("/:id", r.salesReturnHandler.GetSalesReturn)
+				salesReturn.POST("", r.salesReturnHandler.CreateSalesReturn)
+				salesReturn.PUT("/:id", r.salesReturnHandler.UpdateSalesReturn)
+				salesReturn.DELETE("/:id", r.salesReturnHandler.DeleteSalesReturn)
+				salesReturn.POST("/:id/submit", r.salesReturnHandler.SubmitSalesReturn)
+				salesReturn.POST("/:id/approve", r.salesReturnHandler.ApproveSalesReturn)
+				salesReturn.POST("/:id/start-return", r.salesReturnHandler.StartReturnSalesReturn)
+				salesReturn.POST("/:id/confirm", r.salesReturnHandler.ConfirmSalesReturn)
+				salesReturn.POST("/:id/cancel", r.salesReturnHandler.CancelSalesReturn)
 			}
 		}
 
@@ -760,6 +1139,28 @@ func (r *Router) Init(engine *gin.Engine) {
 			gauge.POST("/calibration", r.gaugeCalibrationHandler.Create)
 		}
 
+		// 设备部件
+		equipmentPart := protected.Group("/equipment/part")
+		{
+			equipmentPart.GET("/list", r.equipmentPartHandler.List)
+			equipmentPart.GET("/:id", r.equipmentPartHandler.Get)
+			equipmentPart.POST("", r.equipmentPartHandler.Create)
+			equipmentPart.PUT("/:id", r.equipmentPartHandler.Update)
+			equipmentPart.DELETE("/:id", r.equipmentPartHandler.Delete)
+			equipmentPart.GET("/equipment/:equipment_id", r.equipmentPartHandler.ListByEquipment)
+		}
+
+		// 设备文档
+		equipmentDocument := protected.Group("/equipment/document")
+		{
+			equipmentDocument.GET("/list", r.equipmentDocumentHandler.List)
+			equipmentDocument.GET("/:id", r.equipmentDocumentHandler.Get)
+			equipmentDocument.POST("", r.equipmentDocumentHandler.Create)
+			equipmentDocument.PUT("/:id", r.equipmentDocumentHandler.Update)
+			equipmentDocument.DELETE("/:id", r.equipmentDocumentHandler.Delete)
+			equipmentDocument.GET("/equipment/:equipment_id", r.equipmentDocumentHandler.ListByEquipment)
+		}
+
 		// 生产线
 		line := protected.Group("/mdm/line")
 		{
@@ -878,6 +1279,43 @@ func (r *Router) Init(engine *gin.Engine) {
 			supplier.POST("", r.supplierHandler.Create)
 			supplier.PUT("/:id", r.supplierHandler.Update)
 			supplier.DELETE("/:id", r.supplierHandler.Delete)
+		}
+
+		// SCP供应链供应商（别名，供前端调用）
+		scpSupplier := protected.Group("/scp/supplier")
+		{
+			scpSupplier.GET("/list", r.supplierHandler.List)
+			scpSupplier.GET("/:id", r.supplierHandler.Get)
+		}
+
+		// 供应商ASN管理
+		asn := protected.Group("/supplier/asn")
+		{
+			asn.GET("/list", r.supplierASNHandler.List)
+			asn.GET("/:id", r.supplierASNHandler.Get)
+			asn.GET("/no/:asnNo", r.supplierASNHandler.GetByNo)
+			asn.POST("", r.supplierASNHandler.Create)
+			asn.PUT("/:id", r.supplierASNHandler.Update)
+			asn.DELETE("/:id", r.supplierASNHandler.Delete)
+			asn.PUT("/:id/submit", r.supplierASNHandler.Submit)
+			asn.PUT("/:id/confirm", r.supplierASNHandler.Confirm)
+			asn.PUT("/:id/start-receiving", r.supplierASNHandler.StartReceiving)
+			asn.PUT("/:id/complete-receiving", r.supplierASNHandler.CompleteReceiving)
+			asn.PUT("/:id/cancel", r.supplierASNHandler.Cancel)
+			asn.POST("/:id/items", r.supplierASNHandler.AddItem)
+		}
+
+		// 供应商物料关联
+		supplierMaterial := protected.Group("/mdm/supplier-material")
+		{
+			supplierMaterial.GET("/list", r.supplierMaterialHandler.List)
+			supplierMaterial.GET("/:id", r.supplierMaterialHandler.Get)
+			supplierMaterial.POST("", r.supplierMaterialHandler.Create)
+			supplierMaterial.PUT("/:id", r.supplierMaterialHandler.Update)
+			supplierMaterial.DELETE("/:id", r.supplierMaterialHandler.Delete)
+			supplierMaterial.GET("/supplier/:supplier_id", r.supplierMaterialHandler.ListBySupplier)
+			supplierMaterial.GET("/material/:material_id", r.supplierMaterialHandler.ListByMaterial)
+			supplierMaterial.POST("/preferred", r.supplierMaterialHandler.SetPreferred)
 		}
 
 		// 首末件检验
@@ -1034,6 +1472,19 @@ func (r *Router) Init(engine *gin.Engine) {
 			container.GET("/:id/movements", r.containerHandler.Movements)
 		}
 
+		// 器具生命周期
+		containerLifecycle := protected.Group("/containers/lifecycle")
+		{
+			containerLifecycle.GET("/list", r.containerLifecycleHandler.ListContainerLifecycles)
+			containerLifecycle.GET("/:id", r.containerLifecycleHandler.GetContainerLifecycle)
+			containerLifecycle.POST("/:id/init", r.containerLifecycleHandler.InitializeContainer)
+			containerLifecycle.POST("/:id/maintain", r.containerLifecycleHandler.RecordMaintenance)
+			containerLifecycle.POST("/:id/complete-maintain", r.containerLifecycleHandler.CompleteMaintenance)
+			containerLifecycle.POST("/:id/retire", r.containerLifecycleHandler.RetireContainer)
+			containerLifecycle.GET("/timeline/:id", r.containerLifecycleHandler.GetContainerTimeline)
+			containerLifecycle.GET("/maintenances/:id", r.containerLifecycleHandler.ListContainerMaintenances)
+		}
+
 		// AI Chat
 		ai := protected.Group("/ai")
 		{
@@ -1049,6 +1500,291 @@ func (r *Router) Init(engine *gin.Engine) {
 				chat.DELETE("/conversations/:session_id", r.aiChatHandler.DeleteConversation)
 				chat.POST("/send", r.aiChatHandler.SendMessage)
 				chat.POST("/execute", r.aiChatHandler.ExecuteOperation)
+			}
+
+			// AI视觉检测
+			visualInspection := ai.Group("/visual-inspection")
+			{
+				visualInspection.GET("/list", r.visualInspectionHandler.ListVisualInspectionTasks)
+				visualInspection.GET("/:id", r.visualInspectionHandler.GetVisualInspectionTask)
+				visualInspection.POST("", r.visualInspectionHandler.CreateVisualInspectionTask)
+				visualInspection.DELETE("/:id", r.visualInspectionHandler.DeleteVisualInspectionTask)
+				visualInspection.GET("/:id/result", r.visualInspectionHandler.GetVisualInspectionResult)
+				visualInspection.POST("/:id/manual-review", r.visualInspectionHandler.ManualReview)
+				visualInspection.GET("/stats", r.visualInspectionHandler.GetVisualInspectionStats)
+			}
+		}
+
+		// 财务结算
+		fin := protected.Group("/fin")
+		{
+			// 采购结算
+			purchaseSettlement := fin.Group("/purchase-settlement")
+			{
+				purchaseSettlement.GET("/list", r.finHandler.ListPurchaseSettlements)
+				purchaseSettlement.GET("/:id", r.finHandler.GetPurchaseSettlement)
+				purchaseSettlement.POST("", r.finHandler.CreatePurchaseSettlement)
+				purchaseSettlement.PUT("/:id/submit", r.finHandler.SubmitPurchaseSettlement)
+				purchaseSettlement.PUT("/:id/approve", r.finHandler.ApprovePurchaseSettlement)
+				purchaseSettlement.PUT("/:id/cancel", r.finHandler.CancelPurchaseSettlement)
+				purchaseSettlement.DELETE("/:id", r.finHandler.DeletePurchaseSettlement)
+			}
+
+			// 销售结算
+			salesSettlement := fin.Group("/sales-settlement")
+			{
+				salesSettlement.GET("/list", r.finHandler.ListSalesSettlements)
+				salesSettlement.GET("/:id", r.finHandler.GetSalesSettlement)
+				salesSettlement.POST("", r.finHandler.CreateSalesSettlement)
+				salesSettlement.PUT("/:id/submit", r.finHandler.SubmitSalesSettlement)
+				salesSettlement.PUT("/:id/approve", r.finHandler.ApproveSalesSettlement)
+				salesSettlement.PUT("/:id/cancel", r.finHandler.CancelSalesSettlement)
+				salesSettlement.DELETE("/:id", r.finHandler.DeleteSalesSettlement)
+			}
+
+			// 付款申请
+			paymentRequest := fin.Group("/payment-request")
+			{
+				paymentRequest.GET("/list", r.finHandler.ListPaymentRequests)
+				paymentRequest.GET("/:id", r.finHandler.GetPaymentRequest)
+				paymentRequest.POST("", r.finHandler.CreatePaymentRequest)
+				paymentRequest.PUT("/:id/submit", r.finHandler.SubmitPaymentRequest)
+				paymentRequest.PUT("/:id/approve", r.finHandler.ApprovePaymentRequest)
+				paymentRequest.PUT("/:id/reject", r.finHandler.RejectPaymentRequest)
+				paymentRequest.PUT("/:id/pay", r.finHandler.PayPaymentRequest)
+				paymentRequest.DELETE("/:id", r.finHandler.DeletePaymentRequest)
+			}
+
+			// 采购预付款
+			purchaseAdvance := fin.Group("/purchase-advance")
+			{
+				purchaseAdvance.GET("/list", r.finHandler.ListPurchaseAdvances)
+				purchaseAdvance.POST("", r.finHandler.CreatePurchaseAdvance)
+			}
+
+			// 销售收款
+			salesReceipt := fin.Group("/sales-receipt")
+			{
+				salesReceipt.GET("/list", r.finHandler.ListSalesReceipts)
+				salesReceipt.POST("", r.finHandler.CreateSalesReceipt)
+			}
+
+			// 供应商对账
+			supplierStatement := fin.Group("/supplier-statement")
+			{
+				supplierStatement.GET("/list", r.finHandler.ListSupplierStatements)
+				supplierStatement.GET("/:id", r.finHandler.GetSupplierStatement)
+			}
+
+			// ========== SCP 采购管理 ==========
+			// RFQ
+			rfq := protected.Group("/scp/rfq")
+			{
+				rfq.GET("/list", r.rfqHandler.List)
+				rfq.GET("/:id", r.rfqHandler.Get)
+				rfq.POST("", r.rfqHandler.Create)
+				rfq.PUT("/:id", r.rfqHandler.Update)
+				rfq.DELETE("/:id", r.rfqHandler.Delete)
+				rfq.POST("/:id/publish", r.rfqHandler.Publish)
+				rfq.POST("/:id/close", r.rfqHandler.Close)
+				rfq.GET("/:id/quotes", r.rfqHandler.GetQuotes)
+				rfq.POST("/:id/award", r.rfqHandler.Award)
+			}
+
+			// 采购订单
+			purchaseOrder := protected.Group("/scp/purchase-orders")
+			{
+				purchaseOrder.GET("/list", r.purchaseOrderHandler.List)
+				purchaseOrder.GET("/:id", r.purchaseOrderHandler.Get)
+				purchaseOrder.POST("", r.purchaseOrderHandler.Create)
+				purchaseOrder.PUT("/:id", r.purchaseOrderHandler.Update)
+				purchaseOrder.DELETE("/:id", r.purchaseOrderHandler.Delete)
+				purchaseOrder.POST("/:id/submit", r.purchaseOrderHandler.Submit)
+				purchaseOrder.POST("/:id/approve", r.purchaseOrderHandler.Approve)
+				purchaseOrder.POST("/:id/reject", r.purchaseOrderHandler.Reject)
+				purchaseOrder.POST("/:id/issue", r.purchaseOrderHandler.Issue)
+				purchaseOrder.POST("/:id/close", r.purchaseOrderHandler.Close)
+				purchaseOrder.POST("/:id/cancel", r.purchaseOrderHandler.Cancel)
+				purchaseOrder.POST("/:id/receive", r.purchaseOrderHandler.Receive)
+			}
+
+			// 销售订单
+			salesOrder := protected.Group("/scp/sales-orders")
+			{
+				salesOrder.GET("/list", r.scpSalesOrderHandler.List)
+				salesOrder.GET("/:id", r.scpSalesOrderHandler.Get)
+				salesOrder.POST("", r.scpSalesOrderHandler.Create)
+				salesOrder.PUT("/:id", r.scpSalesOrderHandler.Update)
+				salesOrder.DELETE("/:id", r.scpSalesOrderHandler.Delete)
+				salesOrder.POST("/:id/submit", r.scpSalesOrderHandler.Submit)
+				salesOrder.POST("/:id/approve", r.scpSalesOrderHandler.Approve)
+				salesOrder.POST("/:id/reject", r.scpSalesOrderHandler.Reject)
+				salesOrder.POST("/:id/confirm", r.scpSalesOrderHandler.Confirm)
+				salesOrder.POST("/:id/close", r.scpSalesOrderHandler.Close)
+				salesOrder.POST("/:id/cancel", r.scpSalesOrderHandler.Cancel)
+			}
+
+			// 供应商KPI
+			supplierKPI := protected.Group("/scp/supplier-kpi")
+			{
+				supplierKPI.GET("/list", r.supplierKPIHandler.List)
+				supplierKPI.GET("/monthly", r.supplierKPIHandler.GetByMonthly)
+				supplierKPI.POST("", r.supplierKPIHandler.Create)
+				supplierKPI.GET("/ranking", r.supplierKPIHandler.GetRanking)
+			}
+
+			// 供应商报价
+			supplierQuote := protected.Group("/scp/supplier-quotes")
+			{
+				supplierQuote.GET("/list", r.supplierQuoteHandler.List)
+				supplierQuote.GET("/:id", r.supplierQuoteHandler.Get)
+				supplierQuote.POST("", r.supplierQuoteHandler.Create)
+				supplierQuote.GET("/rfq/:rfqId/quotes", r.supplierQuoteHandler.GetQuotes)
+				supplierQuote.POST("/rfq/:rfqId/award", r.supplierQuoteHandler.Award)
+			}
+
+			// 客户询价
+			customerInquiry := protected.Group("/scp/customer-inquiry")
+			{
+				customerInquiry.GET("/list", r.customerInquiryHandler.List)
+				customerInquiry.GET("/:id", r.customerInquiryHandler.Get)
+				customerInquiry.POST("", r.customerInquiryHandler.Create)
+				customerInquiry.PUT("/:id", r.customerInquiryHandler.Update)
+				customerInquiry.DELETE("/:id", r.customerInquiryHandler.Delete)
+				customerInquiry.POST("/:id/send", r.customerInquiryHandler.Send)
+				customerInquiry.POST("/:id/quote", r.customerInquiryHandler.Quote)
+				customerInquiry.POST("/:id/win", r.customerInquiryHandler.Win)
+				customerInquiry.POST("/:id/lose", r.customerInquiryHandler.Lose)
+				customerInquiry.POST("/:id/cancel", r.customerInquiryHandler.Cancel)
+			}
+
+			// ========== 设备停机 (EAM) ==========
+			downtime := protected.Group("/eam/downtime")
+			{
+				downtime.GET("/list", r.equipmentDowntimeHandler.List)
+				downtime.GET("/:id", r.equipmentDowntimeHandler.Get)
+				downtime.POST("", r.equipmentDowntimeHandler.Create)
+				downtime.PUT("/:id", r.equipmentDowntimeHandler.Update)
+				downtime.DELETE("/:id", r.equipmentDowntimeHandler.Delete)
+				downtime.POST("/:id/start", r.equipmentDowntimeHandler.StartDowntime)
+				downtime.POST("/:id/end", r.equipmentDowntimeHandler.EndDowntime)
+			}
+
+			// ========== Alert 告警管理 ==========
+			alert := protected.Group("/alert")
+			{
+				alert.GET("/rule/list", r.alertHandler.ListRules)
+				alert.GET("/rule/:id", r.alertHandler.GetRule)
+				alert.POST("/rule", r.alertHandler.CreateRule)
+				alert.PUT("/rule/:id", r.alertHandler.UpdateRule)
+				alert.DELETE("/rule/:id", r.alertHandler.DeleteRule)
+				alert.POST("/rule/:id/enable", r.alertHandler.EnableRule)
+				alert.POST("/rule/:id/disable", r.alertHandler.DisableRule)
+				alert.GET("/record/list", r.alertHandler.ListRecords)
+				alert.GET("/record/:id", r.alertHandler.GetRecord)
+				alert.POST("/record/:id/ack", r.alertHandler.AcknowledgeRecord)
+				alert.POST("/record/:id/resolve", r.alertHandler.ResolveRecord)
+				alert.POST("/record/:id/close", r.alertHandler.CloseRecord)
+				alert.GET("/statistics", r.alertHandler.GetStatistics)
+				alert.GET("/notify/logs", r.alertHandler.ListNotificationLogs)
+				alert.GET("/escalation/list", r.alertHandler.ListEscalationRules)
+				alert.POST("/escalation", r.alertHandler.CreateEscalationRule)
+				alert.GET("/channel/list", r.alertHandler.ListChannels)
+				alert.GET("/channel/:id", r.alertHandler.GetChannel)
+				alert.POST("/channel", r.alertHandler.CreateChannel)
+				alert.PUT("/channel/:id", r.alertHandler.UpdateChannel)
+				alert.DELETE("/channel/:id", r.alertHandler.DeleteChannel)
+				alert.POST("/channel/:id/enable", r.alertHandler.EnableChannel)
+				alert.POST("/channel/:id/disable", r.alertHandler.DisableChannel)
+				alert.POST("/send", r.alertHandler.SendNotification)
+			}
+
+			// ========== BPM 业务流程 ==========
+			bpmProc := protected.Group("/bpm/process")
+			{
+				bpmProc.GET("/list", r.bpmHandler.ListProcessModels)
+				bpmProc.GET("/:id", r.bpmHandler.GetProcessModel)
+				bpmProc.POST("", r.bpmHandler.CreateProcessModel)
+				bpmProc.PUT("/:id", r.bpmHandler.UpdateProcessModel)
+				bpmProc.DELETE("/:id", r.bpmHandler.DeleteProcessModel)
+				bpmProc.POST("/:id/publish", r.bpmHandler.PublishProcessModel)
+			}
+			bpmNode := protected.Group("/bpm/node")
+			{
+				bpmNode.GET("/list", r.bpmHandler.ListNodes)
+				bpmNode.POST("", r.bpmHandler.CreateNode)
+				bpmNode.PUT("/:id", r.bpmHandler.UpdateNode)
+				bpmNode.DELETE("/:id", r.bpmHandler.DeleteNode)
+			}
+			bpmFlow := protected.Group("/bpm/flow")
+			{
+				bpmFlow.GET("/list", r.bpmHandler.ListFlows)
+				bpmFlow.POST("", r.bpmHandler.CreateFlow)
+				bpmFlow.PUT("/:id", r.bpmHandler.UpdateFlow)
+				bpmFlow.DELETE("/:id", r.bpmHandler.DeleteFlow)
+			}
+			bpmForm := protected.Group("/bpm/form")
+			{
+				bpmForm.GET("/list", r.bpmHandler.ListFormDefinitions)
+				bpmForm.GET("/:id", r.bpmHandler.GetFormDefinition)
+				bpmForm.POST("", r.bpmHandler.CreateFormDefinition)
+				bpmForm.PUT("/:id", r.bpmHandler.UpdateFormDefinition)
+				bpmForm.DELETE("/:id", r.bpmHandler.DeleteFormDefinition)
+			}
+			bpmField := protected.Group("/bpm/field")
+			{
+				bpmField.GET("/list", r.bpmHandler.ListFormFields)
+				bpmField.POST("", r.bpmHandler.CreateFormField)
+				bpmField.PUT("/:id", r.bpmHandler.UpdateFormField)
+				bpmField.DELETE("/:id", r.bpmHandler.DeleteFormField)
+			}
+			bpmInstance := protected.Group("/bpm/instance")
+			{
+				bpmInstance.GET("/list", r.bpmHandler.ListProcessInstances)
+				bpmInstance.GET("/:id", r.bpmHandler.GetProcessInstance)
+				bpmInstance.POST("/start", r.bpmHandler.CreateProcessInstance)
+				bpmInstance.POST("/:id/cancel", r.bpmHandler.CancelProcessInstance)
+				bpmInstance.POST("/:id/terminate", r.bpmHandler.TerminateProcessInstance)
+				bpmInstance.GET("/task/list", r.bpmHandler.ListTasksByAssignee)
+				bpmInstance.GET("/task/:id", r.bpmHandler.GetTask)
+				bpmInstance.POST("/task/:id/approve", r.bpmHandler.ApproveTask)
+				bpmInstance.POST("/task/:id/reject", r.bpmHandler.RejectTask)
+				bpmInstance.GET("/approve/records", r.bpmHandler.ListApprovalRecords)
+			}
+
+			// BPM 委托
+			bpmDelegate := protected.Group("/bpm/delegate")
+			{
+				bpmDelegate.GET("/list", r.bpmHandler.ListDelegates)
+				bpmDelegate.POST("", r.bpmHandler.CreateDelegate)
+				bpmDelegate.PUT("/:id", r.bpmHandler.UpdateDelegate)
+				bpmDelegate.DELETE("/:id", r.bpmHandler.DeleteDelegate)
+			}
+
+			// ========== MDM 合作伙伴扩展 ==========
+			contact := protected.Group("/mdm/contact")
+			{
+				contact.GET("/list", r.contactHandler.List)
+				contact.GET("/:id", r.contactHandler.Get)
+				contact.POST("", r.contactHandler.Create)
+				contact.PUT("/:id", r.contactHandler.Update)
+				contact.DELETE("/:id", r.contactHandler.Delete)
+			}
+			bankAccount := protected.Group("/mdm/bank-account")
+			{
+				bankAccount.GET("/list", r.bankAccountHandler.List)
+				bankAccount.GET("/:id", r.bankAccountHandler.Get)
+				bankAccount.POST("", r.bankAccountHandler.Create)
+				bankAccount.PUT("/:id", r.bankAccountHandler.Update)
+				bankAccount.DELETE("/:id", r.bankAccountHandler.Delete)
+			}
+			attachment := protected.Group("/mdm/attachment")
+			{
+				attachment.GET("/list", r.attachmentHandler.List)
+				attachment.GET("/:id", r.attachmentHandler.Get)
+				attachment.POST("", r.attachmentHandler.Create)
+				attachment.PUT("/:id", r.attachmentHandler.Update)
+				attachment.DELETE("/:id", r.attachmentHandler.Delete)
 			}
 		}
 	}

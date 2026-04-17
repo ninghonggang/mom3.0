@@ -18,7 +18,11 @@ func NewSupplierHandler(s *service.SupplierService) *SupplierHandler {
 }
 
 func (h *SupplierHandler) List(c *gin.Context) {
-	list, total, err := h.supplierService.List(c.Request.Context())
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	list, total, err := h.supplierService.List(c.Request.Context(), tenantID)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return

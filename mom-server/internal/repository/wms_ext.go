@@ -111,6 +111,10 @@ func (r *StockCheckRepository) Update(ctx context.Context, id uint, updates map[
 	return r.db.WithContext(ctx).Model(&model.StockCheck{}).Where("id = ?", id).Updates(updates).Error
 }
 
+func (r *StockCheckRepository) Delete(ctx context.Context, id uint) error {
+	return r.db.WithContext(ctx).Delete(&model.StockCheck{}, id).Error
+}
+
 type StockCheckItemRepository struct {
 	db *gorm.DB
 }
@@ -221,4 +225,59 @@ func (r *KanbanPullRepository) Update(ctx context.Context, id uint, updates map[
 
 func (r *KanbanPullRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&model.KanbanPull{}, id).Error
+}
+
+// TransferTraceRepository 调拨跟踪记录
+type TransferTraceRepository struct {
+	db *gorm.DB
+}
+
+func NewTransferTraceRepository(db *gorm.DB) *TransferTraceRepository {
+	return &TransferTraceRepository{db: db}
+}
+
+func (r *TransferTraceRepository) ListByOrderID(ctx context.Context, orderID uint) ([]model.TransferTrace, error) {
+	var list []model.TransferTrace
+	err := r.db.WithContext(ctx).Where("transfer_order_id = ?", orderID).Order("created_at DESC").Find(&list).Error
+	return list, err
+}
+
+func (r *TransferTraceRepository) Create(ctx context.Context, trace *model.TransferTrace) error {
+	return r.db.WithContext(ctx).Create(trace).Error
+}
+
+// TransferLotRepository 调拨批次
+type TransferLotRepository struct {
+	db *gorm.DB
+}
+
+func NewTransferLotRepository(db *gorm.DB) *TransferLotRepository {
+	return &TransferLotRepository{db: db}
+}
+
+func (r *TransferLotRepository) ListByItemID(ctx context.Context, itemID int64) ([]model.TransferLot, error) {
+	var list []model.TransferLot
+	err := r.db.WithContext(ctx).Where("transfer_item_id = ?", itemID).Find(&list).Error
+	return list, err
+}
+
+func (r *TransferLotRepository) Create(ctx context.Context, lot *model.TransferLot) error {
+	return r.db.WithContext(ctx).Create(lot).Error
+}
+
+func (r *TransferLotRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {
+	return r.db.WithContext(ctx).Model(&model.TransferLot{}).Where("id = ?", id).Updates(updates).Error
+}
+
+// StockCheckItemRepository 扩展方法
+func (r *StockCheckItemRepository) GetByID(ctx context.Context, id uint) (*model.StockCheckItem, error) {
+	var item model.StockCheckItem
+	err := r.db.WithContext(ctx).First(&item, id).Error
+	return &item, err
+}
+
+func (r *StockCheckItemRepository) ListVariancesByCheckID(ctx context.Context, checkID int64) ([]model.StockCheckItem, error) {
+	var list []model.StockCheckItem
+	err := r.db.WithContext(ctx).Where("check_id = ? AND variance_qty != 0", checkID).Find(&list).Error
+	return list, err
 }

@@ -72,3 +72,18 @@ export const getEnergyStats = (params: any) => {
 export const getEnergyTrend = (params: any) => {
   return request.get('/energy/trend', { params })
 }
+
+// 物料追溯
+export const getTraceList = (params?: any) => {
+  return request.get('/trace/material/list', { params })
+}
+
+// 事件日志
+export const eventApi = {
+  list: (params?: any) => {
+    return request.get('/event/log/list', { params })
+  },
+  get: (id: number) => {
+    return request.get(`/event/log/${id}`)
+  }
+}

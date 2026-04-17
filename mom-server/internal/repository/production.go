@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"time"
+
 	"mom-server/internal/model"
 
 	"gorm.io/gorm"
@@ -36,6 +38,47 @@ func (r *ProductionOrderRepository) GetByID(ctx context.Context, id uint) (*mode
 
 func (r *ProductionOrderRepository) Create(ctx context.Context, order *model.ProductionOrder) error {
 	return r.db.WithContext(ctx).Create(order).Error
+}
+
+// GetStatsByDateRange 获取日期范围内的工单统计数据
+func (r *ProductionOrderRepository) GetStatsByDateRange(ctx context.Context, tenantID int64, startDate, endDate time.Time, workshopID int64) (map[string]interface{}, error) {
+	type Stats struct {
+		OrderCount        int
+		CompletedCount    int
+		TotalOutput       float64
+		QualifiedQty      float64
+		DefectQty         float64
+		FirstPassQty      float64
+	}
+	var stats Stats
+
+	query := r.db.WithContext(ctx).Model(&model.ProductionOrder{}).
+		Where("tenant_id = ?", tenantID).
+		Where("DATE(actual_end_date) >= ? AND DATE(actual_end_date) <= ?", startDate, endDate).
+		Where("status = 3") // 已完成
+	if workshopID > 0 {
+		query = query.Where("workshop_id = ?", workshopID)
+	}
+
+	err := query.Select("COUNT(*) as order_count, "+
+		"SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) as completed_count, "+
+		"SUM(completed_qty) as total_output, "+
+		"SUM(completed_qty - rejected_qty) as qualified_qty, "+
+		"SUM(rejected_qty) as defect_qty, "+
+		"0 as first_pass_qty").
+		Scan(&stats).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"order_count":     stats.OrderCount,
+		"completed_count": stats.CompletedCount,
+		"total_output":    stats.TotalOutput,
+		"qualified_qty":   stats.QualifiedQty,
+		"defect_qty":      stats.DefectQty,
+		"first_pass_qty":  stats.FirstPassQty,
+	}, nil
 }
 
 func (r *ProductionOrderRepository) Update(ctx context.Context, id uint, updates map[string]interface{}) error {

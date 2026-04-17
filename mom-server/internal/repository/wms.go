@@ -148,6 +148,46 @@ func (r *InventoryRepository) GetTotalAvailableByMaterialID(ctx context.Context,
 	return total, err
 }
 
+// GetByMaterialAndLocation 获取指定物料和库位的库存
+func (r *InventoryRepository) GetByMaterialAndLocation(ctx context.Context, materialID int64, warehouseID int64) (*model.Inventory, error) {
+	var inv model.Inventory
+	err := r.db.WithContext(ctx).Where("material_id = ? AND warehouse_id = ?", materialID, warehouseID).First(&inv).Error
+	if err != nil {
+		return nil, err
+	}
+	return &inv, nil
+}
+
+// Allocate 预占库存（可用→已分配）
+func (r *InventoryRepository) Allocate(ctx context.Context, materialID int64, warehouseID int64, qty float64) error {
+	return r.db.WithContext(ctx).Model(&model.Inventory{}).
+		Where("material_id = ? AND warehouse_id = ? AND available_qty >= ?", materialID, warehouseID, qty).
+		Updates(map[string]interface{}{
+			"available_qty":  gorm.Expr("available_qty - ?", qty),
+			"allocated_qty": gorm.Expr("allocated_qty + ?", qty),
+		}).Error
+}
+
+// DeductAllocated 扣减已分配库存
+func (r *InventoryRepository) DeductAllocated(ctx context.Context, materialID int64, warehouseID int64, qty float64) error {
+	return r.db.WithContext(ctx).Model(&model.Inventory{}).
+		Where("material_id = ? AND warehouse_id = ? AND allocated_qty >= ?", materialID, warehouseID, qty).
+		Updates(map[string]interface{}{
+			"allocated_qty": gorm.Expr("allocated_qty - ?", qty),
+			"quantity":      gorm.Expr("quantity - ?", qty),
+		}).Error
+}
+
+// ReleaseAllocation 释放预占库存（已分配→可用）
+func (r *InventoryRepository) ReleaseAllocation(ctx context.Context, materialID int64, warehouseID int64, qty float64) error {
+	return r.db.WithContext(ctx).Model(&model.Inventory{}).
+		Where("material_id = ? AND warehouse_id = ? AND allocated_qty >= ?", materialID, warehouseID, qty).
+		Updates(map[string]interface{}{
+			"available_qty":  gorm.Expr("available_qty + ?", qty),
+			"allocated_qty": gorm.Expr("allocated_qty - ?", qty),
+		}).Error
+}
+
 // ========== 收货单 ==========
 
 type ReceiveOrderRepository struct {

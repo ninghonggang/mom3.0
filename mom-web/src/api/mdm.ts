@@ -244,3 +244,87 @@ export const importBOMs = (data: FormData) => {
 export const downloadBOMTemplate = () => {
   return request.get('/mdm/bom/template', { responseType: 'blob' })
 }
+
+// 联系人管理
+export const getContactList = (params?: any) => {
+  return request.get('/mdm/contact/list', { params })
+}
+
+export const getContactById = (id: number) => {
+  return request.get(`/mdm/contact/${id}`)
+}
+
+export const createContact = (data: any) => {
+  return request.post('/mdm/contact', data)
+}
+
+export const updateContact = (id: number, data: any) => {
+  return request.put(`/mdm/contact/${id}`, data)
+}
+
+export const deleteContact = (id: number) => {
+  return request.delete(`/mdm/contact/${id}`)
+}
+
+// 银行账户管理
+export const getBankAccountList = (params?: any) => {
+  return request.get('/mdm/bank-account/list', { params })
+}
+
+export const getBankAccountById = (id: number) => {
+  return request.get(`/mdm/bank-account/${id}`)
+}
+
+export const createBankAccount = (data: any) => {
+  return request.post('/mdm/bank-account', data)
+}
+
+export const updateBankAccount = (id: number, data: any) => {
+  return request.put(`/mdm/bank-account/${id}`, data)
+}
+
+export const deleteBankAccount = (id: number) => {
+  return request.delete(`/mdm/bank-account/${id}`)
+}
+
+// 附件管理
+export const getAttachmentList = (params?: any) => {
+  return request.get('/mdm/attachment/list', { params })
+}
+
+export const getAttachmentById = (id: number) => {
+  return request.get(`/mdm/attachment/${id}`)
+}
+
+export const createAttachment = (data: any) => {
+  return request.post('/mdm/attachment', data)
+}
+
+export const updateAttachment = (id: number, data: any) => {
+  return request.put(`/mdm/attachment/${id}`, data)
+}
+
+export const deleteAttachment = (id: number) => {
+  return request.delete(`/mdm/attachment/${id}`)
+}
+
+// 客户收货地址
+export const getDeliveryAddressList = (params?: any) => {
+  return request.get('/mdm/delivery-address/list', { params })
+}
+
+export const getDeliveryAddressById = (id: number) => {
+  return request.get(`/mdm/delivery-address/${id}`)
+}
+
+export const createDeliveryAddress = (data: any) => {
+  return request.post('/mdm/delivery-address', data)
+}
+
+export const updateDeliveryAddress = (id: number, data: any) => {
+  return request.put(`/mdm/delivery-address/${id}`, data)
+}
+
+export const deleteDeliveryAddress = (id: number) => {
+  return request.delete(`/mdm/delivery-address/${id}`)
+}

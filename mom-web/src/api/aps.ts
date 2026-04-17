@@ -131,3 +131,86 @@ export const dragUpdateSchedule = (data: {
 export const getScheduleResults = (id: number) => {
   return request.get(`/aps/schedule/${id}/results`)
 }
+
+// ========== 滚动排程配置 ==========
+export const getRollingConfigList = (params?: any) => {
+  return request.get('/aps/rolling-config/list', { params })
+}
+
+export const getRollingConfig = (id: number) => {
+  return request.get(`/aps/rolling-config/${id}`)
+}
+
+export const createRollingConfig = (data: any) => {
+  return request.post('/aps/rolling-config', data)
+}
+
+export const updateRollingConfig = (id: number, data: any) => {
+  return request.put(`/aps/rolling-config/${id}`, data)
+}
+
+export const deleteRollingConfig = (id: number) => {
+  return request.delete(`/aps/rolling-config/${id}`)
+}
+
+export const enableRollingConfig = (id: number) => {
+  return request.post(`/aps/rolling-config/${id}/enable`)
+}
+
+export const disableRollingConfig = (id: number) => {
+  return request.post(`/aps/rolling-config/${id}/disable`)
+}
+
+export const executeRollingConfig = (id: number) => {
+  return request.post(`/aps/rolling-config/${id}/execute`)
+}
+
+// ========== 交付分析 ==========
+export const getDeliveryAnalysisList = (params?: any) => {
+  return request.get('/aps/delivery-analysis/list', { params })
+}
+
+export const getDeliveryAnalysis = (id: number) => {
+  return request.get(`/aps/delivery-analysis/${id}`)
+}
+
+export const createDeliveryAnalysis = (data: any) => {
+  return request.post('/aps/delivery-analysis', data)
+}
+
+export const getDeliveryAnalysisDaily = (params?: any) => {
+  return request.get('/aps/delivery-analysis/statistics/daily', { params })
+}
+
+export const getDeliveryAnalysisWeekly = (params?: any) => {
+  return request.get('/aps/delivery-analysis/statistics/weekly', { params })
+}
+
+export const getDeliveryAnalysisMonthly = (params?: any) => {
+  return request.get('/aps/delivery-analysis/statistics/monthly', { params })
+}
+
+// ========== 换型矩阵 ==========
+export const getChangeoverMatrixList = (params?: any) => {
+  return request.get('/aps/changeover-matrix/list', { params })
+}
+
+export const getChangeoverMatrix = (id: number) => {
+  return request.get(`/aps/changeover-matrix/${id}`)
+}
+
+export const createChangeoverMatrix = (data: any) => {
+  return request.post('/aps/changeover-matrix', data)
+}
+
+export const updateChangeoverMatrix = (id: number, data: any) => {
+  return request.put(`/aps/changeover-matrix/${id}`, data)
+}
+
+export const deleteChangeoverMatrix = (id: number) => {
+  return request.delete(`/aps/changeover-matrix/${id}`)
+}
+
+export const getChangeoverMatrixByProducts = (fromId: number, toId: number) => {
+  return request.get(`/aps/changeover-matrix/from/${fromId}/to/${toId}`)
+}

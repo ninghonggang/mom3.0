@@ -1,12 +1,15 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"mom-server/internal/model"
 	"mom-server/internal/repository"
+	"net/http"
 	"time"
 )
 
@@ -31,13 +34,45 @@ func NewHTTPClient(timeout time.Duration) *HTTPClient {
 }
 
 func (c *HTTPClient) Get(url string) ([]byte, error) {
-	// 这里简化实现，实际项目中应该使用真实的HTTP客户端
-	// 例如使用net/http或翻之类的库
-	return []byte{}, nil
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: c.timeout}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("HTTP请求失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP状态码异常: %d", resp.StatusCode)
+	}
+
+	return io.ReadAll(resp.Body)
 }
 
 func (c *HTTPClient) Post(url string, body []byte) ([]byte, error) {
-	return []byte{}, nil
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: c.timeout}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("HTTP请求失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP状态码异常: %d", resp.StatusCode)
+	}
+
+	return io.ReadAll(resp.Body)
 }
 
 // KingdeeBOMResponse 金蝶BOM响应

@@ -121,3 +121,31 @@ export const updateSparePart = (id: number, data: any) => {
 export const deleteSparePart = (id: number) => {
   return request.delete(`/equipment/spare/${id}`)
 }
+
+// 点检标准
+export const getInspectionTemplateList = (params?: any) => request.get('/equipment/inspection/templates/list', { params })
+export const getInspectionTemplate = (id: number) => request.get(`/equipment/inspection/templates/${id}`)
+export const createInspectionTemplate = (data: any) => request.post('/equipment/inspection/templates', data)
+export const updateInspectionTemplate = (id: number, data: any) => request.put(`/equipment/inspection/templates/${id}`, data)
+export const deleteInspectionTemplate = (id: number) => request.delete(`/equipment/inspection/templates/${id}`)
+
+// 点检计划
+export const getInspectionPlanList = (params?: any) => request.get('/equipment/inspection/plans/list', { params })
+export const getInspectionPlan = (id: number) => request.get(`/equipment/inspection/plans/${id}`)
+export const createInspectionPlan = (data: any) => request.post('/equipment/inspection/plans', data)
+export const updateInspectionPlan = (id: number, data: any) => request.put(`/equipment/inspection/plans/${id}`, data)
+export const assignInspectionPlan = (id: number, data: any) => request.put(`/equipment/inspection/plans/${id}/assign`, data)
+export const cancelInspectionPlan = (id: number) => request.delete(`/equipment/inspection/plans/${id}`)
+
+// 点检记录
+export const getInspectionRecordList = (params?: any) => request.get('/equipment/inspection/records/list', { params })
+export const getInspectionRecord = (id: number) => request.get(`/equipment/inspection/records/${id}`)
+export const startInspection = (data: any) => request.post('/equipment/inspection/records', data)
+export const completeInspection = (id: number, data: any) => request.put(`/equipment/inspection/records/${id}/complete`, data)
+
+// 点检异常
+export const getInspectionDefectList = (params?: any) => request.get('/equipment/inspection/defects/list', { params })
+export const getInspectionDefect = (id: number) => request.get(`/equipment/inspection/defects/${id}`)
+export const createInspectionDefect = (data: any) => request.post('/equipment/inspection/defects', data)
+export const assignInspectionDefect = (id: number, data: any) => request.put(`/equipment/inspection/defects/${id}/assign`, data)
+export const resolveInspectionDefect = (id: number, data: any) => request.put(`/equipment/inspection/defects/${id}/resolve`, data)

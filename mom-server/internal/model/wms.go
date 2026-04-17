@@ -157,35 +157,47 @@ func (DeliveryOrderItem) TableName() string {
 	return "wms_delivery_order_item"
 }
 
-// TransferOrder 调拨单
-type TransferOrder struct {
+// SideLocation 线边库位
+type SideLocation struct {
 	BaseModel
-	TenantID    int64      `json:"tenant_id" gorm:"index;not null"`
-	TransferNo  string     `json:"transfer_no" gorm:"size:50;not null;uniqueIndex:idx_tenant_transfer"`
-	FromWarehouseID int64  `json:"from_warehouse_id"`
-	ToWarehouseID   int64  `json:"to_warehouse_id"`
-	TransferDate *time.Time `json:"transfer_date"`
-	TransferUserID int64   `json:"transfer_user_id"`
-	Status      int        `json:"status" gorm:"default:1"`
-	Remark      *string    `json:"remark" gorm:"size:500"`
+	TenantID     int64   `json:"tenant_id" gorm:"index;not null"`
+	LocationCode string  `json:"location_code" gorm:"size:50;not null;uniqueIndex:idx_tenant_sideloc"`
+	LocationName string  `json:"location_name" gorm:"size:100"`
+	WorkshopID   int64   `json:"workshop_id"`
+	WorkshopName *string `json:"workshop_name" gorm:"size:100"`
+	LineID      *int64  `json:"line_id"`
+	LineName    *string `json:"line_name" gorm:"size:100"`
+	StationID   *int64  `json:"station_id"`
+	StationName *string `json:"station_name" gorm:"size:100"`
+	LocationType string  `json:"location_type" gorm:"size:20"` // 原料/成品/工装
+	MaxCapacity *float64 `json:"max_capacity"` // 最大容量
+	CurrentQty  float64  `json:"current_qty"` // 当前数量
+	Status      int       `json:"status" gorm:"default:1"` // 1启用/2停用
+	Remark      *string  `json:"remark" gorm:"size:500"`
 }
 
-func (TransferOrder) TableName() string {
-	return "wms_transfer_order"
+func (SideLocation) TableName() string {
+	return "wms_side_location"
 }
 
-// StockCheck 盘点单
-type StockCheck struct {
+// KanbanPull 看板拉动
+type KanbanPull struct {
 	BaseModel
-	TenantID    int64      `json:"tenant_id" gorm:"index;not null"`
-	CheckNo     string     `json:"check_no" gorm:"size:50;not null;uniqueIndex:idx_tenant_check"`
-	WarehouseID int64      `json:"warehouse_id"`
-	CheckDate   *time.Time `json:"check_date"`
-	CheckUserID int64      `json:"check_user_id"`
-	Status      int        `json:"status" gorm:"default:1"` // 1待盘点/2盘点中/3已完成
-	Remark      *string    `json:"remark" gorm:"size:500"`
+	TenantID      int64     `json:"tenant_id" gorm:"index;not null"`
+	KanbanNo     string    `json:"kanban_no" gorm:"size:50;not null;uniqueIndex:idx_tenant_kanban"`
+	MaterialID   int64     `json:"material_id"`
+	MaterialCode string    `json:"material_code" gorm:"size:50"`
+	MaterialName string    `json:"material_name" gorm:"size:100"`
+	FromLocationID int64   `json:"from_location_id"` // 物料来源(线边库位)
+	ToLocationID  int64    `json:"to_location_id"` // 物料去向(工位)
+	KanbanQty    float64   `json:"kanban_qty"` // 看板数量
+	TriggerQty   float64   `json:"trigger_qty"` // 触发数量
+	CurrentQty   float64  `json:"current_qty"` // 当前库存
+	LeadTime     int       `json:"lead_time"` // 提前期(分钟)
+	Status       int       `json:"status" gorm:"default:1"` // 1启用/2停用
+	Remark       *string   `json:"remark" gorm:"size:500"`
 }
 
-func (StockCheck) TableName() string {
-	return "wms_stock_check"
+func (KanbanPull) TableName() string {
+	return "wms_kanban_pull"
 }

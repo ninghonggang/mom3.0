@@ -60,76 +60,26 @@ func (s *ConstrainedScheduler) Schedule(ctx context.Context, req *ScheduleReques
 	return result, nil
 }
 
-// sortOrders 按算法类型排序工单
+// sortOrders 按算法类型排序工单（统一使用 CalculateOrder）
 func (s *ConstrainedScheduler) sortOrders(req *ScheduleRequest) []ScheduleOrder {
 	orders := make([]ScheduleOrder, len(req.Orders))
 	copy(orders, req.Orders)
-
-	algorithm := SchedulingRule(req.AlgorithmType)
 
 	// 如果启用产品族聚类，使用换型优化
 	if req.Constraints.FamilyGrouping && s.changeover != nil {
 		return s.changeover.OptimizeByChangeover(orders)
 	}
 
-	switch algorithm {
-	case RuleEDD:
-		sort.Slice(orders, func(i, j int) bool {
-			return orders[i].DueDate.Before(orders[j].DueDate)
-		})
-	case RuleSPT:
-		sort.Slice(orders, func(i, j int) bool {
-			return orders[i].StandardHours < orders[j].StandardHours
-		})
-	case RuleLPT:
-		sort.Slice(orders, func(i, j int) bool {
-			return orders[i].StandardHours > orders[j].StandardHours
-		})
-	case RuleJITFirst:
-		sort.Slice(orders, func(i, j int) bool {
-			if orders[i].JITTime == nil && orders[j].JITTime == nil {
-				return orders[i].Priority < orders[j].Priority
-			}
-			if orders[i].JITTime == nil {
-				return false
-			}
-			if orders[j].JITTime == nil {
-				return true
-			}
-			return orders[i].JITTime.Before(*orders[j].JITTime)
-		})
-	case RuleCR:
-		sort.Slice(orders, func(i, j int) bool {
-			return s.calculateCRValue(orders[i]) < s.calculateCRValue(orders[j])
-		})
-	case RuleBottleneck:
-		sort.Slice(orders, func(i, j int) bool {
-			if orders[i].Bottleneck != orders[j].Bottleneck {
-				return orders[i].Bottleneck
-			}
-			return orders[i].Priority < orders[j].Priority
-		})
-	default: // FIFO
-		sort.Slice(orders, func(i, j int) bool {
-			return orders[i].OrderID < orders[j].OrderID
-		})
-	}
+	algorithm := SchedulingRule(req.AlgorithmType)
+
+	// 统一使用 CalculateOrder 计算优先级得分进行排序
+	sort.Slice(orders, func(i, j int) bool {
+		scoreI := CalculateOrder(orders[i], string(algorithm))
+		scoreJ := CalculateOrder(orders[j], string(algorithm))
+		return scoreI < scoreJ
+	})
 
 	return orders
-}
-
-// calculateCRValue 计算紧迫系数
-func (s *ConstrainedScheduler) calculateCRValue(order ScheduleOrder) float64 {
-	if order.StandardHours <= 0 {
-		return 999
-	}
-	// CR = (截止日期 - 当前时间) / 剩余工时
-	now := time.Now()
-	hoursUntilDue := order.DueDate.Sub(now).Hours()
-	if hoursUntilDue < 0 {
-		hoursUntilDue = 0
-	}
-	return hoursUntilDue / order.StandardHours
 }
 
 // allocateTasksWithChangeover 分配任务（考虑换型）
@@ -151,7 +101,7 @@ func (s *ConstrainedScheduler) allocateTasksWithChangeover(orders []ScheduleOrde
 
 		// 计算换型时间
 		changeoverTime := 0.0
-		if lastProductCode != "" && lastProductCode != order.ProductCode {
+		if lastProductCode != "" && lastProductCode != order.ProductCode && s.changeover != nil {
 			changeoverTime = s.changeover.CalculateChangeoverTime(lastProductCode, order.ProductCode)
 		}
 		lastProductCode = order.ProductCode
