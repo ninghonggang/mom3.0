@@ -461,6 +461,14 @@ func main() {
 		log.Fatalf("数据库迁移失败[第44批-MES工单排程表]: %v", err)
 	}
 
+	// 第45批：SCP QAD对接同步记录表
+	log.Println("迁移第45批：SCP QAD同步记录表")
+	if err := db.AutoMigrate(
+		&model.ScpQadSyncLog{},
+	); err != nil {
+		log.Fatalf("数据库迁移失败[第45批-SCP QAD同步表]: %v", err)
+	}
+
 	// 初始化JWT
 	jwtUtil := jwt.New(&cfg.Server.JWT)
 

@@ -394,6 +394,7 @@ aqlHandler *quality.AQLHandler,
 		supplierQuoteHandler:      supplierQuoteHandler,
 		purchasePlanHandler:     purchasePlanHandler,
 		scpSupplierExtHandler:    scpSupplierExtHandler,
+		qadHandler:               qadHandler,
 		contactHandler:             contactHandler,
 		bankAccountHandler:        bankAccountHandler,
 		attachmentHandler:         attachmentHandler,
@@ -1749,6 +1750,16 @@ func (r *Router) Init(engine *gin.Engine) {
 				supplierBank.PUT("/update", r.scpSupplierExtHandler.UpdateBank)
 				supplierBank.DELETE("/delete", r.scpSupplierExtHandler.DeleteBank)
 				supplierBank.GET("/supplier/:supplierId", r.scpSupplierExtHandler.ListBanksBySupplier)
+			}
+
+			// ========== SCP QAD对接 ==========
+			qad := protected.Group("/scp/qad")
+			{
+				qad.POST("/sync", r.qadHandler.Sync)
+				qad.GET("/sync/status/:syncId", r.qadHandler.GetSyncStatus)
+				qad.GET("/sync/log/:docNo", r.qadHandler.GetSyncLog)
+				qad.POST("/confirm", r.qadHandler.Confirm)
+				qad.POST("/delivery", r.qadHandler.Delivery)
 			}
 
 			// ========== 设备停机 (EAM) ==========
