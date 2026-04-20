@@ -122,6 +122,7 @@ type Router struct {
 	bpmHandler              *bpm.BPMHandler
 	bpmTaskMsgRuleHandler  *bpm.BpmTaskMessageRuleHandler
 	bpmInstanceApiHandler  *bpm.BpmInstanceApiHandler
+	bpmTaskTransferHandler *bpm.TaskTransferHandler
 	rfqHandler              *scp.RFQHandler
 	purchaseOrderHandler     *scp.PurchaseOrderHandler
 	scpSalesOrderHandler     *scp.SalesOrderHandler
@@ -130,6 +131,7 @@ type Router struct {
 	customerInquiryHandler   *scp.CustomerInquiryHandler
 	purchasePlanHandler     *scp.PurchasePlanHandler
 	scpSupplierExtHandler    *scp.SupplierExtHandler
+	qadHandler               *scp.QadHandler
 	contactHandler                   *mdm.ContactHandler
 	bankAccountHandler                *mdm.BankAccountHandler
 	attachmentHandler                 *mdm.AttachmentHandler
@@ -255,6 +257,7 @@ func New(
 	bpmHandler *bpm.BPMHandler,
 	bpmTaskMsgRuleHandler *bpm.BpmTaskMessageRuleHandler,
 	bpmInstanceApiHandler *bpm.BpmInstanceApiHandler,
+	bpmTaskTransferHandler *bpm.TaskTransferHandler,
 	rfqHandler *scp.RFQHandler,
 	purchaseOrderHandler *scp.PurchaseOrderHandler,
 	scpSalesOrderHandler *scp.SalesOrderHandler,
@@ -263,6 +266,7 @@ func New(
 	customerInquiryHandler *scp.CustomerInquiryHandler,
 	purchasePlanHandler *scp.PurchasePlanHandler,
 	scpSupplierExtHandler *scp.SupplierExtHandler,
+	qadHandler *scp.QadHandler,
 	contactHandler *mdm.ContactHandler,
 	bankAccountHandler *mdm.BankAccountHandler,
 	attachmentHandler *mdm.AttachmentHandler,
@@ -382,6 +386,7 @@ aqlHandler *quality.AQLHandler,
 		bpmHandler:                bpmHandler,
 		bpmTaskMsgRuleHandler:   bpmTaskMsgRuleHandler,
 		bpmInstanceApiHandler:   bpmInstanceApiHandler,
+		bpmTaskTransferHandler:  bpmTaskTransferHandler,
 		rfqHandler:              rfqHandler,
 		purchaseOrderHandler:       purchaseOrderHandler,
 		scpSalesOrderHandler:      scpSalesOrderHandler,
@@ -1868,6 +1873,16 @@ func (r *Router) Init(engine *gin.Engine) {
 				instanceApi.POST("/start", r.bpmInstanceApiHandler.StartProcessInstance)
 				instanceApi.POST("/complete", r.bpmInstanceApiHandler.CompleteTask)
 				instanceApi.GET("/:id", r.bpmInstanceApiHandler.GetProcessInstance)
+			}
+
+			// BPM 任务转移/候选人
+			bpmTask := protected.Group("/bpm/task")
+			{
+				bpmTask.POST("/transfer", r.bpmTaskTransferHandler.TransferTask)
+				bpmTask.GET("/transfer/history/:taskId", r.bpmTaskTransferHandler.GetTransferHistory)
+				bpmTask.GET("/candidate/:taskId", r.bpmTaskTransferHandler.GetTaskCandidates)
+				bpmTask.GET("/candidate-group/:taskId", r.bpmTaskTransferHandler.GetTaskCandidateGroups)
+				bpmTask.POST("/assign", r.bpmTaskTransferHandler.AssignTask)
 			}
 
 			// ========== MDM 合作伙伴扩展 ==========
