@@ -140,3 +140,50 @@ func CalculateCPK(values []float64, usl, lsl float64) SPCStats {
 		Count:  n,
 	}
 }
+
+// SPCConfig SPC配置，用于CP/CPK分析
+type SPCConfig struct {
+	ProcessName string
+	CheckItem   string
+	USL         float64
+	LSL         float64
+	Target      float64
+}
+
+// GetCapability 获取CP/CPK能力分析 - 根据配置ID（这里用processID作为configId）
+func (s *SPCDataService) GetCapability(ctx context.Context, configID int64, checkItem string) (SPCStats, error) {
+	// 获取该配置的所有SPC数据
+	data, err := s.repo.GetChartData(ctx, 1, 0, configID, 0, checkItem, 500)
+	if err != nil {
+		return SPCStats{}, err
+	}
+
+	if len(data) == 0 {
+		return SPCStats{Count: 0}, nil
+	}
+
+	// 提取数值和规格限
+	var values []float64
+	var usl, lsl float64
+	hasSpec := false
+
+	for _, d := range data {
+		values = append(values, d.CheckValue)
+		if d.USL != nil && !hasSpec {
+			usl = *d.USL
+			hasSpec = true
+		}
+		if d.LSL != nil && !hasSpec {
+			lsl = *d.LSL
+			hasSpec = true
+		}
+	}
+
+	// 如果没有规格限，使用数据的3sigma作为规格
+	if !hasSpec {
+		stats := CalculateCPK(values, 0, 0)
+		return stats, nil
+	}
+
+	return CalculateCPK(values, usl, lsl), nil
+}

@@ -60,3 +60,45 @@ func (s *NCRService) Delete(ctx context.Context, id string) error {
 	}
 	return s.repo.Delete(ctx, ncrID)
 }
+
+// Resolve NCR解决 - 更新处理结果和状态
+func (s *NCRService) Resolve(ctx context.Context, id string, rootCause, correctiveAction, preventiveAction, verifyResult string, verifyUserID int64) error {
+	var ncrID uint
+	_, err := fmt.Sscanf(id, "%d", &ncrID)
+	if err != nil {
+		return err
+	}
+	return s.repo.Update(ctx, ncrID, map[string]interface{}{
+		"root_cause":         rootCause,
+		"corrective_action":  correctiveAction,
+		"preventive_action":  preventiveAction,
+		"verify_result":      verifyResult,
+		"verify_user_id":     verifyUserID,
+		"status":             3, // 3=已完成
+	})
+}
+
+// Assign NCR指派 - 指派处理人
+func (s *NCRService) Assign(ctx context.Context, id string, handleUserID int64) error {
+	var ncrID uint
+	_, err := fmt.Sscanf(id, "%d", &ncrID)
+	if err != nil {
+		return err
+	}
+	return s.repo.Update(ctx, ncrID, map[string]interface{}{
+		"handle_user_id": handleUserID,
+		"status":         2, // 2=处理中
+	})
+}
+
+// Close NCR关闭 - 关闭 NCR 单据
+func (s *NCRService) Close(ctx context.Context, id string) error {
+	var ncrID uint
+	_, err := fmt.Sscanf(id, "%d", &ncrID)
+	if err != nil {
+		return err
+	}
+	return s.repo.Update(ctx, ncrID, map[string]interface{}{
+		"status": 4, // 4=已关闭
+	})
+}

@@ -83,3 +83,60 @@ func (h *NCRHandler) Delete(c *gin.Context) {
 	}
 	response.Success(c, nil)
 }
+
+// NCRResolveReq NCR解决请求
+type NCRResolveReq struct {
+	RootCause         string `json:"rootCause"`
+	CorrectiveAction  string `json:"correctiveAction"`
+	PreventiveAction  string `json:"preventiveAction"`
+	VerifyResult      string `json:"verifyResult"`
+	VerifyUserID      int64  `json:"verifyUserId"`
+}
+
+// Resolve NCR解决
+func (h *NCRHandler) Resolve(c *gin.Context) {
+	id := c.Param("id")
+	var req NCRResolveReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	err := h.service.Resolve(c.Request.Context(), id, req.RootCause, req.CorrectiveAction, req.PreventiveAction, req.VerifyResult, req.VerifyUserID)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, nil)
+}
+
+// NCRAssignReq NCR指派请求
+type NCRAssignReq struct {
+	HandleUserID int64 `json:"handleUserId" binding:"required"`
+}
+
+// Assign NCR指派
+func (h *NCRHandler) Assign(c *gin.Context) {
+	id := c.Param("id")
+	var req NCRAssignReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	err := h.service.Assign(c.Request.Context(), id, req.HandleUserID)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, nil)
+}
+
+// Close NCR关闭
+func (h *NCRHandler) Close(c *gin.Context) {
+	id := c.Param("id")
+	err := h.service.Close(c.Request.Context(), id)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, nil)
+}

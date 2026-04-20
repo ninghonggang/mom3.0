@@ -173,3 +173,22 @@ func (h *SPCHandler) GetStats(c *gin.Context) {
 		response.Success(c, service.SPCStats{Count: len(values)})
 	}
 }
+
+// GetCapability 获取CP/CPK能力分析
+func (h *SPCHandler) GetCapability(c *gin.Context) {
+	configIDStr := c.Param("configId")
+	configID, err := strconv.ParseInt(configIDStr, 10, 64)
+	if err != nil {
+		response.BadRequest(c, "无效的configId")
+		return
+	}
+
+	checkItem := c.Query("check_item")
+
+	stats, err := h.service.GetCapability(c.Request.Context(), configID, checkItem)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, stats)
+}

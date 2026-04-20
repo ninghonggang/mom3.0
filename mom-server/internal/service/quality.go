@@ -51,3 +51,16 @@ func (s *IQCService) Delete(ctx context.Context, id string) error {
 	}
 	return s.repo.Delete(ctx, iqcID)
 }
+
+// Inspect IQC检验判定 - 更新检验结果
+func (s *IQCService) Inspect(ctx context.Context, id string, result int, remark string) error {
+	var iqcID uint
+	_, err := fmt.Sscanf(id, "%d", &iqcID)
+	if err != nil {
+		return err
+	}
+	return s.repo.Update(ctx, iqcID, map[string]interface{}{
+		"result": result, // 2=合格/3=不合格
+		"remark": remark,
+	})
+}

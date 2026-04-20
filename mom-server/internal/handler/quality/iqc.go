@@ -83,3 +83,25 @@ func (h *IQCHandler) Delete(c *gin.Context) {
 	}
 	response.Success(c, nil)
 }
+
+// IQCInspectReq IQC检验判定请求
+type IQCInspectReq struct {
+	Result int    `json:"result" binding:"required"` // 2=合格/3=不合格
+	Remark string `json:"remark"`
+}
+
+// Inspect IQC检验判定
+func (h *IQCHandler) Inspect(c *gin.Context) {
+	id := c.Param("id")
+	var req IQCInspectReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	err := h.service.Inspect(c.Request.Context(), id, req.Result, req.Remark)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, nil)
+}
