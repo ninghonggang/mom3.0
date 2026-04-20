@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(npx playwright:*)",
+      "Bash(npm run:*)",
+      "Bash(pg_isready -h localhost -p 5432 -U postgres)",
+      "Bash(\"C:/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -p 5432 -U postgres -d mom3_db -c \"\\\\dt\")",
+      "Bash(npm install:*)",
+      "Bash(go run:*)",
+      "Bash(gemini --version)",
+      "mcp__BaiduSearch__webSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(cc-connect --version)",
+      "Bash(cc-connect --help)",
+      "Bash(cc-connect config-example:*)",
+      "Bash(cc-connect)",
+      "Bash(go build:*)",
+      "Bash(psql -h localhost -U postgres -d mom3_db -c \"SELECT COUNT\\(*\\) as total_menus FROM sys_menu WHERE tenant_id = 1;\")",
+      "Bash(\"D:/pgsql/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"SELECT path FROM sys_menu WHERE tenant_id = 1 AND path LIKE '/report%';\")",
+      "Bash(ls -la \"/c/Program Files/PostgreSQL/\"*/bin/psql.exe)",
+      "Read(//c/Program Files \\(x86\\)/**)"
+    ],
+    "defaultMode": "bypassPermissions",
+    "additionalDirectories": [
+      "C:\\Users\\nhg\\.cc-connect"
+    ]
+  }
+}

@@ -154,7 +154,11 @@ type Router struct {
 	productionCompleteHandler        *production.ProductionCompleteHandler
 	purchaseReturnHandler            *wms.PurchaseReturnHandler
 	salesReturnHandler               *wms.SalesReturnHandler
+	labelTemplateHandler             *wms.WmsLabelTemplateHandler
+	strategyHandler                  *wms.WmsStrategyHandler
 	mesHandler                       *mes.MesHandler
+	workSchedulingHandler            *mes.WorkSchedulingHandler
+	eamRepairJobHandler              *eam.EamRepairJobHandler
 	personSkillHandler               *mes.PersonSkillHandler
 	completeInspectHandler          *mes.CompleteInspectHandler
 	productionDailyReportHandler     *report.ProductionDailyReportHandler
@@ -289,7 +293,11 @@ aqlHandler *quality.AQLHandler,
 	productionCompleteHandler *production.ProductionCompleteHandler,
 	purchaseReturnHandler *wms.PurchaseReturnHandler,
 	salesReturnHandler *wms.SalesReturnHandler,
+	labelTemplateHandler *wms.WmsLabelTemplateHandler,
+	strategyHandler *wms.WmsStrategyHandler,
 	mesHandler *mes.MesHandler,
+	workSchedulingHandler *mes.WorkSchedulingHandler,
+	eamRepairJobHandler *eam.EamRepairJobHandler,
 	personSkillHandler *mes.PersonSkillHandler,
 	completeInspectHandler *mes.CompleteInspectHandler,
 	productionDailyReportHandler *report.ProductionDailyReportHandler,

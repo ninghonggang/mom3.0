@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd /c \"\\\\\"C:\\\\Program Files\\\\PostgreSQL\\\\15\\\\bin\\\\psql.exe\\\\\" -h localhost -p 5432 -U postgres -d mom3_db -c \\\\\"SELECT 1 as test;\\\\\"\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -f \"d:/nhgProgram/mom3.0/add_report_menus.sql\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"\\\\d sys_menu\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"SELECT path FROM sys_menu WHERE tenant_id = 1 AND path LIKE '/report%';\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"SELECT MAX\\(id\\) as max_id FROM sys_menu;\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db)",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"SELECT id FROM sys_menu WHERE path = '/report' AND tenant_id = 1;\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -mom3_db)",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '生产日报', 'C', '/report/production-daily', 'DataLine', 1, 46, 1\\);\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '质量周报', 'C', '/report/quality-weekly', 'DataAnalysis', 2, 46, 1\\);\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, 'OEE报表', 'C', '/report/oee', 'TrendCharts', 3, 46, 1\\);\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '交付报表', 'C', '/report/delivery', 'Truck', 4, 46, 1\\);\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '安东报表', 'C', '/report/andon', 'Bell', 5, 46, 1\\);\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -f \"d:/nhgProgram/mom3.0/add_report_submenus.sql\")",
+      "Bash(PGPASSWORD=postgres \"/c/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"SELECT path, menu_name FROM sys_menu WHERE tenant_id = 1 AND path LIKE '/report%' ORDER BY path;\")",
+      "Bash(\"D:\\\\pgsql\\\\bin\\\\psql\" -h localhost -U postgres -d mom3_dev -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '财务管理', 'M', '/fin', 'Money', 16, 0, 1\\);\")",
+      "Bash(/d/pgsql/bin/psql -h localhost -U postgres -d mom3_dev -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '财务管理', 'M', '/fin', 'Money', 16, 0, 1\\);\")",
+      "Bash(ls -la /d/pgsql/15/bin/psql*)",
+      "Bash(cmd //c \"dir D:\\\\\\\\pgsql\\\\\\\\* /s /b\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path 'D:\\\\pgsql' -Recurse -Filter 'psql.exe' -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName\")",
+      "Bash(powershell -Command \"Get-Command psql -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path 'D:\\\\pgsql' -Recurse -Include 'psql.exe' -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName\")",
+      "Bash(\"C:/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '通知公告', 'C', '/system/notice', 'Bell', 20, \\(SELECT id FROM sys_menu WHERE path='/system' AND tenant_id=1\\), 1\\) ON CONFLICT DO NOTHING;\")",
+      "Bash(\"C:/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '打印模板', 'C', '/system/print-template', 'Printer', 21, \\(SELECT id FROM sys_menu WHERE path='/system' AND tenant_id=1\\), 1\\) ON CONFLICT DO NOTHING;\")",
+      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"SELECT 1\")",
+      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '通知公告', 'C', '/system/notice', 'Bell', 20, \\(SELECT id FROM sys_menu WHERE path='/system' AND tenant_id=1\\), 1\\) ON CONFLICT DO NOTHING;\")",
+      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '打印模板', 'C', '/system/print-template', 'Printer', 21, \\(SELECT id FROM sys_menu WHERE path='/system' AND tenant_id=1\\), 1\\) ON CONFLICT DO NOTHING;\")",
+      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '电子SOP', 'C', '/production/electronic-sop', 'Document', 12, \\(SELECT id FROM sys_menu WHERE path='/production' AND tenant_id=1\\), 1\\) ON CONFLICT DO NOTHING;\")",
+      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '流转卡', 'C', '/production/flow-card', 'List', 13, \\(SELECT id FROM sys_menu WHERE path='/production' AND tenant_id=1\\), 1\\) ON CONFLICT DO NOTHING;\")",
+      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '编码规则', 'C', '/production/code-rule', 'Key', 14, \\(SELECT id FROM sys_menu WHERE path='/production' AND tenant_id=1\\), 1\\) ON CONFLICT DO NOTHING;\")",
+      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '动态规则', 'C', '/quality/dynamic-rule', 'Setting', 17, \\(SELECT id FROM sys_menu WHERE path='/quality' AND tenant_id=1\\), 1\\) ON CONFLICT DO NOTHING;\")",
+      "Bash(PGPASSWORD=postgres \"C:/Program Files/PostgreSQL/15/bin/psql.exe\" -h localhost -U postgres -d mom3_db -c \"INSERT INTO sys_menu \\(tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status\\) VALUES \\(1, '物料追溯', 'C', '/mes/material-trace', 'Search', 24, \\(SELECT id FROM sys_menu WHERE path='/mes' AND tenant_id=1\\), 1\\) ON CONFLICT DO NOTHING;\")"
+    ],
+    "additionalDirectories": [
+      "d:\\nhgProgram\\mom3.0"
+    ]
+  },
+  "language": "chinese"
+}

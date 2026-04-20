@@ -585,6 +585,8 @@ func main() {
 	containerMovementRepo := repository.NewContainerMovementRepository(db)
 	containerLifecycleRepo := repository.NewContainerLifecycleRepository(db)
 	containerMaintenanceRepo := repository.NewContainerMaintenanceRepository(db)
+	labelTemplateRepo := repository.NewWmsLabelTemplateRepository(db)
+	strategyRepo := repository.NewWmsStrategyRepository(db)
 	aiConfigRepo := repository.NewAIConfigRepository(db)
 	aiConversationRepo := repository.NewConversationRepository(db)
 	aiMessageRepo := repository.NewMessageRepository(db)
@@ -654,6 +656,7 @@ func main() {
 	purchasePlanRepo := repository.NewScpPurchasePlanRepository(db)
 	scpSupplierContactRepo := repository.NewScpSupplierContactRepository(db)
 	scpSupplierBankRepo := repository.NewScpSupplierBankRepository(db)
+	scpQadSyncLogRepo := repository.NewScpQadSyncLogRepository(db)
 
 	// FIN Repositories
 	purchaseSettlementRepo := repository.NewPurchaseSettlementRepository(db)
@@ -786,6 +789,8 @@ func main() {
 	kanbanPullSvc := service.NewKanbanPullService(kanbanPullRepo)
 	containerSvc := service.NewContainerService(containerRepo, containerMovementRepo)
 	containerLifecycleSvc := service.NewContainerLifecycleService(containerLifecycleRepo, containerMaintenanceRepo, containerRepo)
+	labelTemplateSvc := service.NewWmsLabelTemplateService(labelTemplateRepo)
+	strategySvc := service.NewWmsStrategyService(strategyRepo)
 	aiSvc := service.NewAIService(aiConfigRepo, aiConversationRepo, aiMessageRepo)
 	aiExecutor := service.NewAIExecutor(productionRepo, materialRepo, warehouseRepo, inventoryRepo, iqcRepo, ipqcRepo, fqcRepo, oqcRepo, equipmentRepo, mpsRepo, scheduleRepo, userRepo, deptRepo, roleRepo)
 	personSkillSvc := service.NewPersonSkillService(personSkillRepo, personSkillScoreRepo)
@@ -821,6 +826,7 @@ func main() {
 	)
 	purchasePlanSvc := service.NewScpPurchasePlanService(purchasePlanRepo)
 	scpSupplierSvc := service.NewScpSupplierService(scpSupplierContactRepo, scpSupplierBankRepo)
+	scpQadSvc := service.NewScpQadService(scpQadSyncLogRepo)
 
 	// FIN Service
 	finSvc := service.NewFinService(purchaseSettlementRepo, salesSettlementRepo, paymentRequestRepo, purchaseAdvanceRepo, salesReceiptRepo, supplierStatementRepo)
@@ -939,8 +945,11 @@ func main() {
 	productionCompleteHandler := production.NewProductionCompleteHandler(productionCompleteSvc)
 	purchaseReturnHandler := wms.NewPurchaseReturnHandler(purchaseReturnSvc)
 	salesReturnHandler := wms.NewSalesReturnHandler(salesReturnSvc)
+	labelTemplateHandler := wms.NewWmsLabelTemplateHandler(labelTemplateSvc)
+	strategyHandler := wms.NewWmsStrategyHandler(strategySvc)
 	mesHandler := mes.NewMesHandler(orderMonthSvc, orderDaySvc)
 	workSchedulingHandler := mes.NewWorkSchedulingHandler(mesWorkSchedulingSvc)
+	eamRepairJobHandler = eam.NewEamRepairJobHandler(eamRepairJobSvc)
 	personSkillHandler := mes.NewPersonSkillHandler(personSkillSvc)
 	completeInspectHandler := mes.NewCompleteInspectHandler(completeInspectSvc)
 	productionDailyReportHandler := report.NewProductionDailyReportHandler(productionDailyReportSvc)
@@ -961,6 +970,7 @@ func main() {
 	customerInquiryHandler := scp.NewCustomerInquiryHandler(scpSvc)
 	purchasePlanHandler := scp.NewPurchasePlanHandler(purchasePlanSvc)
 	scpSupplierExtHandler := scp.NewSupplierExtHandler(scpSupplierSvc)
+	qadHandler := scp.NewQadHandler(scpQadSvc)
 	finHandler := fin.NewFinHandler(finSvc)
 
 	// Alert Handler
@@ -979,6 +989,11 @@ func main() {
 	bpmInstanceApi := service.NewBpmProcessInstanceApi(bpmSvc)
 	bpmInstanceApiHandler := bpm.NewBpmInstanceApiHandler(bpmInstanceApi, bpmMessageSvc)
 
+	// BPM Task Transfer Handler
+	bpmTaskTransferRepo := repository.NewBpmTaskTransferRepository(db)
+	bpmTaskTransferSvc := service.NewBpmTaskTransferService(bpmTaskTransferRepo, userRepo)
+	bpmTaskTransferHandler := bpm.NewTaskTransferHandler(bpmTaskTransferSvc)
+
 	// MDM Partner Extension Handlers
 	contactHandler := mdm.NewContactHandler(contactSvc)
 	bankAccountHandler := mdm.NewBankAccountHandler(bankAccountSvc)
@@ -987,7 +1002,7 @@ func main() {
 	// 初始化路由
 	gin.SetMode(cfg.Server.Mode)
 	engine := gin.Default()
-	router.New(jwtUtil, userHandler, authHandler, loginLogHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, tenantHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, workCenterHandler, traceHandler, energyHandler, equipmentHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler, iqcHandler, ipqcHandler, fqcHandler, oqcHandler, defectCodeHandler, defectRecordHandler, ncrHandler, spcHandler, supplierHandler, supplierASNHandler, materialHandler, materialCategoryHandler, customerHandler, workshopHandler, operLogHandler, oeeHandler, teepDataHandler, moldHandler, moldMaintenanceHandler, moldRepairHandler, gaugeHandler, gaugeCalibrationHandler, importHandler, firstLastInspectHandler, packageHandler, dcHandler, electronicSOPHandler, codeRuleHandler, flowCardHandler, noticeHandler, printTemplateHandler, capacityAnalysisHandler, deliveryRateHandler, changeoverMatrixHandler, rollingScheduleHandler, jitDemandHandler, transferOrderHandler, stockCheckHandler, sideLocationHandler, kanbanPullHandler, containerHandler, aiConfigHandler, aiChatHandler, andonCallHandler, andonRuleHandler, workshopConfigHandler, workingCalendarHandler, finHandler, equipmentPartHandler, equipmentDocumentHandler, equipmentDowntimeHandler, spareHandler, eamRepairJobHandler, alertHandler, bpmHandler, bpmTaskMsgRuleHandler, bpmInstanceApiHandler, rfqHandler, purchaseOrderHandler, scpSalesOrderHandler, supplierKPIHandler, supplierQuoteHandler, customerInquiryHandler, purchasePlanHandler, scpSupplierExtHandler, contactHandler, bankAccountHandler, attachmentHandler, supplierMaterialHandler, containerLifecycleHandler, visualInspectionHandler, labSampleHandler, labTestItemHandler, labReportHandler, labInstrumentHandler, inspectionFeatureHandler, inspectionCharacteristicHandler, aqlHandler, qmsSamplingHandler, mesTeamHandler, mesProcessHandler, mesOfflineHandler, productionIssueHandler, productionReturnHandler, productionCompleteHandler, purchaseReturnHandler, salesReturnHandler, mesHandler, workSchedulingHandler, personSkillHandler, completeInspectHandler, productionDailyReportHandler, qualityWeeklyReportHandler, oeeReportHandler, deliveryReportHandler, andonReportHandler, integrationHandler, agvHandler, erpSyncHandler).Init(engine)
+	router.New(jwtUtil, userHandler, authHandler, loginLogHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, tenantHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, workCenterHandler, traceHandler, energyHandler, equipmentHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler, iqcHandler, ipqcHandler, fqcHandler, oqcHandler, defectCodeHandler, defectRecordHandler, ncrHandler, spcHandler, supplierHandler, supplierASNHandler, materialHandler, materialCategoryHandler, customerHandler, workshopHandler, operLogHandler, oeeHandler, teepDataHandler, moldHandler, moldMaintenanceHandler, moldRepairHandler, gaugeHandler, gaugeCalibrationHandler, importHandler, firstLastInspectHandler, packageHandler, dcHandler, electronicSOPHandler, codeRuleHandler, flowCardHandler, noticeHandler, printTemplateHandler, capacityAnalysisHandler, deliveryRateHandler, changeoverMatrixHandler, rollingScheduleHandler, jitDemandHandler, transferOrderHandler, stockCheckHandler, sideLocationHandler, kanbanPullHandler, containerHandler, aiConfigHandler, aiChatHandler, andonCallHandler, andonRuleHandler, workshopConfigHandler, workingCalendarHandler, finHandler, equipmentPartHandler, equipmentDocumentHandler, equipmentDowntimeHandler, spareHandler, alertHandler, bpmHandler, bpmTaskMsgRuleHandler, bpmInstanceApiHandler, bpmTaskTransferHandler, rfqHandler, purchaseOrderHandler, scpSalesOrderHandler, supplierKPIHandler, supplierQuoteHandler, customerInquiryHandler, purchasePlanHandler, scpSupplierExtHandler, qadHandler, contactHandler, bankAccountHandler, attachmentHandler, supplierMaterialHandler, containerLifecycleHandler, visualInspectionHandler, labSampleHandler, labTestItemHandler, labReportHandler, labInstrumentHandler, inspectionFeatureHandler, inspectionCharacteristicHandler, aqlHandler, qmsSamplingHandler, mesTeamHandler, mesProcessHandler, mesOfflineHandler, productionIssueHandler, productionReturnHandler, productionCompleteHandler, purchaseReturnHandler, salesReturnHandler, labelTemplateHandler, strategyHandler, mesHandler, workSchedulingHandler, eamRepairJobHandler, personSkillHandler, completeInspectHandler, productionDailyReportHandler, qualityWeeklyReportHandler, oeeReportHandler, deliveryReportHandler, andonReportHandler, integrationHandler, agvHandler, erpSyncHandler).Init(engine)
 
 	// 启动服务器
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
