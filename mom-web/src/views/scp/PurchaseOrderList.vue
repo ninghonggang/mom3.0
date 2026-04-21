@@ -645,33 +645,6 @@ const handleItemReceive = async (row: any) => {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       inputType: 'number',
-      inputPlaceholder: `最大可收货: ${row.order_qty - (row.received_qty || 0)}`
-    })
-    const { value: batchNo } = await ElMessageBox.prompt('确认收货', '请输入批号（可选）', {
-      confirmButtonText: '确定',
-      cancelButtonText: '跳过',
-      inputPlaceholder: '批号'
-    })
-    await receivePurchaseOrder(row.id, parseFloat(receivedQty), batchNo || undefined)
-    ElMessage.success('收货成功')
-    // 刷新详情数据
-    const res = await getPurchaseOrderById(detailData.value.id)
-    detailData.value = res.data
-    loadData()
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.message || '收货失败')
-    }
-  }
-}
-
-// 行项目收货
-const handleItemReceive = async (row: any) => {
-  try {
-    const { value: receivedQty } = await ElMessageBox.prompt('确认收货', '请输入收货数量', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputType: 'number',
       inputPlaceholder: `最大可收货: ${row.order_qty - (row.received_qty || 0)}`,
       inputValidator: (val) => {
         const qty = parseFloat(val)
