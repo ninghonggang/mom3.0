@@ -9,9 +9,9 @@ server:
 database:
   host: "localhost"
   port: 5432
-  user: "postgres"
-  password: "postgres"
-  dbname: "mom3_db"
+  user: "momadmin"
+  password: "mom123456"
+  dbname: "mom3.0"
   sslmode: "disable"
 
 redis:
