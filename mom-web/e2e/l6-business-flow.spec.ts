@@ -78,7 +78,6 @@ test.describe('L6 业务流程测试', () => {
     const materialId = await db.createMaterialViaDb({
       code: testData.materialCode,
       name: '测试物料',
-      categoryId: 1,
     })
     expect(materialId).toBeGreaterThan(0)
 
@@ -111,7 +110,7 @@ test.describe('L6 业务流程测试', () => {
     const equipmentId = await db.createEquipmentViaDb({
       code: testData.equipmentCode,
       name: '测试设备',
-      category: '加工设备',
+      equipmentType: '加工设备',
     })
     expect(equipmentId).toBeGreaterThan(0)
 

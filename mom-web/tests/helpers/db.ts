@@ -47,8 +47,8 @@ export async function createSalesOrderViaDb(data: {
   deliveryDate?: string
 }): Promise<number> {
   const sql = `
-    INSERT INTO pro_sales_order (order_no, customer_id, quantity, delivery_date, status, created_at)
-    VALUES ($1, $2, $3, $4, 'draft', NOW())
+    INSERT INTO pro_sales_order (tenant_id, order_no, customer_id, quantity, delivery_date, status, created_at)
+    VALUES (1, $1, $2, $3, $4, 1, NOW())
     RETURNING id
   `
   const result = await query(sql, [
@@ -57,7 +57,7 @@ export async function createSalesOrderViaDb(data: {
     data.quantity,
     data.deliveryDate || new Date().toISOString().split('T')[0],
   ])
-  return result[0].id
+  return Number(result[0].id)
 }
 
 export async function getSalesOrder(orderNo: string): Promise<any> {
@@ -92,7 +92,7 @@ export async function createProductionOrderViaDb(data: {
     data.salesOrderNo,
     data.quantity,
   ])
-  return result[0].id
+  return Number(result[0].id)
 }
 
 export async function getProductionOrder(orderNo: string): Promise<any> {
@@ -108,15 +108,15 @@ export async function getProductionOrder(orderNo: string): Promise<any> {
 export async function createMaterialViaDb(data: {
   code: string
   name: string
-  categoryId: number
+  categoryId?: number
 }): Promise<number> {
   const sql = `
-    INSERT INTO mdm_material (material_code, material_name, category_id, status, created_at)
-    VALUES ($1, $2, $3, 'active', NOW())
+    INSERT INTO mdm_material (tenant_id, material_code, material_name, category_id, status, created_at)
+    VALUES (1, $1, $2, $3, 1, NOW())
     RETURNING id
   `
-  const result = await query(sql, [data.code, data.name, data.categoryId])
-  return result[0].id
+  const result = await query(sql, [data.code, data.name, data.categoryId || null])
+  return Number(result[0].id)
 }
 
 export async function getMaterial(code: string): Promise<any> {
@@ -132,15 +132,15 @@ export async function getMaterial(code: string): Promise<any> {
 export async function createEquipmentViaDb(data: {
   code: string
   name: string
-  category: string
+  equipmentType?: string
 }): Promise<number> {
   const sql = `
-    INSERT INTO equ_equipment (equipment_code, equipment_name, equipment_category, status, created_at)
-    VALUES ($1, $2, $3, 'normal', NOW())
+    INSERT INTO equ_equipment (tenant_id, equipment_code, equipment_name, equipment_type, status, created_at)
+    VALUES (1, $1, $2, $3, 1, NOW())
     RETURNING id
   `
-  const result = await query(sql, [data.code, data.name, data.category])
-  return result[0].id
+  const result = await query(sql, [data.code, data.name, data.equipmentType || null])
+  return Number(result[0].id)
 }
 
 export async function getEquipment(code: string): Promise<any> {
@@ -158,12 +158,12 @@ export async function createWarehouseViaDb(data: {
   name: string
 }): Promise<number> {
   const sql = `
-    INSERT INTO wms_warehouse (warehouse_code, warehouse_name, status, created_at)
-    VALUES ($1, $2, 'active', NOW())
+    INSERT INTO wms_warehouse (tenant_id, warehouse_code, warehouse_name, status, created_at)
+    VALUES (1, $1, $2, 1, NOW())
     RETURNING id
   `
   const result = await query(sql, [data.code, data.name])
-  return result[0].id
+  return Number(result[0].id)
 }
 
 export async function getWarehouse(code: string): Promise<any> {
@@ -186,7 +186,7 @@ export async function createIqcViaDb(data: {
     RETURNING id
   `
   const result = await query(sql, [data.iqcNo, data.supplierId])
-  return result[0].id
+  return Number(result[0].id)
 }
 
 // ============ 清理测试数据 ============
