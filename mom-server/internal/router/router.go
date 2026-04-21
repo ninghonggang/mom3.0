@@ -149,6 +149,7 @@ type Router struct {
 	mesTeamHandler                   *mes.TeamHandler
 	mesProcessHandler                *mes.ProcessHandler
 	mesOfflineHandler                *mes.OfflineHandler
+	mesSopHandler                    *mes.SopHandler
 	productionIssueHandler           *production.ProductionIssueHandler
 	productionReturnHandler          *production.ProductionReturnHandler
 	productionCompleteHandler        *production.ProductionCompleteHandler
@@ -156,8 +157,11 @@ type Router struct {
 	salesReturnHandler               *wms.SalesReturnHandler
 	labelTemplateHandler             *wms.WmsLabelTemplateHandler
 	strategyHandler                  *wms.WmsStrategyHandler
+	areaHandler                      *wms.WmsAreaHandler
+	wmsItemHandler                  *wms.WMSItemHandler
 	mesHandler                       *mes.MesHandler
 	workSchedulingHandler            *mes.WorkSchedulingHandler
+	jobReportHandler                *mes.JobReportHandler
 	eamRepairJobHandler              *eam.EamRepairJobHandler
 	personSkillHandler               *mes.PersonSkillHandler
 	completeInspectHandler          *mes.CompleteInspectHandler
@@ -288,6 +292,7 @@ aqlHandler *quality.AQLHandler,
 	mesTeamHandler *mes.TeamHandler,
 	mesProcessHandler *mes.ProcessHandler,
 	mesOfflineHandler *mes.OfflineHandler,
+	mesSopHandler *mes.SopHandler,
 	productionIssueHandler *production.ProductionIssueHandler,
 	productionReturnHandler *production.ProductionReturnHandler,
 	productionCompleteHandler *production.ProductionCompleteHandler,
@@ -295,8 +300,11 @@ aqlHandler *quality.AQLHandler,
 	salesReturnHandler *wms.SalesReturnHandler,
 	labelTemplateHandler *wms.WmsLabelTemplateHandler,
 	strategyHandler *wms.WmsStrategyHandler,
+	areaHandler *wms.WmsAreaHandler,
+	wmsItemHandler *wms.WMSItemHandler,
 	mesHandler *mes.MesHandler,
 	workSchedulingHandler *mes.WorkSchedulingHandler,
+	jobReportHandler *mes.JobReportHandler,
 	eamRepairJobHandler *eam.EamRepairJobHandler,
 	personSkillHandler *mes.PersonSkillHandler,
 	completeInspectHandler *mes.CompleteInspectHandler,
@@ -419,12 +427,19 @@ aqlHandler *quality.AQLHandler,
 		mesTeamHandler:           mesTeamHandler,
 		mesProcessHandler:        mesProcessHandler,
 		mesOfflineHandler:        mesOfflineHandler,
+		mesSopHandler:            mesSopHandler,
 		productionIssueHandler:   productionIssueHandler,
 		productionReturnHandler:  productionReturnHandler,
 		productionCompleteHandler: productionCompleteHandler,
 		purchaseReturnHandler:    purchaseReturnHandler,
 		salesReturnHandler:       salesReturnHandler,
-		mesHandler:               mesHandler,
+		labelTemplateHandler:    labelTemplateHandler,
+		strategyHandler:         strategyHandler,
+		areaHandler:             areaHandler,
+		wmsItemHandler:         wmsItemHandler,
+		mesHandler:              mesHandler,
+		workSchedulingHandler:   workSchedulingHandler,
+		jobReportHandler:        jobReportHandler,
 		personSkillHandler:       personSkillHandler,
 		completeInspectHandler:          completeInspectHandler,
 		productionDailyReportHandler:  productionDailyReportHandler,
@@ -779,6 +794,18 @@ func (r *Router) Init(engine *gin.Engine) {
 			offline.GET("/:id/items", r.mesOfflineHandler.GetItems)
 		}
 
+		// MES SOP-PDF管理
+		sop := protected.Group("/mes/sop")
+		{
+			sop.POST("/upload", r.mesSopHandler.Upload)
+			sop.GET("/getPDF", r.mesSopHandler.GetByWorkOrder)
+			sop.GET("/listByProcessRoute", r.mesSopHandler.ListByProcessRoute)
+			sop.GET("/list", r.mesSopHandler.List)
+			sop.GET("/:id", r.mesSopHandler.Get)
+			sop.DELETE("/:id", r.mesSopHandler.Delete)
+			sop.GET("/download/:id", r.mesSopHandler.Download)
+		}
+
 		// MES齐套检查
 		completeInspect := protected.Group("/mes/complete-inspect")
 		{
@@ -790,6 +817,15 @@ func (r *Router) Init(engine *gin.Engine) {
 			completeInspect.POST("/get-orderDay-equipment", r.completeInspectHandler.GetOrderDayEquipment)
 			completeInspect.POST("/get-orderDay-worker", r.completeInspectHandler.GetOrderDayWorker)
 			completeInspect.POST("/update", r.completeInspectHandler.Update)
+		}
+
+		// MES报工管理
+		jobReport := protected.Group("/mes/mes-job-report-log")
+		{
+			jobReport.POST("/create", r.jobReportHandler.Create)
+			jobReport.GET("/get", r.jobReportHandler.Get)
+			jobReport.GET("/page", r.jobReportHandler.Page)
+			jobReport.POST("/senior", r.jobReportHandler.Senior)
 		}
 
 		// 生产完工
@@ -1048,6 +1084,31 @@ func (r *Router) Init(engine *gin.Engine) {
 				kanban.POST("", r.kanbanPullHandler.Create)
 				kanban.PUT("/:id", r.kanbanPullHandler.Update)
 				kanban.DELETE("/:id", r.kanbanPullHandler.Delete)
+			}
+
+			// 库区管理
+			area := wms.Group("/area")
+			{
+				area.POST("/create", r.areaHandler.Create)
+				area.PUT("/update", r.areaHandler.Update)
+				area.DELETE("/delete", r.areaHandler.Delete)
+				area.GET("/get", r.areaHandler.Get)
+				area.GET("/page", r.areaHandler.Page)
+				area.GET("/tree", r.areaHandler.Tree)
+				area.GET("/listByWarehouse", r.areaHandler.ListByWarehouse)
+			}
+
+			// 货品管理
+			item := wms.Group("/item")
+			{
+				item.GET("/list", r.wmsItemHandler.List)
+				item.GET("/:id", r.wmsItemHandler.Get)
+				item.GET("/search", r.wmsItemHandler.Search)
+				item.POST("", r.wmsItemHandler.Create)
+				item.PUT("/:id", r.wmsItemHandler.Update)
+				item.DELETE("/:id", r.wmsItemHandler.Delete)
+				item.GET("/listByMaterial", r.wmsItemHandler.ListByMaterial)
+				item.POST("/senior", r.wmsItemHandler.Senior)
 			}
 
 			// 采购退货

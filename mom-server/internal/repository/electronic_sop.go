@@ -56,6 +56,11 @@ func (r *ElectronicSOPRepository) GetByMaterial(ctx context.Context, materialID 
 	return list, err
 }
 
+// GetDB 获取数据库连接
+func (r *ElectronicSOPRepository) GetDB() *gorm.DB {
+	return r.db
+}
+
 type CodeRuleRepository struct {
 	db *gorm.DB
 }

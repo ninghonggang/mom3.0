@@ -19,11 +19,11 @@ func NewWMSItemRepository(db *gorm.DB) *WMSItemRepository {
 }
 
 // List 获取货品列表（分页）
-func (r *WMSItemRepository) List(ctx context.Context, query *model.WMSItemQueryVO) ([]model.WMSItem, int64, error) {
+func (r *WMSItemRepository) List(ctx context.Context, tenantID int64, query *model.WMSItemQueryVO) ([]model.WMSItem, int64, error) {
 	var list []model.WMSItem
 	var total int64
 
-	queryDB := r.db.WithContext(ctx).Model(&model.WMSItem{})
+	queryDB := r.db.WithContext(ctx).Model(&model.WMSItem{}).Where("tenant_id = ?", tenantID)
 
 	// 按租户筛选
 	if query != nil && query.Keyword != "" {
@@ -35,6 +35,9 @@ func (r *WMSItemRepository) List(ctx context.Context, query *model.WMSItemQueryV
 	}
 	if query != nil && query.Status != "" {
 		queryDB = queryDB.Where("status = ?", query.Status)
+	}
+	if query != nil && query.MaterialCode != "" {
+		queryDB = queryDB.Where("material_code = ?", query.MaterialCode)
 	}
 
 	err := queryDB.Count(&total).Error
@@ -99,4 +102,75 @@ func (r *WMSItemRepository) Update(ctx context.Context, id uint, updates map[str
 // Delete 删除货品
 func (r *WMSItemRepository) Delete(ctx context.Context, id uint) error {
 	return r.db.WithContext(ctx).Delete(&model.WMSItem{}, id).Error
+}
+
+// ListByMaterial 按物料编码获取货品列表
+func (r *WMSItemRepository) ListByMaterial(ctx context.Context, tenantID int64, materialCode string) ([]model.WMSItem, error) {
+	var list []model.WMSItem
+	err := r.db.WithContext(ctx).Where("tenant_id = ? AND material_code = ?", tenantID, materialCode).
+		Where("status = ?", "ACTIVE").
+		Order("id DESC").Find(&list).Error
+	return list, err
+}
+
+// Senior 高级搜索货品
+func (r *WMSItemRepository) Senior(ctx context.Context, tenantID int64, conditions []map[string]interface{}) ([]model.WMSItem, int64, error) {
+	var list []model.WMSItem
+	var total int64
+
+	q := r.db.WithContext(ctx).Model(&model.WMSItem{}).Where("tenant_id = ?", tenantID)
+
+	for _, cond := range conditions {
+		field, ok := cond["field"].(string)
+		if !ok {
+			continue
+		}
+		operator, _ := cond["operator"].(string)
+		value := cond["value"]
+
+		switch operator {
+		case "eq":
+			q = q.Where(field+" = ?", value)
+		case "ne":
+			q = q.Where(field+" != ?", value)
+		case "like":
+			q = q.Where(field+" LIKE ?", "%"+value.(string)+"%")
+		case "gt":
+			q = q.Where(field+" > ?", value)
+		case "ge":
+			q = q.Where(field+" >= ?", value)
+		case "lt":
+			q = q.Where(field+" < ?", value)
+		case "le":
+			q = q.Where(field+" <= ?", value)
+		case "between":
+			if arr, ok := value.([]interface{}); ok && len(arr) == 2 {
+				q = q.Where(field+" BETWEEN ? AND ?", arr[0], arr[1])
+			}
+		case "in":
+			if arr, ok := value.([]interface{}); ok {
+				q = q.Where(field+" IN ?", arr)
+			}
+		}
+	}
+
+	q.Count(&total)
+
+	page := 1
+	pageSize := 20
+	if len(conditions) > 0 {
+		for _, cond := range conditions {
+			if pf, ok := cond["page"].(float64); ok {
+				page = int(pf)
+			}
+			if ps, ok := cond["pageSize"].(float64); ok {
+				pageSize = int(ps)
+			}
+		}
+	}
+
+	offset := (page - 1) * pageSize
+	q = q.Offset(offset).Limit(pageSize)
+	err := q.Order("id DESC").Find(&list).Error
+	return list, total, err
 }

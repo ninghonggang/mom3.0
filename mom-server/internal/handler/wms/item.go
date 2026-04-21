@@ -32,7 +32,7 @@ func (h *WMSItemHandler) List(c *gin.Context) {
 		tenantID = 1
 	}
 
-	list, total, err := h.service.List(c.Request.Context(), &query)
+	list, total, err := h.service.List(c.Request.Context(), tenantID, &query)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
@@ -87,7 +87,7 @@ func (h *WMSItemHandler) Create(c *gin.Context) {
 	}
 	req.CategoryID = nil // 确保为nil如果未提供
 
-	if err := h.service.Create(c.Request.Context(), &req); err != nil {
+	if err := h.service.Create(c.Request.Context(), tenantID, &req); err != nil {
 		response.ErrorMsg(c, err.Error())
 		return
 	}
@@ -119,4 +119,58 @@ func (h *WMSItemHandler) Delete(c *gin.Context) {
 		return
 	}
 	response.Success(c, nil)
+}
+
+// ListByMaterial 按物料编码获取货品列表
+// GET /wms/item/listByMaterial
+func (h *WMSItemHandler) ListByMaterial(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+
+	materialCode := c.Query("materialCode")
+	if materialCode == "" {
+		response.BadRequest(c, "materialCode is required")
+		return
+	}
+
+	list, err := h.service.ListByMaterial(c.Request.Context(), tenantID, materialCode)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, gin.H{"list": list, "total": len(list)})
+}
+
+// Senior 高级搜索货品
+// POST /wms/item/senior
+func (h *WMSItemHandler) Senior(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+
+	var req model.WMSItemSeniorReqVO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	list, total, err := h.service.Senior(c.Request.Context(), tenantID, req.Conditions)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+	pageSize := req.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+
+	response.Success(c, gin.H{"list": list, "total": total, "page": page, "pageSize": pageSize})
 }

@@ -19,7 +19,7 @@ func NewWMSItemService(repo *repository.WMSItemRepository) *WMSItemService {
 }
 
 // List 获取货品列表
-func (s *WMSItemService) List(ctx context.Context, query *model.WMSItemQueryVO) ([]model.WMSItem, int64, error) {
+func (s *WMSItemService) List(ctx context.Context, tenantID int64, query *model.WMSItemQueryVO) ([]model.WMSItem, int64, error) {
 	// 设置默认分页
 	if query != nil {
 		if query.Page <= 0 {
@@ -29,7 +29,7 @@ func (s *WMSItemService) List(ctx context.Context, query *model.WMSItemQueryVO) 
 			query.PageSize = 20
 		}
 	}
-	return s.repo.List(ctx, query)
+	return s.repo.List(ctx, tenantID, query)
 }
 
 // Get 获取货品详情
@@ -48,8 +48,12 @@ func (s *WMSItemService) Search(ctx context.Context, keyword string) ([]model.WM
 }
 
 // Create 创建货品
-func (s *WMSItemService) Create(ctx context.Context, req *model.WMSItemCreateReqVO) error {
+func (s *WMSItemService) Create(ctx context.Context, tenantID int64, req *model.WMSItemCreateReqVO) error {
+	if tenantID <= 0 {
+		tenantID = 1
+	}
 	item := &model.WMSItem{
+		TenantID:      tenantID,
 		ItemCode:      req.ItemCode,
 		ItemName:      req.ItemName,
 		Specification: req.Specification,
@@ -58,6 +62,8 @@ func (s *WMSItemService) Create(ctx context.Context, req *model.WMSItemCreateReq
 		CategoryID:    req.CategoryID,
 		Barcode:       req.Barcode,
 		SafetyStock:   req.SafetyStock,
+		MaterialCode:  req.MaterialCode,
+		MaterialName:  req.MaterialName,
 		Status:        "ACTIVE",
 	}
 	return s.repo.Create(ctx, item)
@@ -78,6 +84,12 @@ func (s *WMSItemService) Update(ctx context.Context, id string, req *model.WMSIt
 		"barcode":       req.Barcode,
 		"safety_stock":  req.SafetyStock,
 	}
+	if req.MaterialCode != "" {
+		updates["material_code"] = req.MaterialCode
+	}
+	if req.MaterialName != "" {
+		updates["material_name"] = req.MaterialName
+	}
 	if req.Status != "" {
 		updates["status"] = req.Status
 	}
@@ -92,4 +104,14 @@ func (s *WMSItemService) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	return s.repo.Delete(ctx, itemID)
+}
+
+// ListByMaterial 按物料编码获取货品列表
+func (s *WMSItemService) ListByMaterial(ctx context.Context, tenantID int64, materialCode string) ([]model.WMSItem, error) {
+	return s.repo.ListByMaterial(ctx, tenantID, materialCode)
+}
+
+// Senior 高级搜索货品
+func (s *WMSItemService) Senior(ctx context.Context, tenantID int64, conditions []map[string]interface{}) ([]model.WMSItem, int64, error) {
+	return s.repo.Senior(ctx, tenantID, conditions)
 }
