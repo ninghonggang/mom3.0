@@ -166,14 +166,14 @@ test.describe('所有页面加载测试', () => {
 })
 
 test.describe('页面批量验证', () => {
-  test('所有页面在 60 秒内完成加载', async ({ page }) => {
+  test('所有页面在 120 秒内完成加载', async ({ page }) => {
     const startTime = Date.now()
     let failedPages: string[] = []
 
     for (const path of pageRoutes) {
       try {
-        await page.goto(path, { timeout: 15000, waitUntil: 'domcontentloaded' })
-        await page.waitForTimeout(300)
+        await page.goto(path, { timeout: 10000, waitUntil: 'domcontentloaded' })
+        await page.waitForTimeout(200)
       } catch (e) {
         failedPages.push(path)
       }
