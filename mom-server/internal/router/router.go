@@ -1,6 +1,7 @@
 package router
 
 import (
+	"log"
 	"github.com/gin-gonic/gin"
 	"mom-server/internal/handler/andon"
 	"mom-server/internal/handler/aps"
@@ -386,6 +387,10 @@ aqlHandler *quality.AQLHandler,
 		changeoverMatrixHandler:  changeoverMatrixHandler,
 		rollingScheduleHandler:   rollingScheduleHandler,
 		jitDemandHandler:          jitDemandHandler,
+		transferOrderHandler:      transferOrderHandler,
+		stockCheckHandler:          stockCheckHandler,
+		sideLocationHandler:        sideLocationHandler,
+		kanbanPullHandler:          kanbanPullHandler,
 		containerHandler:           containerHandler,
 		aiConfigHandler:            aiConfigHandler,
 		aiChatHandler:              aiChatHandler,
@@ -455,6 +460,7 @@ aqlHandler *quality.AQLHandler,
 
 // Init 初始化路由
 func (r *Router) Init(engine *gin.Engine) {
+	log.Printf("DEBUG Init: transferOrderHandler=%p", r.transferOrderHandler)
 	r.engine = engine
 
 	// 中间件

@@ -13,7 +13,8 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:5176',
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure'
+    screenshot: 'only-on-failure',
+    headless: false,  // 👈 添加这一行，关闭无头模式
   },
   projects: [
     {

@@ -1,6 +1,7 @@
 package wms
 
 import (
+	"log"
 	"mom-server/internal/middleware"
 	"mom-server/internal/model"
 	"mom-server/internal/pkg/response"
@@ -18,12 +19,12 @@ type TransferOrderHandler struct {
 }
 
 func NewTransferOrderHandler(s *service.TransferOrderService) *TransferOrderHandler {
+	log.Printf("DEBUG NewTransferOrderHandler called with service pointer: %p", s)
 	return &TransferOrderHandler{service: s}
 }
 
 func (h *TransferOrderHandler) List(c *gin.Context) {
-	query := c.Query("query")
-	list, total, err := h.service.List(c.Request.Context(), query)
+	list, total, err := h.service.List(c.Request.Context(), c.Query("query"))
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return

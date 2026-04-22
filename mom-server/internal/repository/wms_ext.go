@@ -205,7 +205,7 @@ func (r *KanbanPullRepository) List(ctx context.Context, tenantID int64, query s
 	if err != nil {
 		return nil, 0, err
 	}
-	err = db.Order("priority DESC").Find(&list).Error
+	err = db.Order("id DESC").Find(&list).Error
 	return list, total, err
 }
 

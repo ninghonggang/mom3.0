@@ -90,6 +90,8 @@ func main() {
 		&model.DeliveryOrderItem{},
 		&model.TransferOrder{},
 		&model.StockCheck{},
+		&model.SideLocation{},
+		&model.KanbanPull{},
 	); err != nil {
 		log.Fatalf("数据库迁移失败[第2批-仓储管理表]: %v", err)
 	}
