@@ -174,6 +174,127 @@ export async function getWarehouse(code: string): Promise<any> {
   return rows[0] || null
 }
 
+// ============ 车间 (mdm_workshop) ============
+
+export async function createWorkshop(data: {
+  code: string
+  name: string
+}): Promise<number> {
+  const sql = `
+    INSERT INTO mdm_workshop (tenant_id, workshop_code, workshop_name, status, created_at)
+    VALUES (1, $1, $2, 1, NOW())
+    RETURNING id
+  `
+  const result = await query(sql, [data.code, data.name])
+  return Number(result[0].id)
+}
+
+export async function getWorkshop(code: string): Promise<any> {
+  const rows = await query(
+    'SELECT * FROM mdm_workshop WHERE workshop_code = $1',
+    [code]
+  )
+  return rows[0] || null
+}
+
+// ============ 客户 (mdm_customer) ============
+
+export async function createCustomer(data: {
+  code: string
+  name: string
+}): Promise<number> {
+  const sql = `
+    INSERT INTO mdm_customer (tenant_id, code, name, status, created_at)
+    VALUES (1, $1, $2, 1, NOW())
+    RETURNING id
+  `
+  const result = await query(sql, [data.code, data.name])
+  return Number(result[0].id)
+}
+
+export async function getCustomer(code: string): Promise<any> {
+  const rows = await query(
+    'SELECT * FROM mdm_customer WHERE code = $1',
+    [code]
+  )
+  return rows[0] || null
+}
+
+// ============ 供应商 (mdm_supplier) ============
+
+export async function createSupplier(data: {
+  code: string
+  name: string
+}): Promise<number> {
+  const sql = `
+    INSERT INTO mdm_supplier (tenant_id, code, name, status, created_at)
+    VALUES (1, $1, $2, 1, NOW())
+    RETURNING id
+  `
+  const result = await query(sql, [data.code, data.name])
+  return Number(result[0].id)
+}
+
+export async function getSupplier(code: string): Promise<any> {
+  const rows = await query(
+    'SELECT * FROM mdm_supplier WHERE code = $1',
+    [code]
+  )
+  return rows[0] || null
+}
+
+// ============ 采购订单 (scp_purchase_order) ============
+
+export async function createPurchaseOrder(data: {
+  orderNo: string
+  supplierId: number
+  expectedDate?: string
+}): Promise<number> {
+  const sql = `
+    INSERT INTO scp_purchase_order (tenant_id, order_no, supplier_id, expected_date, status, created_at)
+    VALUES (1, $1, $2, $3, 1, NOW())
+    RETURNING id
+  `
+  const result = await query(sql, [
+    data.orderNo,
+    data.supplierId,
+    data.expectedDate || new Date().toISOString().split('T')[0],
+  ])
+  return Number(result[0].id)
+}
+
+export async function getPurchaseOrder(orderNo: string): Promise<any> {
+  const rows = await query(
+    'SELECT * FROM scp_purchase_order WHERE order_no = $1',
+    [orderNo]
+  )
+  return rows[0] || null
+}
+
+// ============ 供应商报价 (scp_supplier_quote) ============
+
+export async function createSupplierQuote(data: {
+  quoteNo: string
+  supplierId: number
+  validFrom?: string
+  validTo?: string
+}): Promise<number> {
+  const sql = `
+    INSERT INTO scp_supplier_quote (tenant_id, quote_no, supplier_id, valid_from, valid_to, status, created_at)
+    VALUES (1, $1, $2, $3, $4, 1, NOW())
+    RETURNING id
+  `
+  const today = new Date().toISOString().split('T')[0]
+  const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const result = await query(sql, [
+    data.quoteNo,
+    data.supplierId,
+    data.validFrom || today,
+    data.validTo || nextMonth,
+  ])
+  return Number(result[0].id)
+}
+
 // ============ IQC 检验 (iqc) ============
 
 export async function createIqcViaDb(data: {

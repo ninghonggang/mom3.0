@@ -1,319 +1,221 @@
 -- =====================================================
--- 新增功能菜单 (MOM3.0 V2.0)
--- 数据库: mom3_db
+-- MOM3.0 新增功能菜单 - 修复版 (处理已存在父菜单)
 -- =====================================================
 
 -- 1. SCP供应链管理 - 父菜单
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '供应链管理', 'M', '/scp', 'Connection', 12, 0, 1);
-
--- SCP子菜单
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '采购订单', 'C', '/scp/purchase', 'ShoppingCart', 1, (SELECT id FROM sys_menu WHERE path='/scp' AND tenant_id=1), 1),
-(1, '询价单', 'C', '/scp/rfq', 'PriceTag', 2, (SELECT id FROM sys_menu WHERE path='/scp' AND tenant_id=1), 1),
-(1, '供应商报价', 'C', '/scp/supplier-quote', 'Document', 3, (SELECT id FROM sys_menu WHERE path='/scp' AND tenant_id=1), 1),
-(1, '销售订单', 'C', '/scp/sales-order', 'DocumentCopy', 4, (SELECT id FROM sys_menu WHERE path='/scp' AND tenant_id=1), 1),
-(1, '供应商绩效', 'C', '/scp/supplier-kpi', 'DataLine', 5, (SELECT id FROM sys_menu WHERE path='/scp' AND tenant_id=1), 1),
-(1, '客户询价', 'C', '/scp/customer-inquiry', 'Message', 6, (SELECT id FROM sys_menu WHERE path='/scp' AND tenant_id=1), 1);
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, '供应链管理', 'M', '/scp', NULL, 'Connection', 12, 0, 1
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/scp' AND tenant_id = 1);
 
 -- 2. Alert统一告警中心 - 父菜单
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '统一告警', 'M', '/alert', 'Bell', 13, 0, 1);
-
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '告警规则', 'C', '/alert/rules', 'SetUp', 1, (SELECT id FROM sys_menu WHERE path='/alert' AND tenant_id=1), 1),
-(1, '告警记录', 'C', '/alert/records', 'List', 2, (SELECT id FROM sys_menu WHERE path='/alert' AND tenant_id=1), 1),
-(1, '升级规则', 'C', '/alert/escalation-rules', 'Top', 3, (SELECT id FROM sys_menu WHERE path='/alert' AND tenant_id=1), 1),
-(1, '告警统计', 'C', '/alert/statistics', 'DataAnalysis', 4, (SELECT id FROM sys_menu WHERE path='/alert' AND tenant_id=1), 1),
-(1, '通知日志', 'C', '/alert/notification-logs', 'Log', 5, (SELECT id FROM sys_menu WHERE path='/alert' AND tenant_id=1), 1),
-(1, '通知渠道', 'C', '/alert/channels', 'Connection', 6, (SELECT id FROM sys_menu WHERE path='/alert' AND tenant_id=1), 1);
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, '统一告警', 'M', '/alert', NULL, 'Bell', 13, 0, 1
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/alert' AND tenant_id = 1);
 
 -- 3. BPM流程引擎 - 父菜单
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '流程管理', 'M', '/bpm', 'Guide', 14, 0, 1);
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, '流程管理', 'M', '/bpm', NULL, 'Guide', 14, 0, 1
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = '/bpm' AND tenant_id = 1);
 
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '流程模型', 'C', '/bpm/process', 'FlowChart', 1, (SELECT id FROM sys_menu WHERE path='/bpm' AND tenant_id=1), 1),
-(1, '流程实例', 'C', '/bpm/instance', 'Connection', 2, (SELECT id FROM sys_menu WHERE path='/bpm' AND tenant_id=1), 1),
-(1, '任务实例', 'C', '/bpm/task', 'Tickets', 3, (SELECT id FROM sys_menu WHERE path='/bpm' AND tenant_id=1), 1);
+-- 插入SCP子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/scp' AND tenant_id = 1), 1
+FROM (VALUES
+  ('采购订单', '/scp/purchase', 'scp/PurchaseOrderList.vue', 'ShoppingCart', 1),
+  ('询价单', '/scp/rfq', 'scp/RFQList.vue', 'PriceTag', 2),
+  ('供应商报价', '/scp/supplier-quote', 'scp/SupplierQuoteList.vue', 'Document', 3),
+  ('销售订单', '/scp/sales-order', 'scp/SCPSalesOrderList.vue', 'DocumentCopy', 4),
+  ('供应商绩效', '/scp/supplier-kpi', 'scp/SupplierKPIList.vue', 'DataLine', 5),
+  ('客户询价', '/scp/customer-inquiry', 'scp/CustomerInquiryList.vue', 'Message', 6)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
--- 4. APS扩展菜单 - 添加到现有APS父菜单下
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '滚动排程', 'C', '/aps/rolling-config', 'Refresh', 4, (SELECT id FROM sys_menu WHERE path='/aps' AND tenant_id=1), 1),
-(1, '交付分析', 'C', '/aps/delivery-analysis', 'TrendCharts', 5, (SELECT id FROM sys_menu WHERE path='/aps' AND tenant_id=1), 1),
-(1, '缺料分析', 'C', '/aps/material-shortage', 'Warning', 6, (SELECT id FROM sys_menu WHERE path='/aps' AND tenant_id=1), 1),
-(1, '缺料规则', 'C', '/aps/shortage-rule', 'SetUp', 7, (SELECT id FROM sys_menu WHERE path='/aps' AND tenant_id=1), 1),
-(1, '换型矩阵', 'C', '/aps/changeover-matrix', 'Grid', 8, (SELECT id FROM sys_menu WHERE path='/aps' AND tenant_id=1), 1),
-(1, '产品族', 'C', '/aps/product-family', 'Collection', 9, (SELECT id FROM sys_menu WHERE path='/aps' AND tenant_id=1), 1);
+-- 插入Alert子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/alert' AND tenant_id = 1), 1
+FROM (VALUES
+  ('告警规则', '/alert/rules', 'alert/AlertRulesList.vue', 'SetUp', 1),
+  ('告警记录', '/alert/records', 'alert/AlertRecordsList.vue', 'List', 2),
+  ('升级规则', '/alert/escalation', 'alert/AlertEscalationList.vue', 'Top', 3),
+  ('告警统计', '/alert/statistics', 'alert/AlertStatistics.vue', 'DataAnalysis', 4),
+  ('通知日志', '/alert/notification', 'alert/AlertNotification.vue', 'Log', 5)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
--- 5. WMS扩展菜单 - 添加到现有WMS父菜单下
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '调拨管理', 'C', '/wms/transfer', 'Switch', 4, (SELECT id FROM sys_menu WHERE path='/wms' AND tenant_id=1), 1),
-(1, '盘点管理', 'C', '/wms/stock-check', 'DocumentChecked', 5, (SELECT id FROM sys_menu WHERE path='/wms' AND tenant_id=1), 1),
-(1, '采购退货', 'C', '/wms/purchase-return', 'Return', 6, (SELECT id FROM sys_menu WHERE path='/wms' AND tenant_id=1), 1),
-(1, '销售退货', 'C', '/wms/sales-return', 'Return', 7, (SELECT id FROM sys_menu WHERE path='/wms' AND tenant_id=1), 1);
+-- 插入BPM子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/bpm' AND tenant_id = 1), 1
+FROM (VALUES
+  ('流程模型', '/bpm/process', 'bpm/ProcessList.vue', 'FlowChart', 1),
+  ('流程实例', '/bpm/instance', 'bpm/InstanceList.vue', 'Connection', 2),
+  ('任务实例', '/bpm/task', 'bpm/TaskList.vue', 'Tickets', 3)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
--- 5.1 生产发料管理 - 添加到现有生产执行父菜单下
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '生产发料', 'C', '/production/issue', 'Box', 10, (SELECT id FROM sys_menu WHERE path='/production' AND tenant_id=1), 1);
+-- 插入APS子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/aps' AND tenant_id = 1), 1
+FROM (VALUES
+  ('滚动排程', '/aps/rolling-config', 'aps/RollingConfigList.vue', 'Refresh', 4),
+  ('交付分析', '/aps/delivery-analysis', 'aps/DeliveryAnalysisList.vue', 'TrendCharts', 5),
+  ('缺料分析', '/aps/material-shortage', 'aps/MaterialShortageList.vue', 'Warning', 6),
+  ('缺料规则', '/aps/shortage-rule', 'aps/ShortageRuleList.vue', 'SetUp', 7),
+  ('换型矩阵', '/aps/changeover-matrix', 'aps/ChangeoverMatrixList.vue', 'Grid', 8),
+  ('产品族', '/aps/product-family', 'aps/ProductFamilyList.vue', 'Collection', 9)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
--- 5.2 生产退料管理 - 添加到现有生产执行父菜单下
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '生产退料', 'C', '/production/return', 'Return', 11, (SELECT id FROM sys_menu WHERE path='/production' AND tenant_id=1), 1);
+-- 插入WMS子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/wms' AND tenant_id = 1), 1
+FROM (VALUES
+  ('调拨管理', '/wms/transfer', 'wms/TransferOrderList.vue', 'Switch', 4),
+  ('盘点管理', '/wms/stock-check', 'wms/StockCheckList.vue', 'Document', 5)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
--- 6. Quality扩展菜单 - 添加到现有Quality父菜单下
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, 'QRCI质量闭环', 'C', '/quality/qrci', 'CircleCheck', 10, (SELECT id FROM sys_menu WHERE path='/quality' AND tenant_id=1), 1),
-(1, 'LPA分层审核', 'C', '/quality/lpa', 'Checked', 11, (SELECT id FROM sys_menu WHERE path='/quality' AND tenant_id=1), 1),
-(1, '检验计划', 'C', '/quality/inspection-plans', 'Document', 12, (SELECT id FROM sys_menu WHERE path='/quality' AND tenant_id=1), 1),
-(1, 'AQL抽样方案', 'C', '/quality/aql', 'DataAnalysis', 13, (SELECT id FROM sys_menu WHERE path='/quality' AND tenant_id=1), 1),
-(1, '检测样品', 'C', '/quality/lab/samples', 'TestTube', 14, (SELECT id FROM sys_menu WHERE path='/quality' AND tenant_id=1), 1),
-(1, '检验特性', 'C', '/quality/inspection-feature', 'Grid', 16, (SELECT id FROM sys_menu WHERE path='/quality' AND tenant_id=1), 1),
-(1, '检测报告', 'C', '/quality/lab/reports', 'Document', 15, (SELECT id FROM sys_menu WHERE path='/quality' AND tenant_id=1), 1),
-(1, '仪器管理', 'C', '/quality/lab-instrument', 'Tools', 16, (SELECT id FROM sys_menu WHERE path='/quality' AND tenant_id=1), 1);
+-- 插入Production子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/production' AND tenant_id = 1), 1
+FROM (VALUES
+  ('生产发料', '/production/issue', 'production/ProductionIssueList.vue', 'Top', 1),
+  ('生产退料', '/production/return', 'production/ProductionReturnList.vue', 'Bottom', 2)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
--- 7. MES班组管理 - 添加到现有MES父菜单下
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '班组管理', 'C', '/mes/team', 'Team', 20, (SELECT id FROM sys_menu WHERE path='/mes' AND tenant_id=1), 1);
+-- 插入Quality子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/quality' AND tenant_id = 1), 1
+FROM (VALUES
+  ('QRCI', '/quality/qrci', 'quality/QRCIList.vue', 'Edit', 1),
+  ('LPA', '/quality/lpa', 'quality/LPAList.vue', 'Document', 2),
+  ('检验计划', '/quality/inspection-plans', 'quality/InspectionPlanList.vue', 'SetUp', 3),
+  ('AQL配置', '/quality/aql', 'quality/AQLList.vue', 'DataLine', 4),
+  ('实验室样品', '/quality/lab/samples', 'quality/lab/LabSampleList.vue', 'Sample', 5),
+  ('实验室报告', '/quality/lab/reports', 'quality/lab/LabReportList.vue', 'Document', 6),
+  ('检测设备', '/quality/lab/instrument', 'quality/lab/LabInstrumentList.vue', 'Tools', 7)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
--- 7.1 MES工艺路线管理 - 添加到现有MES父菜单下
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '工艺路线', 'C', '/mes/process-routes', 'Guide', 21, (SELECT id FROM sys_menu WHERE path='/mes' AND tenant_id=1), 1);
+-- 插入MES子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/mes' AND tenant_id = 1), 1
+FROM (VALUES
+  ('班组管理', '/mes/team', 'mes/TeamList.vue', 'User', 1),
+  ('工艺路线', '/mes/process-routes', 'mes/ProcessRouteList.vue', 'Flow', 2),
+  ('离线作业', '/mes/offline', 'mes/OfflineOperationList.vue', 'VideoPause', 3),
+  ('人员技能', '/mes/person-skill', 'mes/PersonSkillList.vue', 'Star', 4)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
--- 7.2 MES产品离线管理 - 添加到现有MES父菜单下
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '产品离线', 'C', '/mes/offline', 'Warning', 22, (SELECT id FROM sys_menu WHERE path='/mes' AND tenant_id=1), 1);
+-- 插入EAM子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/eam' AND tenant_id = 1), 1
+FROM (VALUES
+  ('工厂日历', '/eam/factory', 'eam/FactoryList.vue', 'Calendar', 1),
+  ('设备组织', '/eam/equipment-org', 'eam/EquipmentOrgList.vue', 'Office', 2),
+  ('停机记录', '/eam/downtime', 'eam/DowntimeList.vue', 'Switch', 3)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
--- 7.3 MES人员能力矩阵 - 添加到现有MES父菜单下
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '人员能力', 'C', '/mes/person-skill', 'User', 23, (SELECT id FROM sys_menu WHERE path='/mes' AND tenant_id=1), 1);
+-- 插入Equipment子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/equipment' AND tenant_id = 1), 1
+FROM (VALUES
+  ('量具管理', '/equipment/gauge', 'equipment/GaugeList.vue', 'Scale', 1),
+  ('检验计划', '/equipment/inspection/plans', 'equipment/inspection/InspectionPlanList.vue', 'SetUp', 2),
+  ('检验记录', '/equipment/inspection/records', 'equipment/inspection/InspectionRecordList.vue', 'List', 3),
+  ('检验模板', '/equipment/inspection/templates', 'equipment/inspection/InspectionTemplateList.vue', 'Document', 4),
+  ('缺陷管理', '/equipment/inspection/defects', 'equipment/inspection/DefectList.vue', 'Warning', 5)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
--- 7.4 EAM设备组织层级 - 添加到现有MDM父菜单下
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '设备组织', 'M', '/eam', 'OfficeBuilding', 8, 0, 1);
+-- 插入Fin子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/fin' AND tenant_id = 1), 1
+FROM (VALUES
+  ('付款申请', '/fin/payment-request', 'fin/PaymentRequestList.vue', 'Money', 1),
+  ('采购结算', '/fin/purchase-settlement', 'fin/PurchaseSettlementList.vue', 'ShoppingCart', 2),
+  ('销售结算', '/fin/sales-settlement', 'fin/SalesSettlementList.vue', 'Sell', 3)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '厂区管理', 'C', '/eam/factory', 'HomeFilled', 1, (SELECT id FROM sys_menu WHERE path='/eam' AND tenant_id=1), 1),
-(1, '设备组织层级', 'C', '/eam/equipment-org', 'Connection', 2, (SELECT id FROM sys_menu WHERE path='/eam' AND tenant_id=1), 1);
+-- 插入Report子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/report' AND tenant_id = 1), 1
+FROM (VALUES
+  ('生产日报', '/report/production-daily', 'report/ProductionDailyReport.vue', 'DataLine', 1),
+  ('质量周报', '/report/quality-weekly', 'report/QualityWeeklyReport.vue', 'DataAnalysis', 2),
+  ('OEE报表', '/report/oee', 'report/OEEReport.vue', 'TrendCharts', 3),
+  ('交付报表', '/report/delivery', 'report/DeliveryReport.vue', 'Vehicle', 4),
+  ('安灯报表', '/report/andon', 'report/AndonReport.vue', 'Bell', 5)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '停机记录', 'C', '/eam/downtime', 'Clock', 13, (SELECT id FROM sys_menu WHERE path='/eam' AND tenant_id=1), 1);
+-- 插入Integration子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/integration' AND tenant_id = 1), 1
+FROM (VALUES
+  ('接口配置', '/integration/interface-config', 'integration/InterfaceConfigList.vue', 'Setting', 1),
+  ('执行日志', '/integration/execution-log', 'integration/ExecutionLogList.vue', 'List', 2)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
+-- 插入AGV子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/agv' AND tenant_id = 1), 1
+FROM (VALUES
+  ('AGV任务', '/agv/task', 'agv/AGVTaskList.vue', 'VideoPlay', 1),
+  ('AGV设备', '/agv/device', 'agv/AGVDeviceList.vue', 'Van', 2),
+  ('AGV站点', '/agv/location', 'agv/AGVLocationList.vue', 'Location', 3)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
--- 8. 设备点检子菜单 - 添加到现有设备父菜单下
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '点检模板', 'C', '/equipment/inspection/templates', 'Tickets', 6, (SELECT id FROM sys_menu WHERE path='/equipment' AND tenant_id=1), 1),
-(1, '点检计划', 'C', '/equipment/inspection/plans', 'Schedule', 7, (SELECT id FROM sys_menu WHERE path='/equipment' AND tenant_id=1), 1),
-(1, '点检记录', 'C', '/equipment/inspection/records', 'Document', 8, (SELECT id FROM sys_menu WHERE path='/equipment' AND tenant_id=1), 1),
-(1, '点检缺陷', 'C', '/equipment/inspection/defects', 'Warning', 9, (SELECT id FROM sys_menu WHERE path='/equipment' AND tenant_id=1), 1),
-(1, '量检具管理', 'C', '/equipment/gauge', 'Scale', 10, (SELECT id FROM sys_menu WHERE path='/equipment' AND tenant_id=1), 1),
-(1, '器具管理', 'C', '/equipment/tools', 'Tool', 11, (SELECT id FROM sys_menu WHERE path='/equipment' AND tenant_id=1), 1),
-(1, '容器管理', 'C', '/equipment/containers', 'Box', 12, (SELECT id FROM sys_menu WHERE path='/equipment' AND tenant_id=1), 1),
-(1, '器具容器绑定', 'C', '/equipment/tool-bindings', 'Connection', 13, (SELECT id FROM sys_menu WHERE path='/equipment' AND tenant_id=1), 1),
-(1, '容器生命周期', 'C', '/equipment/container-lifecycle', 'Refresh', 14, (SELECT id FROM sys_menu WHERE path='/equipment' AND tenant_id=1), 1);
+-- 插入Supplier子菜单
+INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, component, icon, sort, parent_id, status)
+SELECT 1, name.val, 'C', name.path, name.comp, name.icon, name.sort,
+       (SELECT id FROM sys_menu WHERE path = '/supplier' AND tenant_id = 1), 1
+FROM (VALUES
+  ('ASN', '/supplier/asn', 'supplier/ASNList.vue', 'Truck', 1)
+) AS name(val, path, comp, icon, sort)
+WHERE NOT EXISTS (SELECT 1 FROM sys_menu WHERE path = name.path AND tenant_id = 1);
 
--- 9. MDM客户供应商扩展菜单 - 添加到现有MDM父菜单下
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '联系人管理', 'C', '/mdm/contacts', 'User', 30, (SELECT id FROM sys_menu WHERE path='/mdm' AND tenant_id=1), 1),
-(1, '银行账户', 'C', '/mdm/bank-accounts', 'CreditCard', 31, (SELECT id FROM sys_menu WHERE path='/mdm' AND tenant_id=1), 1),
-(1, '附件管理', 'C', '/mdm/attachments', 'Folder', 32, (SELECT id FROM sys_menu WHERE path='/mdm' AND tenant_id=1), 1);
-
--- AI视觉检测菜单 - 添加到现有AI父菜单下（假设AI菜单path为/ai）
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '视觉检测', 'C', '/ai/visual-inspection', 'Camera', 10, (SELECT id FROM sys_menu WHERE path='/ai' AND tenant_id=1), 1);
-
--- 给管理员角色分配新菜单
+-- =====================================================
+-- 角色菜单权限 (role_id=1 管理员)
+-- =====================================================
 INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path LIKE '/scp%';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path LIKE '/alert%';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path LIKE '/bpm%';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path IN ('/aps/rolling-config','/aps/delivery-analysis','/aps/material-shortage','/aps/shortage-rule','/aps/changeover-matrix','/aps/product-family');
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path IN ('/wms/transfer','/wms/stock-check');
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/production/issue';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/production/return';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path IN ('/quality/qrci','/quality/lpa','/quality/inspection-plans','/quality/aql','/quality/lab/samples','/quality/lab/reports','/quality/lab-instrument');
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path LIKE '/equipment/inspection%';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/equipment/gauge';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/mes/team';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/mes/process-routes';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/mes/offline';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/mes/person-skill';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path LIKE '/eam%';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path IN ('/quality/inspection-plans','/quality/aql');
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path IN ('/equipment/tools','/equipment/containers','/equipment/tool-bindings','/equipment/container-lifecycle');
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path IN ('/mdm/contacts','/mdm/bank-accounts','/mdm/attachments');
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/ai/visual-inspection';
-
--- 8. 系统集成 - 接口配置管理（作为一级菜单）
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '系统集成', 'M', '/integration', 'Connection', 12, 0, 1);
-
--- 8.1 接口配置管理
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '接口配置', 'C', '/integration/interface-config', 'Interface', 1, (SELECT id FROM sys_menu WHERE path='/integration' AND tenant_id=1), 1);
-
--- 8.2 执行日志查询
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '执行日志', 'C', '/integration/execution-log', 'List', 2, (SELECT id FROM sys_menu WHERE path='/integration' AND tenant_id=1), 1);
-
--- 分配系统集成菜单权限
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/integration';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/integration/interface-config';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/integration/execution-log';
-
--- 9. AGV调度
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, 'AGV调度', 'M', '/agv', 'Apple', 13, 0, 1);
-
--- 9.1 AGV任务管理
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, 'AGV任务', 'C', '/agv/task', 'Document', 1, (SELECT id FROM sys_menu WHERE path='/agv' AND tenant_id=1), 1);
-
--- 9.2 AGV设备管理
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, 'AGV设备', 'C', '/agv/device', 'Processor', 2, (SELECT id FROM sys_menu WHERE path='/agv' AND tenant_id=1), 1);
-
--- 9.3 库位映射管理
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '库位映射', 'C', '/agv/location', 'Location', 3, (SELECT id FROM sys_menu WHERE path='/agv' AND tenant_id=1), 1);
-
--- 分配AGV菜单权限
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/agv';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/agv/task';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/agv/device';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/agv/location';
-
--- 10. 供应商ASN
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '供应商ASN', 'M', '/supplier-asn', 'Truck', 14, 0, 1);
-
--- 10.1 ASN到货通知
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, 'ASN到货', 'C', '/supplier-asn/asn', 'Document', 1, (SELECT id FROM sys_menu WHERE path='/supplier-asn' AND tenant_id=1), 1);
-
--- 分配供应商ASN菜单权限
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/supplier-asn';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/supplier-asn/asn';
-
--- 11. 报表模块
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '生产报表', 'M', '/report', 'DataLine', 15, 0, 1);
-
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '生产日报', 'C', '/report/production-daily', 'DataLine', 1, (SELECT id FROM sys_menu WHERE path='/report' AND tenant_id=1), 1),
-(1, '质量周报', 'C', '/report/quality-weekly', 'DataAnalysis', 2, (SELECT id FROM sys_menu WHERE path='/report' AND tenant_id=1), 1),
-(1, 'OEE报表', 'C', '/report/oee', 'TrendCharts', 3, (SELECT id FROM sys_menu WHERE path='/report' AND tenant_id=1), 1),
-(1, '交付报表', 'C', '/report/delivery', 'Truck', 4, (SELECT id FROM sys_menu WHERE path='/report' AND tenant_id=1), 1),
-(1, '安东报表', 'C', '/report/andon', 'Bell', 5, (SELECT id FROM sys_menu WHERE path='/report' AND tenant_id=1), 1);
-
--- 分配报表菜单权限
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/report';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/report/production-daily';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/report/quality-weekly';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/report/oee';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/report/delivery';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/report/andon';
-
--- 12. 财务模块
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '财务管理', 'M', '/fin', 'Money', 16, 0, 1);
-
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '采购结算', 'C', '/fin/purchase-settlement', 'Document', 1, (SELECT id FROM sys_menu WHERE path='/fin' AND tenant_id=1), 1),
-(1, '销售结算', 'C', '/fin/sales-settlement', 'DocumentCopy', 2, (SELECT id FROM sys_menu WHERE path='/fin' AND tenant_id=1), 1),
-(1, '付款申请', 'C', '/fin/payment-request', 'Money', 3, (SELECT id FROM sys_menu WHERE path='/fin' AND tenant_id=1), 1);
-
--- 分配财务菜单权限
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/fin';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/fin/purchase-settlement';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/fin/sales-settlement';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/fin/payment-request';
-
--- 13. System扩展菜单
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '通知公告', 'C', '/system/notice', 'Bell', 20, (SELECT id FROM sys_menu WHERE path='/system' AND tenant_id=1), 1),
-(1, '打印模板', 'C', '/system/print-template', 'Printer', 21, (SELECT id FROM sys_menu WHERE path='/system' AND tenant_id=1), 1);
-
--- 分配System扩展菜单权限
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/system/notice';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/system/print-template';
-
--- 14. Production扩展菜单
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '电子SOP', 'C', '/production/electronic-sop', 'Document', 12, (SELECT id FROM sys_menu WHERE path='/production' AND tenant_id=1), 1),
-(1, '流转卡', 'C', '/production/flow-card', 'List', 13, (SELECT id FROM sys_menu WHERE path='/production' AND tenant_id=1), 1),
-(1, '编码规则', 'C', '/production/code-rule', 'Key', 14, (SELECT id FROM sys_menu WHERE path='/production' AND tenant_id=1), 1);
-
--- 分配Production扩展菜单权限
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/production/electronic-sop';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/production/flow-card';
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/production/code-rule';
-
--- 15. Quality扩展菜单
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '动态规则', 'C', '/quality/dynamic-rule', 'Setting', 17, (SELECT id FROM sys_menu WHERE path='/quality' AND tenant_id=1), 1);
-
--- 分配Quality扩展菜单权限
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/quality/dynamic-rule';
-
--- 16. MES扩展菜单
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '物料追溯', 'C', '/mes/material-trace', 'Search', 24, (SELECT id FROM sys_menu WHERE path='/mes' AND tenant_id=1), 1);
-
--- 分配MES扩展菜单权限
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/mes/material-trace';
-
--- 17. Alert扩展菜单
-INSERT INTO sys_menu (tenant_id, menu_name, menu_type, path, icon, sort, parent_id, status) VALUES
-(1, '告警通知', 'C', '/alert/notification', 'Message', 5, (SELECT id FROM sys_menu WHERE path='/alert' AND tenant_id=1), 1);
-
--- 分配Alert扩展菜单权限
-INSERT INTO sys_role_menu (role_id, menu_id)
-SELECT 1, id FROM sys_menu WHERE tenant_id = 1 AND path = '/alert/notification';
-
--- 验证
-SELECT COUNT(*) as total_menus FROM sys_menu WHERE tenant_id = 1;
+SELECT 1, m.id FROM sys_menu m WHERE m.tenant_id = 1
+AND m.path IN (
+  '/scp/purchase', '/scp/rfq', '/scp/supplier-quote', '/scp/sales-order', '/scp/supplier-kpi', '/scp/customer-inquiry',
+  '/alert/rules', '/alert/records', '/alert/escalation', '/alert/statistics', '/alert/notification',
+  '/bpm/process', '/bpm/instance', '/bpm/task',
+  '/aps/rolling-config', '/aps/delivery-analysis', '/aps/material-shortage', '/aps/shortage-rule', '/aps/changeover-matrix', '/aps/product-family',
+  '/wms/transfer', '/wms/stock-check',
+  '/production/issue', '/production/return',
+  '/quality/qrci', '/quality/lpa', '/quality/inspection-plans', '/quality/aql',
+  '/quality/lab/samples', '/quality/lab/reports', '/quality/lab/instrument',
+  '/mes/team', '/mes/process-routes', '/mes/offline', '/mes/person-skill',
+  '/eam/factory', '/eam/equipment-org', '/eam/downtime',
+  '/equipment/gauge',
+  '/equipment/inspection/plans', '/equipment/inspection/records', '/equipment/inspection/templates', '/equipment/inspection/defects',
+  '/fin/payment-request', '/fin/purchase-settlement', '/fin/sales-settlement',
+  '/report/production-daily', '/report/quality-weekly', '/report/oee', '/report/delivery', '/report/andon',
+  '/integration/interface-config', '/integration/execution-log',
+  '/agv/task', '/agv/device', '/agv/location',
+  '/supplier/asn'
+)
+AND NOT EXISTS (SELECT 1 FROM sys_role_menu rm WHERE rm.role_id = 1 AND rm.menu_id = m.id);
