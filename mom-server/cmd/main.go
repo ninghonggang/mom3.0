@@ -450,6 +450,7 @@ func main() {
 		&model.EamRepairJob{},
 		&model.EamRepairFlow{},
 		&model.EamRepairStd{},
+		&model.EquipmentDowntime{},
 	); err != nil {
 		log.Fatalf("数据库迁移失败[第43批-EAM维修工单]: %v", err)
 	}
