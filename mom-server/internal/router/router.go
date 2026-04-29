@@ -91,6 +91,7 @@ type Router struct {
 	gaugeHandler     *equipment.GaugeHandler
 	gaugeCalibrationHandler *equipment.GaugeCalibrationHandler
 	firstLastInspectHandler *production.FirstLastInspectHandler
+	kanbanHandler          *production.KanbanHandler
 	packageHandler     *production.PackageHandler
 	dcHandler          *dc.DataCollectionHandler
 	electronicSOPHandler *production.ElectronicSOPHandler
@@ -147,6 +148,8 @@ type Router struct {
 	inspectionCharacteristicHandler  *quality.InspectionCharacteristicHandler
 	aqlHandler                       *quality.AQLHandler
 	qmsSamplingHandler               *quality.QMSSamplingHandler
+	lpaHandler                       *quality.LPAHandler
+	qrciHandler                      *quality.QRCIHandler
 	mesTeamHandler                   *mes.TeamHandler
 	mesProcessHandler                *mes.ProcessHandler
 	mesOfflineHandler                *mes.OfflineHandler
@@ -188,6 +191,7 @@ func New(
 	dictHandler *system.DictHandler,
 	postHandler *system.PostHandler,
 	tenantHandler *system.TenantHandler,
+	importHandler *system.ImportHandler,
 	warehouseHandler *wms.WarehouseHandler,
 	salesOrderHandler *production.SalesOrderHandler,
 	reportHandler *production.ReportHandler,
@@ -232,8 +236,8 @@ func New(
 	moldRepairHandler *equipment.MoldRepairHandler,
 	gaugeHandler *equipment.GaugeHandler,
 	gaugeCalibrationHandler *equipment.GaugeCalibrationHandler,
-	importHandler *system.ImportHandler,
 	firstLastInspectHandler *production.FirstLastInspectHandler,
+	kanbanHandler *production.KanbanHandler,
 	packageHandler *production.PackageHandler,
 	dcHandler *dc.DataCollectionHandler,
 	electronicSOPHandler *production.ElectronicSOPHandler,
@@ -288,8 +292,10 @@ func New(
 	labInstrumentHandler *quality.LabInstrumentHandler,
 	inspectionFeatureHandler *quality.InspectionFeatureHandler,
 	inspectionCharacteristicHandler *quality.InspectionCharacteristicHandler,
-aqlHandler *quality.AQLHandler,
+	aqlHandler *quality.AQLHandler,
 	qmsSamplingHandler *quality.QMSSamplingHandler,
+	lpaHandler *quality.LPAHandler,
+	qrciHandler *quality.QRCIHandler,
 	mesTeamHandler *mes.TeamHandler,
 	mesProcessHandler *mes.ProcessHandler,
 	mesOfflineHandler *mes.OfflineHandler,
@@ -343,6 +349,7 @@ aqlHandler *quality.AQLHandler,
 		checkHandler:        checkHandler,
 		maintHandler:        maintHandler,
 		repairHandler:       repairHandler,
+		eamRepairJobHandler: eamRepairJobHandler,
 		sparePartHandler:    sparePartHandler,
 		lineHandler:         lineHandler,
 		workstationHandler:  workstationHandler,
@@ -375,6 +382,7 @@ aqlHandler *quality.AQLHandler,
 		gaugeCalibrationHandler: gaugeCalibrationHandler,
 		importHandler:         importHandler,
 		firstLastInspectHandler: firstLastInspectHandler,
+		kanbanHandler:           kanbanHandler,
 		packageHandler:          packageHandler,
 		dcHandler:               dcHandler,
 		electronicSOPHandler:    electronicSOPHandler,
@@ -411,9 +419,10 @@ aqlHandler *quality.AQLHandler,
 		rfqHandler:              rfqHandler,
 		purchaseOrderHandler:       purchaseOrderHandler,
 		scpSalesOrderHandler:      scpSalesOrderHandler,
-		supplierKPIHandler:        supplierKPIHandler,
-		supplierQuoteHandler:      supplierQuoteHandler,
-		purchasePlanHandler:     purchasePlanHandler,
+	supplierKPIHandler:        supplierKPIHandler,
+	supplierQuoteHandler:      supplierQuoteHandler,
+	customerInquiryHandler:   customerInquiryHandler,
+	purchasePlanHandler:     purchasePlanHandler,
 		scpSupplierExtHandler:    scpSupplierExtHandler,
 		qadHandler:               qadHandler,
 		contactHandler:             contactHandler,
@@ -429,7 +438,10 @@ aqlHandler *quality.AQLHandler,
 		inspectionFeatureHandler:  inspectionFeatureHandler,
 		inspectionCharacteristicHandler: inspectionCharacteristicHandler,
 		aqlHandler:               aqlHandler,
-		mesTeamHandler:           mesTeamHandler,
+		qmsSamplingHandler:      qmsSamplingHandler,
+		lpaHandler:              lpaHandler,
+		qrciHandler:             qrciHandler,
+		mesTeamHandler:          mesTeamHandler,
 		mesProcessHandler:        mesProcessHandler,
 		mesOfflineHandler:        mesOfflineHandler,
 		mesSopHandler:            mesSopHandler,
@@ -606,6 +618,12 @@ func (r *Router) Init(engine *gin.Engine) {
 			report.GET("/list", r.reportHandler.List)
 			report.POST("", r.reportHandler.Create)
 		}
+
+		// 生产看板
+		kanban := protected.Group("/production/kanban")
+			{
+				kanban.GET("/dashboard", r.kanbanHandler.GetDashboard)
+			}
 
 		// 生产日报
 		prodDaily := protected.Group("/report/production-daily")
@@ -834,6 +852,64 @@ func (r *Router) Init(engine *gin.Engine) {
 			jobReport.POST("/senior", r.jobReportHandler.Senior)
 		}
 
+		// MES工单排程
+		workScheduling := protected.Group("/mes/work-scheduling")
+		{
+			workScheduling.GET("/list", r.workSchedulingHandler.Page)
+			workScheduling.GET("/get", r.workSchedulingHandler.Get)
+			workScheduling.POST("/create", r.workSchedulingHandler.Create)
+			workScheduling.PUT("/update", r.workSchedulingHandler.Update)
+			workScheduling.DELETE("/delete", r.workSchedulingHandler.Delete)
+		}
+
+		// MES工单排程明细
+		workSchedulingDetail := protected.Group("/mes/work-scheduling-detail")
+		{
+			workSchedulingDetail.GET("/list", r.workSchedulingHandler.PageDetail)
+			workSchedulingDetail.GET("/get", r.workSchedulingHandler.GetDetail)
+			workSchedulingDetail.POST("/create", r.workSchedulingHandler.CreateDetail)
+			workSchedulingDetail.PUT("/update", r.workSchedulingHandler.UpdateDetail)
+			workSchedulingDetail.DELETE("/delete", r.workSchedulingHandler.DeleteDetail)
+			workSchedulingDetail.GET("/page", r.workSchedulingHandler.PageDetail)
+			workSchedulingDetail.GET("/listByScheduling", r.workSchedulingHandler.ListDetail)
+			workSchedulingDetail.PUT("/start", r.workSchedulingHandler.StartDetail)
+			workSchedulingDetail.PUT("/pause", r.workSchedulingHandler.PauseDetail)
+			workSchedulingDetail.PUT("/resume", r.workSchedulingHandler.ResumeDetail)
+			workSchedulingDetail.PUT("/complete", r.workSchedulingHandler.CompleteDetail)
+			workSchedulingDetail.POST("/report", r.workSchedulingHandler.ReportDetail)
+			workSchedulingDetail.PUT("/bindEquipment", r.workSchedulingHandler.BindEquipment)
+			workSchedulingDetail.PUT("/bindWorker", r.workSchedulingHandler.BindWorker)
+		}
+
+		// MES月计划/日计划
+		orderPlan := protected.Group("/mes/order-plan")
+		{
+			// 月计划
+			orderPlan.GET("/month/list", r.mesHandler.ListMonthPlans)
+			orderPlan.GET("/month/:id", r.mesHandler.GetMonthPlan)
+			orderPlan.POST("/month", r.mesHandler.CreateMonthPlan)
+			orderPlan.PUT("/month/:id", r.mesHandler.UpdateMonthPlan)
+			orderPlan.DELETE("/month/:id", r.mesHandler.DeleteMonthPlan)
+			orderPlan.POST("/month/:id/submit", r.mesHandler.SubmitMonthPlan)
+			orderPlan.POST("/month/:id/approve", r.mesHandler.ApproveMonthPlan)
+			orderPlan.POST("/month/:id/release", r.mesHandler.ReleaseMonthPlan)
+			orderPlan.POST("/month/:id/close", r.mesHandler.CloseMonthPlan)
+			orderPlan.POST("/month/:id/cancel", r.mesHandler.CancelMonthPlan)
+			orderPlan.GET("/month/:id/audits", r.mesHandler.GetMonthPlanAudits)
+			orderPlan.POST("/month/:id/decompose", r.mesHandler.DecomposeMonthPlan)
+			// 日计划
+			orderPlan.GET("/day/list", r.mesHandler.ListDayPlans)
+			orderPlan.GET("/day/:id", r.mesHandler.GetDayPlan)
+			orderPlan.POST("/day", r.mesHandler.CreateDayPlan)
+			orderPlan.PUT("/day/:id", r.mesHandler.UpdateDayPlan)
+			orderPlan.DELETE("/day/:id", r.mesHandler.DeleteDayPlan)
+			orderPlan.POST("/day/:id/publish", r.mesHandler.PublishDayPlan)
+			orderPlan.POST("/day/:id/complete", r.mesHandler.CompleteDayPlan)
+			orderPlan.POST("/day/:id/terminate", r.mesHandler.TerminateDayPlan)
+			orderPlan.POST("/day/:id/kit-check", r.mesHandler.KitCheckDayPlan)
+			orderPlan.GET("/day/by-month/:month", r.mesHandler.GetDayPlansByMonth)
+		}
+
 		// 生产完工
 		productionComplete := protected.Group("/production/complete")
 		{
@@ -969,6 +1045,34 @@ func (r *Router) Init(engine *gin.Engine) {
 			inspectionFeature.GET("/product/:product_id", r.inspectionFeatureHandler.GetFeaturesByProduct)
 		}
 
+		// 检验特性明细
+		inspectionCharacteristic := protected.Group("/quality/inspection-characteristic")
+		{
+			inspectionCharacteristic.GET("/list", r.inspectionCharacteristicHandler.List)
+			inspectionCharacteristic.GET("/:id", r.inspectionCharacteristicHandler.Get)
+			inspectionCharacteristic.POST("", r.inspectionCharacteristicHandler.Create)
+			inspectionCharacteristic.PUT("/:id", r.inspectionCharacteristicHandler.Update)
+			inspectionCharacteristic.DELETE("/:id", r.inspectionCharacteristicHandler.Delete)
+		}
+
+		// AQL 抽样检验
+		aql := protected.Group("/quality/aql")
+		{
+			aql.GET("/levels/list", r.aqlHandler.ListAQLLevels)
+			aql.GET("/levels/:id", r.aqlHandler.GetAQLLevel)
+			aql.POST("/levels", r.aqlHandler.CreateAQLLevel)
+			aql.PUT("/levels/:id", r.aqlHandler.UpdateAQLLevel)
+			aql.DELETE("/levels/:id", r.aqlHandler.DeleteAQLLevel)
+			aql.GET("/table/rows", r.aqlHandler.ListAQLTableRows)
+			aql.POST("/table/rows", r.aqlHandler.CreateAQLTableRow)
+			aql.GET("/calculate/sample-size", r.aqlHandler.CalculateSampleSize)
+			aql.GET("/sampling-plans/list", r.aqlHandler.ListSamplingPlans)
+			aql.GET("/sampling-plans/:id", r.aqlHandler.GetSamplingPlan)
+			aql.POST("/sampling-plans", r.aqlHandler.CreateSamplingPlan)
+			aql.PUT("/sampling-plans/:id", r.aqlHandler.UpdateSamplingPlan)
+			aql.DELETE("/sampling-plans/:id", r.aqlHandler.DeleteSamplingPlan)
+		}
+
 		// QMS抽样方案
 		sampling := protected.Group("/qms/sampling")
 		{
@@ -981,6 +1085,48 @@ func (r *Router) Init(engine *gin.Engine) {
 			sampling.GET("/calculate", r.qmsSamplingHandler.Calculate)
 			sampling.POST("/record", r.qmsSamplingHandler.CreateRecord)
 			sampling.GET("/record/list", r.qmsSamplingHandler.ListRecord)
+		}
+
+		// LPA 分层过程审核
+		lpa := protected.Group("/lpa")
+		{
+			standard := lpa.Group("/standard")
+			{
+				standard.GET("/list", r.lpaHandler.ListStandards)
+				standard.GET("/:id", r.lpaHandler.GetStandard)
+				standard.POST("", r.lpaHandler.CreateStandard)
+				standard.PUT("/:id", r.lpaHandler.UpdateStandard)
+				standard.DELETE("/:id", r.lpaHandler.DeleteStandard)
+			}
+			question := lpa.Group("/question")
+			{
+				question.GET("/list", r.lpaHandler.ListQuestions)
+				question.POST("", r.lpaHandler.AddQuestion)
+			}
+			record := lpa.Group("/record")
+			{
+				record.GET("/list", r.lpaHandler.ListRecords)
+				record.GET("/:id", r.lpaHandler.GetRecord)
+				record.POST("", r.lpaHandler.CreateRecord)
+				record.PUT("/:id/verify", r.lpaHandler.VerifyRecord)
+			}
+		}
+
+		// QRCI 质量改善
+		qrci := protected.Group("/quality/qrci")
+		{
+			qrci.GET("/list", r.qrciHandler.List)
+			qrci.GET("/:id", r.qrciHandler.Get)
+			qrci.POST("", r.qrciHandler.Create)
+			qrci.PUT("/:id", r.qrciHandler.Update)
+			qrci.DELETE("/:id", r.qrciHandler.Delete)
+			qrci.PUT("/:id/close", r.qrciHandler.Close)
+			qrci.POST("/:id/5why", r.qrciHandler.Add5Why)
+			qrci.GET("/:id/5why", r.qrciHandler.List5Why)
+			qrci.POST("/:id/action", r.qrciHandler.AddAction)
+			qrci.GET("/:id/action", r.qrciHandler.ListActions)
+			qrci.PUT("/action/:action_id", r.qrciHandler.UpdateAction)
+			qrci.POST("/:id/verification", r.qrciHandler.AddVerification)
 		}
 
 		// APS计划
@@ -1145,6 +1291,26 @@ func (r *Router) Init(engine *gin.Engine) {
 				salesReturn.POST("/:id/start-return", r.salesReturnHandler.StartReturnSalesReturn)
 				salesReturn.POST("/:id/confirm", r.salesReturnHandler.ConfirmSalesReturn)
 				salesReturn.POST("/:id/cancel", r.salesReturnHandler.CancelSalesReturn)
+			}
+
+			// 标签模板
+			labelTemplate := wms.Group("/label-template")
+			{
+				labelTemplate.GET("/list", r.labelTemplateHandler.List)
+				labelTemplate.GET("/:id", r.labelTemplateHandler.Get)
+				labelTemplate.POST("", r.labelTemplateHandler.Create)
+				labelTemplate.PUT("/:id", r.labelTemplateHandler.Update)
+				labelTemplate.DELETE("/:id", r.labelTemplateHandler.Delete)
+			}
+
+			// 策略管理
+			strategy := wms.Group("/strategy")
+			{
+				strategy.GET("/list", r.strategyHandler.List)
+				strategy.GET("/:id", r.strategyHandler.Get)
+				strategy.POST("", r.strategyHandler.Create)
+				strategy.PUT("/:id", r.strategyHandler.Update)
+				strategy.DELETE("/:id", r.strategyHandler.Delete)
 			}
 		}
 
@@ -1482,6 +1648,87 @@ func (r *Router) Init(engine *gin.Engine) {
 			{
 				collect.GET("/list", r.dcHandler.ListCollectRecord)
 			}
+		}
+
+		// 生产报缺
+		productionIssue := protected.Group("/production/issue")
+		{
+			productionIssue.GET("/list", r.productionIssueHandler.ListProductionIssues)
+			productionIssue.GET("/:id", r.productionIssueHandler.GetProductionIssue)
+			productionIssue.POST("", r.productionIssueHandler.CreateProductionIssue)
+			productionIssue.PUT("/:id", r.productionIssueHandler.UpdateProductionIssue)
+			productionIssue.DELETE("/:id", r.productionIssueHandler.DeleteProductionIssue)
+			productionIssue.PUT("/:id/submit", r.productionIssueHandler.SubmitProductionIssue)
+			productionIssue.PUT("/:id/start-pick", r.productionIssueHandler.StartPickProductionIssue)
+			productionIssue.PUT("/:id/confirm-pick", r.productionIssueHandler.ConfirmPickProductionIssue)
+			productionIssue.PUT("/:id/issue", r.productionIssueHandler.IssueProductionIssue)
+			productionIssue.PUT("/:id/cancel", r.productionIssueHandler.CancelProductionIssue)
+		}
+
+		// 生产退料
+		productionReturn := protected.Group("/production/return")
+		{
+			productionReturn.GET("/list", r.productionReturnHandler.ListProductionReturns)
+			productionReturn.GET("/:id", r.productionReturnHandler.GetProductionReturn)
+			productionReturn.POST("", r.productionReturnHandler.CreateProductionReturn)
+			productionReturn.PUT("/:id", r.productionReturnHandler.UpdateProductionReturn)
+			productionReturn.DELETE("/:id", r.productionReturnHandler.DeleteProductionReturn)
+			productionReturn.PUT("/:id/submit", r.productionReturnHandler.SubmitProductionReturn)
+			productionReturn.PUT("/:id/approve", r.productionReturnHandler.ApproveProductionReturn)
+			productionReturn.PUT("/:id/start-return", r.productionReturnHandler.StartReturnProductionReturn)
+			productionReturn.PUT("/:id/confirm-return", r.productionReturnHandler.ConfirmReturnProductionReturn)
+			productionReturn.PUT("/:id/cancel", r.productionReturnHandler.CancelProductionReturn)
+		}
+
+		// 班次管理
+		shift := protected.Group("/mes/shift")
+		{
+			shift.GET("/list", r.shiftHandler.List)
+			shift.POST("", r.shiftHandler.Create)
+			shift.PUT("/:id", r.shiftHandler.Update)
+			shift.DELETE("/:id", r.shiftHandler.Delete)
+		}
+
+		// 实验室样品
+		labSample := protected.Group("/quality/lab-sample")
+		{
+			labSample.GET("/list", r.labSampleHandler.List)
+			labSample.GET("/:id", r.labSampleHandler.Get)
+			labSample.POST("", r.labSampleHandler.Create)
+			labSample.PUT("/:id", r.labSampleHandler.Update)
+			labSample.DELETE("/:id", r.labSampleHandler.Delete)
+			labSample.PUT("/:id/submit", r.labSampleHandler.SubmitForInspection)
+		}
+
+		// 实验室检验项
+		labTestItem := protected.Group("/quality/lab-test-item")
+		{
+			labTestItem.GET("/list", r.labTestItemHandler.ListBySampleID)
+			labTestItem.POST("", r.labTestItemHandler.Create)
+			labTestItem.PUT("/:id", r.labTestItemHandler.Update)
+			labTestItem.DELETE("/:id", r.labTestItemHandler.Delete)
+		}
+
+		// 实验室报告
+		labReport := protected.Group("/quality/lab-report")
+		{
+			labReport.GET("/list", r.labReportHandler.List)
+			labReport.GET("/:id", r.labReportHandler.Get)
+			labReport.POST("", r.labReportHandler.Create)
+			labReport.PUT("/:id", r.labReportHandler.Update)
+			labReport.PUT("/:id/approve", r.labReportHandler.Approve)
+		}
+
+		// BPM任务消息规则
+		bpmTaskMsgRule := protected.Group("/bpm/task-msg-rule")
+		{
+			bpmTaskMsgRule.GET("/list", r.bpmTaskMsgRuleHandler.List)
+			bpmTaskMsgRule.GET("/:id", r.bpmTaskMsgRuleHandler.Get)
+			bpmTaskMsgRule.POST("", r.bpmTaskMsgRuleHandler.Create)
+			bpmTaskMsgRule.PUT("/:id", r.bpmTaskMsgRuleHandler.Update)
+			bpmTaskMsgRule.DELETE("/:id", r.bpmTaskMsgRuleHandler.Delete)
+			bpmTaskMsgRule.PUT("/:id/enable", r.bpmTaskMsgRuleHandler.Enable)
+			bpmTaskMsgRule.PUT("/:id/disable", r.bpmTaskMsgRuleHandler.Disable)
 		}
 
 		// TODO: 其他模块路由...
@@ -1860,6 +2107,36 @@ func (r *Router) Init(engine *gin.Engine) {
 				spare.POST("/input", r.spareHandler.Input)
 				spare.POST("/output", r.spareHandler.Output)
 				spare.GET("/transactions", r.spareHandler.Transactions)
+			}
+
+			// ========== 维修工单/流程/标准 (EAM) ==========
+			repairJob := protected.Group("/eam/repair-job")
+			{
+				repairJob.POST("/create", r.eamRepairJobHandler.CreateJob)
+				repairJob.PUT("/update", r.eamRepairJobHandler.UpdateJob)
+				repairJob.DELETE("/delete", r.eamRepairJobHandler.DeleteJob)
+				repairJob.GET("/get", r.eamRepairJobHandler.GetJob)
+				repairJob.GET("/page", r.eamRepairJobHandler.PageJob)
+				repairJob.POST("/assign", r.eamRepairJobHandler.AssignJob)
+				repairJob.POST("/accept", r.eamRepairJobHandler.AcceptJob)
+				repairJob.POST("/complete", r.eamRepairJobHandler.CompleteJob)
+				repairJob.POST("/evaluate", r.eamRepairJobHandler.EvaluateJob)
+			}
+			repairFlow := protected.Group("/eam/repair-flow")
+			{
+				repairFlow.POST("/create", r.eamRepairJobHandler.CreateFlow)
+				repairFlow.PUT("/update", r.eamRepairJobHandler.UpdateFlow)
+				repairFlow.DELETE("/delete", r.eamRepairJobHandler.DeleteFlow)
+				repairFlow.GET("/get", r.eamRepairJobHandler.GetFlow)
+				repairFlow.GET("/page", r.eamRepairJobHandler.PageFlow)
+			}
+			repairStd := protected.Group("/eam/repair-std")
+			{
+				repairStd.POST("/create", r.eamRepairJobHandler.CreateStd)
+				repairStd.PUT("/update", r.eamRepairJobHandler.UpdateStd)
+				repairStd.DELETE("/delete", r.eamRepairJobHandler.DeleteStd)
+				repairStd.GET("/get", r.eamRepairJobHandler.GetStd)
+				repairStd.GET("/page", r.eamRepairJobHandler.PageStd)
 			}
 
 			// ========== Alert 告警管理 ==========

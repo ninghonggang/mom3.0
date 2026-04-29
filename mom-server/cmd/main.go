@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"regexp"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
@@ -40,6 +42,177 @@ import (
 	"mom-server/internal/service"
 )
 
+// migrateBatch wraps GORM AutoMigrate with self-healing logic for known PostgreSQL
+// migration errors: duplicate key violations (23505) and missing PK on FK refs (42830).
+func migrateBatch(db *gorm.DB, name string, models ...interface{}) {
+	var lastErr error
+	for attempt := 1; attempt <= 3; attempt++ {
+		lastErr = nil
+		err := db.AutoMigrate(models...)
+		if err == nil {
+			return
+		}
+
+		errMsg := err.Error()
+
+		// Type 1: unique constraint violation (23505) — could be duplicate rows OR pre-existing index
+		if strings.Contains(errMsg, "23505") {
+			// Check if this is a "could not create index" error (index already exists)
+			idxNameMatch := regexp.MustCompile(`could not create (unique )?index "(\w+)"`).FindStringSubmatch(errMsg)
+			if idxNameMatch != nil {
+				idxName := idxNameMatch[2]
+				var exists int
+				db.Raw("SELECT 1 FROM pg_indexes WHERE indexname = ?", idxName).Scan(&exists)
+				if exists == 1 {
+					log.Printf("  ✓ 索引 %s 已存在，跳过", idxName)
+					return // index exists, migration is effectively complete
+				}
+			}
+			// Otherwise it's a row-level duplicate key — try to deduplicate
+			log.Printf("  ⚠ %s: 唯一约束冲突，尝试清理重复行 (%d/%d)", name, attempt, 3)
+			idxMatch := regexp.MustCompile(`Key \((\w+)\)=\(([^)]+)\)`).FindStringSubmatch(errMsg)
+			if len(idxMatch) == 3 {
+				colVal := idxMatch[2]
+				idxName := regexp.MustCompile(`Key \((\w+)\)=`).FindString(errMsg)
+				if idxName != "" {
+					idxName = strings.TrimSuffix(strings.TrimPrefix(idxName, "Key ("), "=")
+					var idxDef string
+					db.Raw("SELECT indexdef FROM pg_indexes WHERE indexname = ?", idxName).Scan(&idxDef)
+					m := regexp.MustCompile(`ON (\w+) USING`).FindStringSubmatch(idxDef)
+					if len(m) == 2 {
+						tbl := m[1]
+						var col string
+						db.Raw("SELECT column_name FROM information_schema.key_column_usage WHERE constraint_name = ?", idxName).Scan(&col)
+						db.Exec(fmt.Sprintf(`DELETE FROM %s WHERE ctid NOT IN (SELECT MIN(ctid) FROM %s WHERE %s = $1 GROUP BY %s HAVING COUNT(*) > 1)`,
+							tbl, tbl, col, col), colVal)
+						log.Printf("  ✓ 清理重复行: %s.%s = %s", tbl, col, colVal)
+						continue
+					}
+				}
+			}
+		}
+
+		// Type 2: foreign key constraint violation (42830) — referenced table missing PK
+		if strings.Contains(errMsg, "42830") {
+			log.Printf("  ⚠ %s: 外键引用表缺主键，尝试修复 (%d/%d)", name, attempt, 3)
+			m := regexp.MustCompile(`(\w+)\s+FOREIGN KEY\s+\((\w+)\)\s+REFERENCES\s+(\w+)`).FindStringSubmatch(errMsg)
+			if len(m) == 4 {
+				refTable := m[3]
+				// Check if PK already exists before trying to add
+				var pkExists int
+				db.Raw("SELECT 1 FROM information_schema.table_constraints WHERE table_name = ? AND constraint_type = 'PRIMARY KEY'", refTable).Scan(&pkExists)
+				if pkExists == 0 {
+					db.Exec(fmt.Sprintf("ALTER TABLE %s ADD PRIMARY KEY (id)", refTable))
+					log.Printf("  ✓ 添加主键: %s.id", refTable)
+				} else {
+					// PK exists but no unique constraint — GORM may need explicit unique constraint on the PK column
+					db.Exec(fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s_id_unique UNIQUE (id)", refTable, refTable))
+					log.Printf("  ✓ 添加唯一约束: %s.id (for FK)", refTable)
+				}
+				continue
+			}
+		}
+
+		log.Printf("  ⚠ %s: %v", name, err)
+		lastErr = err
+	}
+	if lastErr != nil {
+		if config.GlobalConfig != nil && config.GlobalConfig.Server.Env == "production" {
+			log.Fatalf("  ✗ %s 迁移失败 (3次重试后): %v", name, lastErr)
+		}
+		log.Printf("  ✗ %s 迁移失败 (3次重试后): %v", name, lastErr)
+	}
+}
+
+// preFlightFixFK scans information_schema for all FK constraints in the database,
+// finds the referenced table/column, and ensures a UNIQUE constraint exists on it.
+// GORM's PostgreSQL driver requires UNIQUE (not just PK) when adding FK constraints.
+// Also ensures all tables have primary keys (needed because backup SQL may lack PKs).
+func preFlightFixFK(db *gorm.DB) {
+	// Step 1: ensure every table has a primary key on (id)
+	log.Println("  [pre-flight] 检查并修复缺主键的表...")
+	var tables []string
+	db.Raw(`SELECT table_name FROM information_schema.tables
+		WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`).Scan(&tables)
+
+	pkFixed := 0
+	for _, tbl := range tables {
+		// Skip junction/m2m tables that don't have an id column
+		var idExists int
+		db.Raw(`SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = 'id' LIMIT 1`, tbl).Scan(&idExists)
+		if idExists == 0 {
+			continue
+		}
+		var pkCount int
+		db.Raw(`SELECT COUNT(*) FROM information_schema.table_constraints
+			WHERE table_name = $1 AND table_schema = 'public' AND constraint_type = 'PRIMARY KEY'`, tbl).Scan(&pkCount)
+		if pkCount == 0 {
+			db.Exec(fmt.Sprintf(`ALTER TABLE %s ADD PRIMARY KEY (id)`, tbl))
+			log.Printf("    ✓ 添加主键: %s(id)", tbl)
+			pkFixed++
+		}
+	}
+	if pkFixed > 0 {
+		log.Printf("  [pre-flight] 修复了 %d 个缺主键的表", pkFixed)
+	} else {
+		log.Printf("  [pre-flight] 所有表已有主键")
+	}
+
+	// Step 2: ensure referenced columns in FK relationships have UNIQUE constraints
+	log.Println("  [pre-flight] 修复外键引用的唯一约束...")
+	rows, err := db.Raw(`
+		SELECT kcu.table_name, kcu.column_name, kcu.constraint_name,
+		       ccu.table_name AS referenced_table, ccu.column_name AS referenced_column
+		FROM information_schema.key_column_usage kcu
+		JOIN information_schema.constraint_column_usage ccu
+		  ON ccu.constraint_name = kcu.constraint_name
+		JOIN information_schema.table_constraints tc
+		  ON tc.constraint_name = kcu.constraint_name
+		WHERE tc.constraint_type = 'FOREIGN KEY'
+		  AND kcu.table_schema = 'public'
+		  AND ccu.table_schema = 'public'
+	`).Rows()
+	if err != nil {
+		log.Printf("  pre-flight FK scan failed: %v", err)
+		return
+	}
+	defer rows.Close()
+
+	fixed := 0
+	for rows.Next() {
+		var tbl, col, fkName, refTbl, refCol string
+		rows.Scan(&tbl, &col, &fkName, &refTbl, &refCol)
+
+		// Check if a UNIQUE or PK constraint already exists on referenced_column in refTbl
+		var hasUnique int
+		db.Raw(`
+			SELECT 1 FROM information_schema.table_constraints tc
+			JOIN information_schema.key_column_usage kcu
+			  ON tc.constraint_name = kcu.constraint_name
+			WHERE tc.table_name = ? AND tc.table_schema = 'public'
+			  AND tc.constraint_type IN ('PRIMARY KEY','UNIQUE')
+			  AND kcu.column_name = ?
+			LIMIT 1
+		`, refTbl, refCol).Scan(&hasUnique)
+
+		if hasUnique == 0 {
+			constraintName := fmt.Sprintf("preflight_uk_%s_%s", refTbl, refCol)
+			db.Exec(fmt.Sprintf(
+				"ALTER TABLE %s ADD CONSTRAINT %s UNIQUE (%s)",
+				refTbl, constraintName, refCol,
+			))
+			log.Printf("  ✓ [pre-flight] 添加唯一约束: %s(%s) → %s.%s",
+				constraintName, refCol, refTbl, refCol)
+			fixed++
+		}
+	}
+	if fixed > 0 {
+		log.Printf("  pre-flight 修复了 %d 个唯一约束", fixed)
+	} else {
+		log.Printf("  pre-flight: 所有外键引用已满足唯一约束")
+	}
+}
+
 func main() {
 	// 加载配置
 	cfg, err := config.Load("config.yaml")
@@ -52,13 +225,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("连接数据库失败: %v", err)
 	}
-
-	// 自动迁移（分批执行，便于错误排查）
+	// Pre-flight: scan all tables that GORM will try to add FK constraints to,
+	// and ensure the referenced columns have UNIQUE constraints (GORM PostgreSQL
+	// driver requires unique, not just PK, on the referenced column).
+	log.Println("Pre-flight: 修复所有外键引用的唯一约束...")
+	preFlightFixFK(db)
+	// Pre-flight 完成，开始正式迁移...
 	log.Println("开始数据库迁移...")
 	
 	// 第1批：系统基础表（14个）
 	log.Println("迁移第1批：系统基础表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第1批-系统基础表",
 		&model.User{},
 		&model.Role{},
 		&model.Menu{},
@@ -71,15 +248,13 @@ func main() {
 		&model.LoginLog{},
 		&model.RoleMenu{},
 		&model.UserRole{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第1批-系统基础表]: %v", err)
-	}
+	)
 	
 	// 第2批：仓储管理表（7个）
 	log.Println("迁移第2批：仓储管理表")
 	// 修复：wms_transfer_order.status 从 bigint 改为 varchar(20)
 	db.Exec("ALTER TABLE wms_transfer_order ALTER COLUMN status TYPE varchar(20) USING status::varchar(20)")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第2批-仓储管理表",
 		&model.Warehouse{},
 		&model.Location{},
 		&model.Inventory{},
@@ -92,25 +267,21 @@ func main() {
 		&model.StockCheck{},
 		&model.SideLocation{},
 		&model.KanbanPull{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第2批-仓储管理表]: %v", err)
-	}
+	)
 	
 	// 第3批：生产执行表（6个）
 	log.Println("迁移第3批：生产执行表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第3批-生产执行表",
 		&model.SalesOrder{},
 		&model.SalesOrderItem{},
 		&model.ProductionReport{},
 		&model.Dispatch{},
 		&model.ProductionOrder{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第3批-生产执行表]: %v", err)
-	}
-	
+	)
+
 	// 第4批：APS计划表（8个）
 	log.Println("迁移第4批：APS计划表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第4批-APS计划表",
 		&model.MPS{},
 		&model.MRP{},
 		&model.MRPItem{},
@@ -124,35 +295,29 @@ func main() {
 		&model.RollingSchedule{},
 		&model.JITDemand{},
 		&model.WorkingCalendar{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第4批-APS计划表]: %v", err)
-	}
+	)
 	
 	// 第5批：追溯管理表（5个）
 	log.Println("迁移第5批：追溯管理表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第5批-追溯管理表",
 		&model.SerialNumber{},
 		&model.TraceRecord{},
 		&model.AndonCall{},
 		&model.DataCollection{},
 		&model.EnergyRecord{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第5批-追溯管理表]: %v", err)
-	}
+	)
 
 	// 第5.5批：安灯升级机制表
 	log.Println("迁移第5.5批：安灯升级机制表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第5.5批-安灯升级机制表",
 		&model.AndonEscalationRule{},
 		&model.AndonEscalationLog{},
 		&model.AndonNotificationLog{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第5.5批-安灯升级机制表]: %v", err)
-	}
+	)
 	
 	// 第6批：主数据管理表（跳过已有数据的表避免迁移错误）
 	log.Println("迁移第6批：主数据管理表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第6批-主数据管理表",
 		&model.Material{},
 		&model.MaterialCategory{},
 		// BOM/BOMItem/Process/Route/RouteOperation等表已有数据,跳过迁移
@@ -164,13 +329,14 @@ func main() {
 		&model.Supplier{},
 		&model.SupplierMaterial{},
 		&model.WorkshopConfig{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第6批-主数据管理表]: %v", err)
-	}
+		&model.Contact{},
+		&model.BankAccount{},
+		&model.Attachment{},
+	)
 
 	// 第7批：质量管理表
 	log.Println("迁移第7批：质量管理表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第7批-质量管理表",
 		&model.IQC{},
 		&model.IQCItem{},
 		&model.IPQC{},
@@ -180,13 +346,12 @@ func main() {
 		&model.DefectRecord{},
 		&model.NCR{},
 		&model.SPCData{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第7批-质量管理表]: %v", err)
-	}
+		&model.QRCI{},
+	)
 
 	// 第8批：设备OEE表
 	log.Println("迁移第8批：设备OEE表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第8批-设备OEE表",
 		&model.OEE{},
 		&model.OEEEvent{},
 		&model.TEEPData{},
@@ -195,39 +360,31 @@ func main() {
 		&model.MoldRepair{},
 		&model.Gauge{},
 		&model.GaugeCalibration{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第8批-设备OEE表]: %v", err)
-	}
+	)
 
 	// 第9批：首末件检验表
 	log.Println("迁移第9批：首末件检验表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第9批-首末件检验表",
 		&model.MesFirstLastInspect{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第9批-首末件检验表]: %v", err)
-	}
+	)
 
 	// 第10批：包装条码表
 	log.Println("迁移第10批：包装条码表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第10批-包装条码表",
 		&model.MesPackage{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第10批-包装条码表]: %v", err)
-	}
+	)
 
 	// 第11批：数据采集表
 	log.Println("迁移第11批：数据采集表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第11批-数据采集表",
 		&model.DCDataPoint{},
 		&model.DCCollectRecord{},
 		&model.DCScanLog{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第11批-数据采集表]: %v", err)
-	}
+	)
 
 	// 第12批：电子SOP、编码规则、流程卡
 	log.Println("迁移第12批：电子SOP、编码规则、流程卡")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第12批",
 		&model.ElectronicSOP{},
 		&model.CodeRule{},
 		&model.CodeRuleRecord{},
@@ -236,44 +393,36 @@ func main() {
 		&model.PrintTemplate{},
 		&model.Notice{},
 		&model.NoticeReadRecord{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第12批]: %v", err)
-	}
+	)
 
 	// 第13批：器具管理表
 	log.Println("迁移第13批：器具管理表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第13批-器具管理表",
 		&model.ContainerMaster{},
 		&model.ContainerMovement{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第13批-器具管理表]: %v", err)
-	}
+	)
 
 	// 第14批：AI聊天表 + 设备部件文档表
 	log.Println("迁移第14批：AI聊天表 + 设备部件文档表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第14批",
 		&model.AIConfig{},
 		&model.ChatConversation{},
 		&model.ChatMessage{},
 		&model.EquipmentPart{},
 		&model.EquipmentDocument{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第14批]: %v", err)
-	}
+	)
 
 	// 第28批：实验室检测管理表
 	log.Println("迁移第28批：实验室检测管理表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第28批-实验室检测管理表",
 		&model.LabSample{},
 		&model.LabTestItem{},
 		&model.LabReport{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第28批-实验室检测管理表]: %v", err)
-	}
+	)
 
 	// 第29批：MES生产执行扩展表（班组/工艺路线/发料/退料/离线）
 	log.Println("迁移第29批：MES生产执行扩展表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第29批-MES生产执行扩展表",
 		&model.MesTeam{},
 		&model.MesTeamMember{},
 		&model.MesTeamShift{},
@@ -289,32 +438,26 @@ func main() {
 		&model.ProductionCompleteItem{},
 		&model.ProductionStockIn{},
 		&model.ProductionStockInItem{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第29批-MES生产执行扩展表]: %v", err)
-	}
+	)
 
 	// 第30批：WMS采购退货和销售退货表
 	log.Println("迁移第30批：WMS采购退货和销售退货表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第30批-WMS采购退货和销售退货表",
 		&model.PurchaseReturn{},
 		&model.PurchaseReturnItem{},
 		&model.SalesReturn{},
 		&model.SalesReturnItem{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第30批-WMS采购退货和销售退货表]: %v", err)
-	}
+	)
 
 	// 第31批：检验特性管理表
 	log.Println("迁移第31批：检验特性管理表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第31批-检验特性管理表",
 		&model.InspectionFeature{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第31批-检验特性管理表]: %v", err)
-	}
+	)
 
 	// 第32批：实验室仪器管理表
 	log.Println("迁移第32批：实验室仪器管理表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第32批-实验室仪器管理表",
 		&model.LabInstrument{},
 		&model.LabCalibration{},
 		&model.InspectionCharacteristic{},
@@ -324,85 +467,67 @@ func main() {
 		&model.QMSSamplingPlan{},
 		&model.QMSSamplingRule{},
 		&model.QMSSamplingRecord{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第32批-实验室仪器管理表]: %v", err)
-	}
+	)
 
 	// 第33批：AI视觉检测表
 	log.Println("迁移第33批：AI视觉检测表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第33批-AI视觉检测表",
 		&model.VisualInspectionTask{},
 		&model.VisualInspectionResult{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第33批-AI视觉检测表]: %v", err)
-	}
+	)
 
 	// 第34批：容器生命周期管理表
 	log.Println("迁移第34批：容器生命周期管理表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第34批-容器生命周期管理表",
 		&model.ContainerLifecycle{},
 		&model.ContainerMaintenance{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第34批-容器生命周期管理表]: %v", err)
-	}
+	)
 
 	// 第35批：人员能力矩阵表
 	log.Println("迁移第35批：人员能力矩阵表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第35批-人员能力矩阵表",
 		&model.PersonSkill{},
 		&model.PersonSkillScore{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第35批-人员能力矩阵表]: %v", err)
-	}
+	)
 
 	// 第36批：报表表
 	log.Println("迁移第36批：报表表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第36批-报表表",
 		&model.ProductionDailyReport{},
 		&model.QualityWeeklyReport{},
 		&model.OEEReport{},
 		&model.DeliveryReport{},
 		&model.AndonReport{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第36批-报表表]: %v", err)
-	}
+	)
 
 	// 第37批：系统集成接口配置表
 	log.Println("迁移第37批：系统集成接口配置表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第37批-系统集成接口配置表",
 		&model.InterfaceConfig{},
 		&model.InterfaceFieldMap{},
 		&model.InterfaceTrigger{},
 		&model.InterfaceExecutionLog{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第37批-系统集成接口配置表]: %v", err)
-	}
+	)
 
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第38批-AGV表",
 		&model.AGVTask{},
 		&model.AGVDevice{},
 		&model.AGVLocationMapping{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第38批-AGV表]: %v", err)
-	}
+	)
 
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第39批-供应商ASN表",
 		&model.SupplierASN{},
 		&model.SupplierASNItem{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第39批-供应商ASN表]: %v", err)
-	}
+	)
 
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第40批-ERP同步表",
 		&model.IntegrationERPSyncLog{},
 		&model.IntegrationERPMapping{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第40批-ERP同步表]: %v", err)
-	}
+	)
 
 	// 第41批：SCP供应链管理表
 	log.Println("迁移第41批：SCP供应链管理表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第41批-SCP供应链管理表",
 		&model.PurchaseOrder{},
 		&model.PurchaseOrderItem{},
 		&model.POChangeLog{},
@@ -429,56 +554,36 @@ func main() {
 		&model.ScpPurchasePlanItem{},
 		&model.ScpSupplierContact{},
 		&model.ScpSupplierBank{},
-	); err != nil {
+	)
 
 	// 第42批：EAM巡检管理表
-	log.Println("迁移第42批：EAM巡检管理表")
-	if err := db.AutoMigrate(
-		&model.EAMInspectionPlan{},
-		&model.EAMInspectionItem{},
-		&model.EAMInspectionScheme{},
-		&model.EAMInspectionResult{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第42批-EAM巡检管理表]: %v", err)
-	}
-		log.Fatalf("数据库迁移失败[第41批-SCP供应链表]: %v", err)
-	}
-
 	// 第43批：EAM维修工单/流程/标准
 	log.Println("迁移第43批：EAM维修工单/流程/标准")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第43批-EAM维修工单",
 		&model.EamRepairJob{},
 		&model.EamRepairFlow{},
 		&model.EamRepairStd{},
 		&model.EquipmentDowntime{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第43批-EAM维修工单]: %v", err)
-	}
+	)
 
 	// 第44批：MES工单排程表
 	log.Println("迁移第44批：MES工单排程表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第44批-MES工单排程表",
 		&model.MesWorkScheduling{},
 		&model.MesWorkSchedulingDetail{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第44批-MES工单排程表]: %v", err)
-	}
+	)
 
 	// 第46批：MES报工记录表
 	log.Println("迁移第46批：MES报工记录表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第46批-MES报工记录表",
 		&model.MesJobReportLog{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第46批-MES报工记录表]: %v", err)
-	}
+	)
 
 	// 第45批：SCP QAD对接同步记录表
 	log.Println("迁移第45批：SCP QAD同步记录表")
-	if err := db.AutoMigrate(
+	migrateBatch(db, "第45批-SCP QAD同步表",
 		&model.ScpQadSyncLog{},
-	); err != nil {
-		log.Fatalf("数据库迁移失败[第45批-SCP QAD同步表]: %v", err)
-	}
+	)
 
 	// 初始化JWT
 	jwtUtil := jwt.New(&cfg.Server.JWT)
@@ -766,6 +871,7 @@ func main() {
 	gaugeCalibrationSvc := service.NewGaugeCalibrationService(gaugeCalibrationRepo)
 	firstLastInspectSvc := service.NewFirstLastInspectService(firstLastInspectRepo)
 	packageSvc := service.NewPackageService(packageRepo)
+	kanbanSvc := service.NewKanbanService(productionRepo, lineRepo, reportRepo)
 	dcSvc := service.NewDCService(dcDataPointRepo, dcScanLogRepo, dcCollectRecordRepo)
 	importSvc := service.NewImportService(importTaskRepo, materialRepo, bomRepo, bomItemRepo)
 	electronicSOPSvc := service.NewElectronicSOPService(electronicSOPRepo)
@@ -926,6 +1032,7 @@ aiSvc := service.NewAIService(aiConfigRepo, aiConversationRepo, aiMessageRepo)
 	gaugeHandler := equipment.NewGaugeHandler(gaugeSvc)
 	gaugeCalibrationHandler := equipment.NewGaugeCalibrationHandler(gaugeCalibrationSvc)
 	firstLastInspectHandler := production.NewFirstLastInspectHandler(firstLastInspectSvc)
+	kanbanHandler := production.NewKanbanHandler(kanbanSvc)
 	packageHandler := production.NewPackageHandler(packageSvc)
 	dcHandler := dc.NewDataCollectionHandler(dcSvc)
 	electronicSOPHandler := production.NewElectronicSOPHandler(electronicSOPSvc)
@@ -955,6 +1062,29 @@ aiSvc := service.NewAIService(aiConfigRepo, aiConversationRepo, aiMessageRepo)
 	inspectionCharacteristicHandler := quality.NewInspectionCharacteristicHandler(inspectionCharacteristicSvc)
 	aqlHandler := quality.NewAQLHandler(aqlSvc)
 	qmsSamplingHandler := quality.NewQMSSamplingHandler(qmsSamplingSvc)
+
+	// LPA (分层过程审核)
+	lpaStandardRepo := repository.NewLPAStandardRepository(db)
+	lpaQuestionRepo := repository.NewLPAQuestionRepository(db)
+	lpaRecordRepo := repository.NewLPARecordRepository(db)
+	lpaRecordItemRepo := repository.NewLPARecordItemRepository(db)
+	lpaStandardSvc := service.NewLPAStandardService(lpaStandardRepo)
+	lpaQuestionSvc := service.NewLPAQuestionService(lpaQuestionRepo)
+	lpaRecordSvc := service.NewLPARecordService(lpaRecordRepo, codeRuleSvc)
+	lpaRecordItemSvc := service.NewLPARecordItemService(lpaRecordItemRepo)
+	lpaHandler := quality.NewLPAHandler(lpaStandardSvc, lpaQuestionSvc, lpaRecordSvc, lpaRecordItemSvc)
+
+	// QRCI (质量改善)
+	qrciRepo := repository.NewQRCIRepository(db)
+	qrci5WhyRepo := repository.NewQRCI5WhyRepository(db)
+	qrciActionRepo := repository.NewQRCIActionRepository(db)
+	qrciVerificationRepo := repository.NewQRCIVerificationRepository(db)
+	qrciSvc := service.NewQRCIService(qrciRepo, codeRuleSvc)
+	qrci5WhySvc := service.NewQRCI5WhyService(qrci5WhyRepo)
+	qrciActionSvc := service.NewQRCIActionService(qrciActionRepo)
+	qrciVerificationSvc := service.NewQRCIVerificationService(qrciVerificationRepo)
+	qrciHandler := quality.NewQRCIHandler(qrciSvc, qrci5WhySvc, qrciActionSvc, qrciVerificationSvc)
+
 	mesTeamHandler := mes.NewTeamHandler(mesTeamSvc)
 	mesProcessHandler := mes.NewProcessHandler(mesProcessSvc)
 	mesOfflineHandler := mes.NewOfflineHandler(productionOfflineSvc)
@@ -1024,7 +1154,7 @@ aiSvc := service.NewAIService(aiConfigRepo, aiConversationRepo, aiMessageRepo)
 	// 初始化路由
 	gin.SetMode(cfg.Server.Mode)
 	engine := gin.Default()
-	router.New(jwtUtil, userHandler, authHandler, loginLogHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, tenantHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, workCenterHandler, traceHandler, energyHandler, equipmentHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler, iqcHandler, ipqcHandler, fqcHandler, oqcHandler, defectCodeHandler, defectRecordHandler, ncrHandler, spcHandler, supplierHandler, supplierASNHandler, materialHandler, materialCategoryHandler, customerHandler, workshopHandler, operLogHandler, oeeHandler, teepDataHandler, moldHandler, moldMaintenanceHandler, moldRepairHandler, gaugeHandler, gaugeCalibrationHandler, importHandler, firstLastInspectHandler, packageHandler, dcHandler, electronicSOPHandler, codeRuleHandler, flowCardHandler, noticeHandler, printTemplateHandler, capacityAnalysisHandler, deliveryRateHandler, changeoverMatrixHandler, rollingScheduleHandler, jitDemandHandler, transferOrderHandler, stockCheckHandler, sideLocationHandler, kanbanPullHandler, containerHandler, aiConfigHandler, aiChatHandler, andonCallHandler, andonRuleHandler, workshopConfigHandler, workingCalendarHandler, finHandler, equipmentPartHandler, equipmentDocumentHandler, equipmentDowntimeHandler, spareHandler, alertHandler, bpmHandler, bpmTaskMsgRuleHandler, bpmInstanceApiHandler, bpmTaskTransferHandler, rfqHandler, purchaseOrderHandler, scpSalesOrderHandler, supplierKPIHandler, supplierQuoteHandler, customerInquiryHandler, purchasePlanHandler, scpSupplierExtHandler, qadHandler, contactHandler, bankAccountHandler, attachmentHandler, supplierMaterialHandler, containerLifecycleHandler, visualInspectionHandler, labSampleHandler, labTestItemHandler, labReportHandler, labInstrumentHandler, inspectionFeatureHandler, inspectionCharacteristicHandler, aqlHandler, qmsSamplingHandler, mesTeamHandler, mesProcessHandler, mesOfflineHandler, mesSopHandler, productionIssueHandler, productionReturnHandler, productionCompleteHandler, purchaseReturnHandler, salesReturnHandler, labelTemplateHandler, strategyHandler, areaHandler, wmsItemHandler, mesHandler, workSchedulingHandler, jobReportHandler, eamRepairJobHandler, personSkillHandler, completeInspectHandler, productionDailyReportHandler, qualityWeeklyReportHandler, oeeReportHandler, deliveryReportHandler, andonReportHandler, integrationHandler, agvHandler, erpSyncHandler).Init(engine)
+	router.New(jwtUtil, userHandler, authHandler, loginLogHandler, roleHandler, menuHandler, deptHandler, dictHandler, postHandler, tenantHandler, importHandler, warehouseHandler, salesOrderHandler, reportHandler, dispatchHandler, apsMPSHandler, apsMRPHandler, apsScheduleHandler, workCenterHandler, traceHandler, energyHandler, equipmentHandler, checkHandler, maintHandler, repairHandler, sparePartHandler, lineHandler, workstationHandler, shiftHandler, bomHandler, opHandler, mdmShiftHandler, productionOrderHandler, iqcHandler, ipqcHandler, fqcHandler, oqcHandler, defectCodeHandler, defectRecordHandler, ncrHandler, spcHandler, supplierHandler, supplierASNHandler, materialHandler, materialCategoryHandler, customerHandler, workshopHandler, operLogHandler, oeeHandler, teepDataHandler, moldHandler, moldMaintenanceHandler, moldRepairHandler, gaugeHandler, gaugeCalibrationHandler, firstLastInspectHandler, kanbanHandler, packageHandler, dcHandler, electronicSOPHandler, codeRuleHandler, flowCardHandler, noticeHandler, printTemplateHandler, capacityAnalysisHandler, deliveryRateHandler, changeoverMatrixHandler, rollingScheduleHandler, jitDemandHandler, transferOrderHandler, stockCheckHandler, sideLocationHandler, kanbanPullHandler, containerHandler, aiConfigHandler, aiChatHandler, andonCallHandler, andonRuleHandler, workshopConfigHandler, workingCalendarHandler, finHandler, equipmentPartHandler, equipmentDocumentHandler, equipmentDowntimeHandler, spareHandler, alertHandler, bpmHandler, bpmTaskMsgRuleHandler, bpmInstanceApiHandler, bpmTaskTransferHandler, rfqHandler, purchaseOrderHandler, scpSalesOrderHandler, supplierKPIHandler, supplierQuoteHandler, customerInquiryHandler, purchasePlanHandler, scpSupplierExtHandler, qadHandler, contactHandler, bankAccountHandler, attachmentHandler, supplierMaterialHandler, containerLifecycleHandler, visualInspectionHandler, labSampleHandler, labTestItemHandler, labReportHandler, labInstrumentHandler, inspectionFeatureHandler, inspectionCharacteristicHandler, aqlHandler, qmsSamplingHandler, lpaHandler, qrciHandler, mesTeamHandler, mesProcessHandler, mesOfflineHandler, mesSopHandler, productionIssueHandler, productionReturnHandler, productionCompleteHandler, purchaseReturnHandler, salesReturnHandler, labelTemplateHandler, strategyHandler, areaHandler, wmsItemHandler, mesHandler, workSchedulingHandler, jobReportHandler, eamRepairJobHandler, personSkillHandler, completeInspectHandler, productionDailyReportHandler, qualityWeeklyReportHandler, oeeReportHandler, deliveryReportHandler, andonReportHandler, integrationHandler, agvHandler, erpSyncHandler).Init(engine)
 
 	// 启动服务器
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
