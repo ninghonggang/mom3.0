@@ -1,6 +1,7 @@
 package eam
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -121,12 +122,15 @@ func (h *EamRepairJobHandler) PageJob(c *gin.Context) {
 	if tenantID == 0 {
 		tenantID = 1
 	}
+	log.Printf("[DEBUG] PageJob: tenantID=%d, h.svc=%v", tenantID, h.svc)
 	var req model.EamRepairJobPageReq
 	if err := c.ShouldBindQuery(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "参数错误")
 		return
 	}
+	log.Printf("[DEBUG] PageJob calling svc.PageJob: tenantID=%d, req=%+v", tenantID, req)
 	list, total, err := h.svc.PageJob(c.Request.Context(), tenantID, &req)
+	log.Printf("[DEBUG] PageJob returned: listLen=%d, total=%d, err=%v", len(list), total, err)
 	if err != nil {
 		response.ErrorMsg(c, err.Error())
 		return

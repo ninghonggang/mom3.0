@@ -130,18 +130,19 @@ export const updateInspectionTemplate = (id: number, data: any) => request.put(`
 export const deleteInspectionTemplate = (id: number) => request.delete(`/equipment/inspection/templates/${id}`)
 
 // 点检计划
-export const getInspectionPlanList = (params?: any) => request.get('/equipment/inspection/plans/list', { params })
-export const getInspectionPlan = (id: number) => request.get(`/equipment/inspection/plans/${id}`)
-export const createInspectionPlan = (data: any) => request.post('/equipment/inspection/plans', data)
-export const updateInspectionPlan = (id: number, data: any) => request.put(`/equipment/inspection/plans/${id}`, data)
-export const assignInspectionPlan = (id: number, data: any) => request.put(`/equipment/inspection/plans/${id}/assign`, data)
-export const cancelInspectionPlan = (id: number) => request.delete(`/equipment/inspection/plans/${id}`)
+export const getInspectionPlanList = (params?: any) => request.get('/equipment/inspection/plan/list', { params })
+export const getInspectionPlan = (id: number) => request.get(`/equipment/inspection/plan/${id}`)
+export const createInspectionPlan = (data: any) => request.post('/equipment/inspection/plan', data)
+export const updateInspectionPlan = (id: number, data: any) => request.put(`/equipment/inspection/plan/${id}`, data)
+export const assignInspectionPlan = (id: number, data: any) => request.put(`/equipment/inspection/plan/${id}/assign`, data)
+export const cancelInspectionPlan = (id: number) => request.delete(`/equipment/inspection/plan/${id}`)
 
 // 点检记录
 export const getInspectionRecordList = (params?: any) => request.get('/equipment/inspection/records/list', { params })
 export const getInspectionRecord = (id: number) => request.get(`/equipment/inspection/records/${id}`)
 export const startInspection = (data: any) => request.post('/equipment/inspection/records', data)
 export const completeInspection = (id: number, data: any) => request.put(`/equipment/inspection/records/${id}/complete`, data)
+export const deleteInspectionRecord = (id: number) => request.delete(`/equipment/inspection/records/${id}`)
 
 // 点检异常
 export const getInspectionDefectList = (params?: any) => request.get('/equipment/inspection/defects/list', { params })
@@ -149,3 +150,24 @@ export const getInspectionDefect = (id: number) => request.get(`/equipment/inspe
 export const createInspectionDefect = (data: any) => request.post('/equipment/inspection/defects', data)
 export const assignInspectionDefect = (id: number, data: any) => request.put(`/equipment/inspection/defects/${id}/assign`, data)
 export const resolveInspectionDefect = (id: number, data: any) => request.put(`/equipment/inspection/defects/${id}/resolve`, data)
+
+// 量检具管理
+export const getGaugeList = (params?: any) => {
+  return request.get('/equipment/gauge/list', { params })
+}
+
+export const getGaugeById = (id: number) => {
+  return request.get(`/equipment/gauge/${id}`)
+}
+
+export const createGauge = (data: any) => {
+  return request.post('/equipment/gauge', data)
+}
+
+export const updateGauge = (id: number, data: any) => {
+  return request.put(`/equipment/gauge/${id}`, data)
+}
+
+export const deleteGauge = (id: number) => {
+  return request.delete(`/equipment/gauge/${id}`)
+}

@@ -73,7 +73,7 @@ type ProductionOrder struct {
 }
 
 func (ProductionOrder) TableName() string {
-	return "pro_production_order"
+	return "production_orders"
 }
 
 // ProductionReport 生产报工

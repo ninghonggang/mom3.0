@@ -83,23 +83,23 @@ export const getScheduleGantt = (id: number) => {
 
 // 工作中心（APS模块）
 export const getWorkCenterList = (params?: any) => {
-  return request.get('/aps/workcenter/list', { params })
+  return request.get('/aps/work-center/list', { params })
 }
 
 export const getWorkCenter = (id: number) => {
-  return request.get(`/aps/workcenter/${id}`)
+  return request.get(`/aps/work-center/${id}`)
 }
 
 export const createWorkCenter = (data: any) => {
-  return request.post('/aps/workcenter', data)
+  return request.post('/aps/work-center', data)
 }
 
 export const updateWorkCenter = (id: number, data: any) => {
-  return request.put(`/aps/workcenter/${id}`, data)
+  return request.put(`/aps/work-center/${id}`, data)
 }
 
 export const deleteWorkCenter = (id: number) => {
-  return request.delete(`/aps/workcenter/${id}`)
+  return request.delete(`/aps/work-center/${id}`)
 }
 
 // 资源（APS模块）
@@ -111,9 +111,9 @@ export const createResource = (data: any) => {
   return request.post('/aps/resource', data)
 }
 
-// 甘特图
-export const getGanttData = (params: any) => {
-  return request.get('/aps/gantt', { params })
+// 甘特图（基于排程计划）
+export const getGanttData = (planId: number) => {
+  return request.get(`/aps/schedule/${planId}/gantt`)
 }
 
 // 拖拽更新排程结果

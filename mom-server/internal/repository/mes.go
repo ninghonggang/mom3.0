@@ -11,6 +11,22 @@ import (
 
 // ========== OrderMonthRepository 月计划仓储 ==========
 
+func toInt64(v interface{}) (int64, error) {
+	switch x := v.(type) {
+	case int64:
+		return x, nil
+	case int:
+		return int64(x), nil
+	case float64:
+		return int64(x), nil
+	case string:
+		var i int64
+		fmt.Sscanf(x, "%d", &i)
+		return i, nil
+	}
+	return 0, fmt.Errorf("cannot convert %T to int64", v)
+}
+
 type OrderMonthRepository struct {
 	db *gorm.DB
 }
@@ -165,14 +181,20 @@ func (r *OrderDayRepository) List(ctx context.Context, tenantID int64, query map
 	if endDate, ok := query["end_date"]; ok && endDate != "" {
 		q = q.Where("plan_date <= ?", endDate)
 	}
-	if lineID, ok := query["line_id"]; ok && lineID.(int64) > 0 {
-		q = q.Where("production_line_id = ?", lineID)
+	if lineID, ok := query["line_id"]; ok {
+		if v, err := toInt64(lineID); err == nil && v > 0 {
+			q = q.Where("production_line_id = ?", v)
+		}
 	}
-	if monthPlanID, ok := query["month_plan_id"]; ok && monthPlanID.(int64) > 0 {
-		q = q.Where("month_plan_id = ?", monthPlanID)
+	if monthPlanID, ok := query["month_plan_id"]; ok {
+		if v, err := toInt64(monthPlanID); err == nil && v > 0 {
+			q = q.Where("month_plan_id = ?", v)
+		}
 	}
-	if workshopID, ok := query["workshop_id"]; ok && workshopID.(int64) > 0 {
-		q = q.Where("workshop_id = ?", workshopID)
+	if workshopID, ok := query["workshop_id"]; ok {
+		if v, err := toInt64(workshopID); err == nil && v > 0 {
+			q = q.Where("workshop_id = ?", v)
+		}
 	}
 
 	q.Count(&total)

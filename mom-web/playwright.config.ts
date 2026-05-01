@@ -14,7 +14,10 @@ export default defineConfig({
     baseURL: 'http://localhost:5176',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    headless: false,  // 👈 添加这一行，关闭无头模式
+    headless: true,
+    launchOptions: {
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+    }
   },
   projects: [
     {

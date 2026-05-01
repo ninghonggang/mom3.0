@@ -293,7 +293,6 @@ func (h *MesHandler) ListDayPlans(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"data": list,

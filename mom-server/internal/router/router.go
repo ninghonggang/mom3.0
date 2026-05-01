@@ -104,6 +104,8 @@ type Router struct {
 	changeoverMatrixHandler *aps.ChangeoverMatrixHandler
 	rollingScheduleHandler *aps.RollingScheduleHandler
 	jitDemandHandler *aps.JITDemandHandler
+	simulationHandler *aps.SimulationHandler
+	workOrderHandler *aps.WorkOrderHandler
 	transferOrderHandler *wms.TransferOrderHandler
 	stockCheckHandler *wms.StockCheckHandler
 	sideLocationHandler *wms.SideLocationHandler
@@ -121,6 +123,11 @@ type Router struct {
 	equipmentDowntimeHandler *eam.EquipmentDowntimeHandler
 	spareHandler            *eam.SpareHandler
 	alertHandler            *alert.AlertHandler
+	eamFactoryHandler       *eam.EAMFactoryHandler
+	eamEquipmentOrgHandler  *eam.EAMEquipmentOrgHandler
+	inspectionHandler       *equipment.InspectionHandler
+	dynamicRuleHandler      *quality.DynamicRuleHandler
+	qualityInspPlanHandler   *quality.QualityInspectionPlanHandler
 	bpmHandler              *bpm.BPMHandler
 	bpmTaskMsgRuleHandler  *bpm.BpmTaskMessageRuleHandler
 	bpmInstanceApiHandler  *bpm.BpmInstanceApiHandler
@@ -163,6 +170,10 @@ type Router struct {
 	strategyHandler                  *wms.WmsStrategyHandler
 	areaHandler                      *wms.WmsAreaHandler
 	wmsItemHandler                  *wms.WMSItemHandler
+	wmsInboundHandler               *wms.WMSInboundHandler
+	wmsOutboundHandler              *wms.WMSOutboundHandler
+	productUnitHandler               *mdm.ProductUnitHandler
+	eamAssetHandler                 *eam.AssetHandler
 	mesHandler                       *mes.MesHandler
 	workSchedulingHandler            *mes.WorkSchedulingHandler
 	jobReportHandler                *mes.JobReportHandler
@@ -250,6 +261,8 @@ func New(
 	changeoverMatrixHandler *aps.ChangeoverMatrixHandler,
 	rollingScheduleHandler *aps.RollingScheduleHandler,
 	jitDemandHandler *aps.JITDemandHandler,
+	simulationHandler *aps.SimulationHandler,
+	workOrderHandler *aps.WorkOrderHandler,
 	transferOrderHandler *wms.TransferOrderHandler,
 	stockCheckHandler *wms.StockCheckHandler,
 	sideLocationHandler *wms.SideLocationHandler,
@@ -267,6 +280,11 @@ func New(
 	equipmentDowntimeHandler *eam.EquipmentDowntimeHandler,
 	spareHandler *eam.SpareHandler,
 	alertHandler *alert.AlertHandler,
+	eamFactoryHandler *eam.EAMFactoryHandler,
+	eamEquipmentOrgHandler *eam.EAMEquipmentOrgHandler,
+	inspectionHandler *equipment.InspectionHandler,
+	dynamicRuleHandler *quality.DynamicRuleHandler,
+	qualityInspPlanHandler *quality.QualityInspectionPlanHandler,
 	bpmHandler *bpm.BPMHandler,
 	bpmTaskMsgRuleHandler *bpm.BpmTaskMessageRuleHandler,
 	bpmInstanceApiHandler *bpm.BpmInstanceApiHandler,
@@ -309,6 +327,10 @@ func New(
 	strategyHandler *wms.WmsStrategyHandler,
 	areaHandler *wms.WmsAreaHandler,
 	wmsItemHandler *wms.WMSItemHandler,
+	wmsInboundHandler *wms.WMSInboundHandler,
+	wmsOutboundHandler *wms.WMSOutboundHandler,
+	productUnitHandler *mdm.ProductUnitHandler,
+	eamAssetHandler *eam.AssetHandler,
 	mesHandler *mes.MesHandler,
 	workSchedulingHandler *mes.WorkSchedulingHandler,
 	jobReportHandler *mes.JobReportHandler,
@@ -395,6 +417,8 @@ func New(
 		changeoverMatrixHandler:  changeoverMatrixHandler,
 		rollingScheduleHandler:   rollingScheduleHandler,
 		jitDemandHandler:          jitDemandHandler,
+		simulationHandler:         simulationHandler,
+		workOrderHandler:          workOrderHandler,
 		transferOrderHandler:      transferOrderHandler,
 		stockCheckHandler:          stockCheckHandler,
 		sideLocationHandler:        sideLocationHandler,
@@ -411,7 +435,12 @@ func New(
 		equipmentDocumentHandler:   equipmentDocumentHandler,
 		equipmentDowntimeHandler:   equipmentDowntimeHandler,
 		alertHandler:              alertHandler,
-			spareHandler:             spareHandler,
+		spareHandler:              spareHandler,
+		eamFactoryHandler:         eamFactoryHandler,
+		eamEquipmentOrgHandler:    eamEquipmentOrgHandler,
+		inspectionHandler:         inspectionHandler,
+		dynamicRuleHandler:        dynamicRuleHandler,
+		qualityInspPlanHandler:     qualityInspPlanHandler,
 		bpmHandler:                bpmHandler,
 		bpmTaskMsgRuleHandler:   bpmTaskMsgRuleHandler,
 		bpmInstanceApiHandler:   bpmInstanceApiHandler,
@@ -454,7 +483,11 @@ func New(
 		strategyHandler:         strategyHandler,
 		areaHandler:             areaHandler,
 		wmsItemHandler:         wmsItemHandler,
-		mesHandler:              mesHandler,
+		wmsInboundHandler:    wmsInboundHandler,
+		wmsOutboundHandler:   wmsOutboundHandler,
+		productUnitHandler:    productUnitHandler,
+		eamAssetHandler:      eamAssetHandler,
+		mesHandler:           mesHandler,
 		workSchedulingHandler:   workSchedulingHandler,
 		jobReportHandler:        jobReportHandler,
 		personSkillHandler:       personSkillHandler,
@@ -1129,7 +1162,27 @@ func (r *Router) Init(engine *gin.Engine) {
 			qrci.POST("/:id/verification", r.qrciHandler.AddVerification)
 		}
 
-		// APS计划
+			// ========== Alias Routes (frontend path → actual handler) ==========
+			// Quality inspection plan (new path, not in original)
+			protected.Group("/quality/inspection-plan").GET("/list", r.qualityInspPlanHandler.List)
+			protected.Group("/quality/inspection-plan").GET("/:id", r.qualityInspPlanHandler.Get)
+			protected.Group("/quality/inspection-plan").POST("", r.qualityInspPlanHandler.Create)
+			protected.Group("/quality/inspection-plan").PUT("/:id", r.qualityInspPlanHandler.Update)
+			protected.Group("/quality/inspection-plan").DELETE("/:id", r.qualityInspPlanHandler.Delete)
+			// Defect record alias (genuinely new path)
+			protected.Group("/quality/defect-record").GET("/list", r.defectRecordHandler.List)
+			// WMS aliases (genuinely new paths)
+			protected.Group("/wms/delivery-order").GET("/list", r.wmsOutboundHandler.List)
+			protected.Group("/wms/receive-order").GET("/list", r.wmsInboundHandler.List)
+			// Dynamic rule (new path, not registered elsewhere)
+			protected.Group("/quality/dynamic-rule").GET("/list", r.dynamicRuleHandler.List)
+			protected.Group("/quality/dynamic-rule").GET("/:id", r.dynamicRuleHandler.Get)
+			protected.Group("/quality/dynamic-rule").POST("", r.dynamicRuleHandler.Create)
+			protected.Group("/quality/dynamic-rule").PUT("/:id", r.dynamicRuleHandler.Update)
+			protected.Group("/quality/dynamic-rule").DELETE("/:id", r.dynamicRuleHandler.Delete)
+			protected.Group("/quality/dynamic-rule").PUT("/:id/activate", r.dynamicRuleHandler.Activate)
+
+			// APS计划
 		aps := protected.Group("/aps")
 		{
 			mps := aps.Group("/mps")
@@ -1165,6 +1218,27 @@ func (r *Router) Init(engine *gin.Engine) {
 				workCenter.PUT("/:id", r.workCenterHandler.Update)
 				workCenter.DELETE("/:id", r.workCenterHandler.Delete)
 				workCenter.GET("/by-workshop", r.workCenterHandler.ListByWorkshop)
+			}
+			// 兼容别名路由（供前端菜单直接跳转）
+			aps.GET("/plan/list", r.mpsHandler.List)
+			aps.GET("/scheduling/list", r.scheduleHandler.List)
+			simulation := aps.Group("/simulation")
+			{
+				simulation.GET("/list", r.simulationHandler.List)
+				simulation.GET("/:id", r.simulationHandler.Get)
+				simulation.POST("", r.simulationHandler.Create)
+				simulation.PUT("/:id", r.simulationHandler.Update)
+				simulation.DELETE("/:id", r.simulationHandler.Delete)
+				simulation.POST("/:id/run", r.simulationHandler.Run)
+				simulation.POST("/:id/confirm", r.simulationHandler.Confirm)
+			}
+			workOrder := aps.Group("/workorder")
+			{
+				workOrder.GET("/list", r.workOrderHandler.List)
+				workOrder.GET("/:id", r.workOrderHandler.Get)
+				workOrder.POST("", r.workOrderHandler.Create)
+				workOrder.PUT("/:id", r.workOrderHandler.Update)
+				workOrder.DELETE("/:id", r.workOrderHandler.Delete)
 			}
 		}
 
@@ -1261,6 +1335,26 @@ func (r *Router) Init(engine *gin.Engine) {
 				item.DELETE("/:id", r.wmsItemHandler.Delete)
 				item.GET("/listByMaterial", r.wmsItemHandler.ListByMaterial)
 				item.POST("/senior", r.wmsItemHandler.Senior)
+			}
+
+			// 入库管理
+			inbound := wms.Group("/inbound")
+			{
+				inbound.GET("/list", r.wmsInboundHandler.List)
+				inbound.GET("/:id", r.wmsInboundHandler.Get)
+				inbound.POST("", r.wmsInboundHandler.Create)
+				inbound.PUT("/:id", r.wmsInboundHandler.Update)
+				inbound.DELETE("/:id", r.wmsInboundHandler.Delete)
+			}
+
+			// 出库管理
+			outbound := wms.Group("/outbound")
+			{
+				outbound.GET("/list", r.wmsOutboundHandler.List)
+				outbound.GET("/:id", r.wmsOutboundHandler.Get)
+				outbound.POST("", r.wmsOutboundHandler.Create)
+				outbound.PUT("/:id", r.wmsOutboundHandler.Update)
+				outbound.DELETE("/:id", r.wmsOutboundHandler.Delete)
 			}
 
 			// 采购退货
@@ -1373,6 +1467,11 @@ func (r *Router) Init(engine *gin.Engine) {
 			equipment.DELETE("/:id", r.equipmentHandler.Delete)
 			equipment.GET("/status", r.equipmentHandler.Status)
 		}
+		// 点检模板/计划/记录/缺陷 (设备管理)
+		protected.Group("/equipment/inspection/template").GET("/list", r.inspectionHandler.ListTemplates)
+		protected.Group("/equipment/inspection/plan").GET("/list", r.inspectionHandler.ListPlans)
+		protected.Group("/equipment/inspection/record").GET("/list", r.inspectionHandler.ListRecords)
+		protected.Group("/equipment/inspection/defect").GET("/list", r.inspectionHandler.ListDefects)
 
 		// 设备点检
 		protected.Group("/equipment/check").GET("/list", r.checkHandler.List)
@@ -1497,6 +1596,16 @@ func (r *Router) Init(engine *gin.Engine) {
 			materialCategory.POST("", r.materialCategoryHandler.Create)
 			materialCategory.PUT("/:id", r.materialCategoryHandler.Update)
 			materialCategory.DELETE("/:id", r.materialCategoryHandler.Delete)
+		}
+
+		// 计量单位
+		productUnit := protected.Group("/mdm/product-unit")
+		{
+			productUnit.GET("/list", r.productUnitHandler.List)
+			productUnit.GET("/:id", r.productUnitHandler.Get)
+			productUnit.POST("", r.productUnitHandler.Create)
+			productUnit.PUT("/:id", r.productUnitHandler.Update)
+			productUnit.DELETE("/:id", r.productUnitHandler.Delete)
 		}
 
 		// MDM 客户管理
@@ -2137,6 +2246,36 @@ func (r *Router) Init(engine *gin.Engine) {
 				repairStd.DELETE("/delete", r.eamRepairJobHandler.DeleteStd)
 				repairStd.GET("/get", r.eamRepairJobHandler.GetStd)
 				repairStd.GET("/page", r.eamRepairJobHandler.PageStd)
+			}
+
+			// ========== 设备资产 (EAM) ==========
+			asset := protected.Group("/eam/asset")
+			{
+				asset.GET("/list", r.eamAssetHandler.List)
+				asset.GET("/:id", r.eamAssetHandler.Get)
+				asset.POST("", r.eamAssetHandler.Create)
+				asset.PUT("/:id", r.eamAssetHandler.Update)
+				asset.DELETE("/:id", r.eamAssetHandler.Delete)
+			}
+
+			// ========== 工厂日历 (EAM) ==========
+			factory := protected.Group("/eam/factory")
+			{
+				factory.GET("/list", r.eamFactoryHandler.List)
+				factory.GET("/:id", r.eamFactoryHandler.Get)
+				factory.POST("", r.eamFactoryHandler.Create)
+				factory.PUT("/:id", r.eamFactoryHandler.Update)
+				factory.DELETE("/:id", r.eamFactoryHandler.Delete)
+			}
+
+			// ========== 设备组织 (EAM) ==========
+			equipmentOrg := protected.Group("/eam/equipment-org")
+			{
+				equipmentOrg.GET("/list", r.eamEquipmentOrgHandler.List)
+				equipmentOrg.GET("/:id", r.eamEquipmentOrgHandler.Get)
+				equipmentOrg.POST("", r.eamEquipmentOrgHandler.Create)
+				equipmentOrg.PUT("/:id", r.eamEquipmentOrgHandler.Update)
+				equipmentOrg.DELETE("/:id", r.eamEquipmentOrgHandler.Delete)
 			}
 
 			// ========== Alert 告警管理 ==========

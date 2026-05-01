@@ -22,25 +22,54 @@ export const createSerialNumber = (data: any) => {
   return request.post('/trace/serial', data)
 }
 
-//安东呼叫
+// 安东呼叫
 export const getAndonCallList = (params?: any) => {
-  return request.get('/andon/call/list', { params })
+  return request.get('/andon/calls/list', { params })
+}
+
+export const getAndonCallDetail = (id: number) => {
+  return request.get(`/andon/calls/${id}`)
 }
 
 export const createAndonCall = (data: any) => {
-  return request.post('/andon/call', data)
+  return request.post('/andon/calls', data)
 }
 
-export const responseAndonCall = (id: number) => {
-  return request.put(`/andon/call/${id}/response`)
+export const responseAndonCall = (id: number, data?: any) => {
+  return request.put(`/andon/calls/${id}/respond`, data)
 }
 
-export const resolveAndonCall = (id: number) => {
-  return request.put(`/andon/call/${id}/resolve`)
+export const resolveAndonCall = (id: number, data?: any) => {
+  return request.put(`/andon/calls/${id}/resolve`, data)
 }
 
-export const getAndonStats = () => {
-  return request.get('/andon/stats')
+export const escalateAndonCall = (id: number, data?: any) => {
+  return request.put(`/andon/calls/${id}/escalate`, data)
+}
+
+export const getAndonStats = (params?: any) => {
+  return request.get('/andon/statistics', { params })
+}
+
+// 升级规则
+export const getEscalationRuleList = (params?: any) => {
+  return request.get('/andon/escalation-rules/list', { params })
+}
+
+export const getEscalationRuleDetail = (id: number) => {
+  return request.get(`/andon/escalation-rules/${id}`)
+}
+
+export const createEscalationRule = (data: any) => {
+  return request.post('/andon/escalation-rules', data)
+}
+
+export const updateEscalationRule = (id: number, data: any) => {
+  return request.put(`/andon/escalation-rules/${id}`, data)
+}
+
+export const deleteEscalationRule = (id: number) => {
+  return request.delete(`/andon/escalation-rules/${id}`)
 }
 
 // 数据采集

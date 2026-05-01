@@ -112,19 +112,19 @@ export const deleteWorkstation = (id: number) => {
 
 // 班次
 export const getShiftList = (params?: any) => {
-  return request.get('/mdm/shift/list', { params })
+  return request.get('/mes/shift/list', { params })
 }
 
 export const createShift = (data: any) => {
-  return request.post('/mdm/shift', data)
+  return request.post('/mes/shift', data)
 }
 
 export const updateShift = (id: number, data: any) => {
-  return request.put(`/mdm/shift/${id}`, data)
+  return request.put(`/mes/shift/${id}`, data)
 }
 
 export const deleteShift = (id: number) => {
-  return request.delete(`/mdm/shift/${id}`)
+  return request.delete(`/mes/shift/${id}`)
 }
 
 // MDM 工序
@@ -327,4 +327,21 @@ export const updateDeliveryAddress = (id: number, data: any) => {
 
 export const deleteDeliveryAddress = (id: number) => {
   return request.delete(`/mdm/delivery-address/${id}`)
+}
+
+// 计量单位
+export const getProductUnitList = (params?: any) => {
+  return request.get('/mdm/product-unit/list', { params })
+}
+
+export const createProductUnit = (data: any) => {
+  return request.post('/mdm/product-unit', data)
+}
+
+export const updateProductUnit = (id: number, data: any) => {
+  return request.put(`/mdm/product-unit/${id}`, data)
+}
+
+export const deleteProductUnit = (id: number) => {
+  return request.delete(`/mdm/product-unit/${id}`)
 }

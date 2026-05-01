@@ -219,7 +219,7 @@ type AQLLevel struct {
 	Level   string `json:"level" gorm:"size:10;not null"`
 	Name    string `json:"name" gorm:"size:50;not null"`
 	Type    string `json:"type" gorm:"size:20"`
-	Order   int    `json:"order" gorm:"default:0"`
+	Order   int    `json:"order" gorm:"column:order_num;default:0"`
 	Status  int    `json:"status" gorm:"default:1"`
 	Remark  *string `json:"remark" gorm:"size:500"`
 }

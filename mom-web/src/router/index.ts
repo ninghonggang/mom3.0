@@ -417,6 +417,18 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/trace/AndonCall.vue'),
         meta: { title: '安东呼叫', icon: 'Bell' }
       },
+      {
+        path: 'trace/escalation-rules',
+        name: 'EscalationRuleList',
+        component: () => import('@/views/trace/EscalationRuleList.vue'),
+        meta: { title: '升级规则', icon: 'Guide' }
+      },
+      {
+        path: 'trace/andon-stats',
+        name: 'AndonStats',
+        component: () => import('@/views/trace/AndonStats.vue'),
+        meta: { title: '安东统计', icon: 'DataLine' }
+      },
       // 能源管理
       {
         path: 'energy/monitor',

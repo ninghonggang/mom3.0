@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"log"
 	"mom-server/internal/model"
 
 	"gorm.io/gorm"
@@ -331,16 +332,24 @@ func (r *CustomerInquiryRepository) List(ctx context.Context, tenantID int64, qu
 	var list []model.CustomerInquiry
 	var total int64
 
-	q := r.db.WithContext(ctx).Model(&model.CustomerInquiry{}).Where("tenant_id = ?", tenantID)
-
-	if status, ok := query["status"]; ok && status != "" {
-		q = q.Where("status = ?", status)
+	log.Printf("[CustomerInquiryRepository] START")
+	err := r.db.WithContext(ctx).Exec("SELECT 1").Error
+	log.Printf("[CustomerInquiryRepository] after test query, err=%v", err)
+	if err != nil {
+		return list, 0, err
 	}
-
-	q.Count(&total)
-	q = q.Preload("Items").Order("id DESC")
-
-	err := q.Find(&list).Error
+	err = r.db.WithContext(ctx).Model(&model.CustomerInquiry{}).Where("tenant_id = ?", tenantID).Count(&total).Error
+	if err != nil {
+		log.Printf("[CustomerInquiryRepository] count error: %v", err)
+		return list, 0, err
+	}
+	log.Printf("[CustomerInquiryRepository] count=%d", total)
+	// Temporarily REMOVE Preload to test if preload causes the panic
+	// q = r.db.WithContext(ctx).Model(&model.CustomerInquiry{}).Where("tenant_id = ?", tenantID).Preload("Items").Order("id DESC")
+	q := r.db.WithContext(ctx).Model(&model.CustomerInquiry{}).Where("tenant_id = ?", tenantID).Order("id DESC")
+	log.Printf("[CustomerInquiryRepository] query built, about to Find")
+	err = q.Find(&list).Error
+	log.Printf("[CustomerInquiryRepository] Find done, err=%v, len=%d", err, len(list))
 	return list, total, err
 }
 

@@ -253,3 +253,37 @@ export const cancelTransferOrder = (id: number, reason?: string) => {
 export const getTransferOrderTrace = (id: number) => {
   return request.get(`/wms/transfer/${id}/trace`)
 }
+
+// 入库管理
+export const getInboundList = (params?: any) => {
+  return request.get('/wms/inbound/list', { params })
+}
+
+export const createInbound = (data: any) => {
+  return request.post('/wms/inbound', data)
+}
+
+export const updateInbound = (id: number, data: any) => {
+  return request.put(`/wms/inbound/${id}`, data)
+}
+
+export const deleteInbound = (id: number) => {
+  return request.delete(`/wms/inbound/${id}`)
+}
+
+// 出库管理
+export const getOutboundList = (params?: any) => {
+  return request.get('/wms/outbound/list', { params })
+}
+
+export const createOutbound = (data: any) => {
+  return request.post('/wms/outbound', data)
+}
+
+export const updateOutbound = (id: number, data: any) => {
+  return request.put(`/wms/outbound/${id}`, data)
+}
+
+export const deleteOutbound = (id: number) => {
+  return request.delete(`/wms/outbound/${id}`)
+}

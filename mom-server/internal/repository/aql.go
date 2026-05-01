@@ -24,7 +24,7 @@ func (r *AQLLevelRepository) List(ctx context.Context, tenantID int64) ([]model.
 	if err := q.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
-	if err := q.Order("`order` ASC, id ASC").Find(&list).Error; err != nil {
+	if err := q.Order(`"order" ASC, id ASC`).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
 	return list, total, nil

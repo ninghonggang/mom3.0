@@ -19,7 +19,11 @@ func (r *ProductionOfflineRepository) List(c *gorm.DB, tenantID uint64, query ma
 	var list []model.ProductionOffline
 	var total int64
 
-	q := c.Model(&model.ProductionOffline{}).Where("tenant_id = ?", tenantID)
+	db := c
+	if db == nil {
+		db = r.db
+	}
+	q := db.Model(&model.ProductionOffline{}).Where("tenant_id = ?", tenantID)
 
 	if v, ok := query["work_order_code"]; ok && v.(string) != "" {
 		q = q.Where("work_order_code LIKE ?", "%"+v.(string)+"%")

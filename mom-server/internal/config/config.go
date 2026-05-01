@@ -20,6 +20,7 @@ type Config struct {
 type ServerConfig struct {
 	Port            int           `mapstructure:"port"`
 	Mode            string        `mapstructure:"mode"`
+	Env             string        `mapstructure:"env"` // development | production
 	JWT             JWTConfig     `mapstructure:"jwt"`
 	ReadTimeout     time.Duration `mapstructure:"read_timeout"`
 	WriteTimeout    time.Duration `mapstructure:"write_timeout"`

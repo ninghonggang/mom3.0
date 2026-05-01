@@ -1,6 +1,7 @@
 server:
   port: 9081
   mode: debug
+  env: development  # development | production（生产环境设为 production，迁移失败会退出）
   jwt:
     secret: "mom3-secret-key-change-in-production"
     access_token_expire: 7200s    # 2小时
@@ -11,12 +12,13 @@ database:
   port: 5432
   user: "momadmin"
   password: "mom123456"
-  dbname: "mom3.0"
+  dbname: "mom3_db"
   sslmode: "disable"
 
 redis:
-  host: "localhost"
-  port: 6379
+  # host: "localhost"
+  # port: 6379
+  # Redis已禁用（代码中未实际使用）
   password: ""
   db: 0
 
