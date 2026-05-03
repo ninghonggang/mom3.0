@@ -191,6 +191,7 @@ type Router struct {
 	deliveryReportHandler            *report.DeliveryReportHandler
 	andonReportHandler               *report.AndonReportHandler
 	integrationHandler              *integration.IntegrationHandler
+	idocHandler                     *integration.IdocHandler
 	agvHandler                    *agv.AGVHandler
 	erpSyncHandler                *erp_sync.ERPSyncHandler
 }
@@ -353,6 +354,7 @@ func New(
 	deliveryReportHandler *report.DeliveryReportHandler,
 	andonReportHandler *report.AndonReportHandler,
 	integrationHandler *integration.IntegrationHandler,
+	idocHandler *integration.IdocHandler,
 	agvHandler *agv.AGVHandler,
 	erpSyncHandler *erp_sync.ERPSyncHandler,
 ) *Router {
@@ -511,6 +513,7 @@ func New(
 		deliveryReportHandler:         deliveryReportHandler,
 		andonReportHandler:            andonReportHandler,
 		integrationHandler:           integrationHandler,
+		idocHandler:                  idocHandler,
 		agvHandler:                  agvHandler,
 		erpSyncHandler:              erpSyncHandler,
 	}
@@ -741,6 +744,14 @@ func (r *Router) Init(engine *gin.Engine) {
 
 			// 枚举选项
 			integration.GET("/options", r.integrationHandler.GetConstantOptions)
+
+			// IDOC接口
+			integration.GET("/idoc/page", r.idocHandler.List)
+			integration.GET("/idoc/:id", r.idocHandler.Get)
+			integration.POST("/idoc/receive", r.idocHandler.Receive)
+			integration.POST("/idoc/send", r.idocHandler.Send)
+			integration.POST("/idoc/:id/retry", r.idocHandler.Retry)
+			integration.GET("/idoc/configs", r.idocHandler.ListConfigs)
 
 			// ERP同步
 			integration.GET("/erp/sync-log/list", r.erpSyncHandler.ListSyncLogs)
