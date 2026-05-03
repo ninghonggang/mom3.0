@@ -135,6 +135,7 @@ export const getInspectionPlan = (id: number) => request.get(`/equipment/inspect
 export const createInspectionPlan = (data: any) => request.post('/equipment/inspection/plan', data)
 export const updateInspectionPlan = (id: number, data: any) => request.put(`/equipment/inspection/plan/${id}`, data)
 export const assignInspectionPlan = (id: number, data: any) => request.put(`/equipment/inspection/plan/${id}/assign`, data)
+export const deleteInspectionPlan = (id: number) => request.delete(`/equipment/inspection/plan/${id}`)
 export const cancelInspectionPlan = (id: number) => request.delete(`/equipment/inspection/plan/${id}`)
 
 // 点检记录

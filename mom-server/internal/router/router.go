@@ -61,6 +61,7 @@ type Router struct {
 	maintHandler       *equipment.EquipmentMaintenanceHandler
 	repairHandler      *equipment.EquipmentRepairHandler
 	sparePartHandler   *equipment.SparePartHandler
+	equipmentBomHandler *equipment.EquipmentBomHandler
 	lineHandler        *business.ProductionLineHandler
 	workstationHandler *business.WorkstationHandler
 	shiftHandler       *business.ShiftHandler
@@ -76,6 +77,7 @@ type Router struct {
 	defectRecordHandler *quality.DefectRecordHandler
 	ncrHandler        *quality.NCRHandler
 	spcHandler        *quality.SPCHandler
+	qualityCertificateHandler *quality.QualityCertificateHandler
 	supplierHandler       *supplier.SupplierHandler
 	supplierASNHandler    *supplier_asn.SupplierASNHandler
 	materialHandler       *mdm.MaterialHandler
@@ -220,6 +222,7 @@ func New(
 	maintHandler *equipment.EquipmentMaintenanceHandler,
 	repairHandler *equipment.EquipmentRepairHandler,
 	sparePartHandler *equipment.SparePartHandler,
+	equipmentBomHandler *equipment.EquipmentBomHandler,
 	lineHandler *business.ProductionLineHandler,
 	workstationHandler *business.WorkstationHandler,
 	shiftHandler *business.ShiftHandler,
@@ -235,6 +238,7 @@ func New(
 	defectRecordHandler *quality.DefectRecordHandler,
 	ncrHandler *quality.NCRHandler,
 	spcHandler *quality.SPCHandler,
+	qualityCertificateHandler *quality.QualityCertificateHandler,
 	supplierHandler *supplier.SupplierHandler,
 	supplierASNHandler *supplier_asn.SupplierASNHandler,
 	materialHandler *mdm.MaterialHandler,
@@ -377,6 +381,7 @@ func New(
 		repairHandler:       repairHandler,
 		eamRepairJobHandler: eamRepairJobHandler,
 		sparePartHandler:    sparePartHandler,
+		equipmentBomHandler: equipmentBomHandler,
 		lineHandler:         lineHandler,
 		workstationHandler:  workstationHandler,
 		shiftHandler:        shiftHandler,
@@ -392,6 +397,7 @@ func New(
 		defectRecordHandler:   defectRecordHandler,
 		ncrHandler:            ncrHandler,
 		spcHandler:            spcHandler,
+		qualityCertificateHandler: qualityCertificateHandler,
 		supplierHandler:       supplierHandler,
 		supplierASNHandler:    supplierASNHandler,
 		materialHandler:       materialHandler,
@@ -1067,6 +1073,16 @@ func (r *Router) Init(engine *gin.Engine) {
 			spc.GET("/capability/:configId", r.spcHandler.GetCapability) // CP/CPK分析
 		}
 
+		// 质量证书
+		certificate := protected.Group("/quality/certificate")
+		{
+			certificate.GET("/page", r.qualityCertificateHandler.List)
+			certificate.GET("/:id", r.qualityCertificateHandler.Get)
+			certificate.POST("", r.qualityCertificateHandler.Create)
+			certificate.PUT("/:id", r.qualityCertificateHandler.Update)
+			certificate.DELETE("/:id", r.qualityCertificateHandler.Delete)
+		}
+
 		// 实验室仪器
 		labInstrument := protected.Group("/quality/lab-instrument")
 		{
@@ -1481,6 +1497,17 @@ func (r *Router) Init(engine *gin.Engine) {
 			equipment.PUT("/:id", r.equipmentHandler.Update)
 			equipment.DELETE("/:id", r.equipmentHandler.Delete)
 			equipment.GET("/status", r.equipmentHandler.Status)
+
+			// 设备BOM
+			equipmentBom := equipment.Group("/bom")
+			{
+				equipmentBom.GET("/list", r.equipmentBomHandler.ListByEquipment)
+				equipmentBom.GET("/page", r.equipmentBomHandler.List)
+				equipmentBom.GET("/:id", r.equipmentBomHandler.Get)
+				equipmentBom.POST("", r.equipmentBomHandler.Create)
+				equipmentBom.PUT("/:id", r.equipmentBomHandler.Update)
+				equipmentBom.DELETE("/:id", r.equipmentBomHandler.Delete)
+			}
 		}
 		// 点检模板/计划/记录/缺陷 (设备管理)
 		protected.Group("/equipment/inspection/template").GET("/list", r.inspectionHandler.ListTemplates)
