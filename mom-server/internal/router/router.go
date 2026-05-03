@@ -142,6 +142,7 @@ type Router struct {
 	supplierKPIHandler      *scp.SupplierKPIHandler
 	supplierQuoteHandler    *scp.SupplierQuoteHandler
 	customerInquiryHandler   *scp.CustomerInquiryHandler
+	customerCreditHandler    *scp.CustomerCreditHandler
 	purchasePlanHandler     *scp.PurchasePlanHandler
 	scpSupplierExtHandler    *scp.SupplierExtHandler
 	qadHandler               *scp.QadHandler
@@ -303,6 +304,7 @@ func New(
 	supplierKPIHandler *scp.SupplierKPIHandler,
 	supplierQuoteHandler *scp.SupplierQuoteHandler,
 	customerInquiryHandler *scp.CustomerInquiryHandler,
+	customerCreditHandler *scp.CustomerCreditHandler,
 	purchasePlanHandler *scp.PurchasePlanHandler,
 	scpSupplierExtHandler *scp.SupplierExtHandler,
 	qadHandler *scp.QadHandler,
@@ -461,6 +463,7 @@ func New(
 	supplierKPIHandler:        supplierKPIHandler,
 	supplierQuoteHandler:      supplierQuoteHandler,
 	customerInquiryHandler:   customerInquiryHandler,
+	customerCreditHandler:    customerCreditHandler,
 	purchasePlanHandler:     purchasePlanHandler,
 		scpSupplierExtHandler:    scpSupplierExtHandler,
 		qadHandler:               qadHandler,
@@ -2200,6 +2203,21 @@ func (r *Router) Init(engine *gin.Engine) {
 				customerInquiry.POST("/:id/win", r.customerInquiryHandler.Win)
 				customerInquiry.POST("/:id/lose", r.customerInquiryHandler.Lose)
 				customerInquiry.POST("/:id/cancel", r.customerInquiryHandler.Cancel)
+			}
+
+			// 客户信用
+			customerCredit := protected.Group("/scp/customer-credit")
+			{
+				customerCredit.GET("/page", r.customerCreditHandler.List)
+				customerCredit.GET("/:id", r.customerCreditHandler.Get)
+				customerCredit.GET("/customer/:customerId", r.customerCreditHandler.GetByCustomer)
+				customerCredit.POST("", r.customerCreditHandler.Create)
+				customerCredit.PUT("/:id", r.customerCreditHandler.Update)
+				customerCredit.DELETE("/:id", r.customerCreditHandler.Delete)
+				customerCredit.PUT("/:id/used-credit", r.customerCreditHandler.UpdateUsedCredit)
+				customerCredit.PUT("/:id/blacklist", r.customerCreditHandler.SetBlacklist)
+				customerCredit.PUT("/:id/freeze", r.customerCreditHandler.Freeze)
+				customerCredit.PUT("/:id/unfreeze", r.customerCreditHandler.Unfreeze)
 			}
 
 			// 采购计划

@@ -149,6 +149,7 @@ export const deleteInspectionRecord = (id: number) => request.delete(`/equipment
 export const getInspectionDefectList = (params?: any) => request.get('/equipment/inspection/defects/list', { params })
 export const getInspectionDefect = (id: number) => request.get(`/equipment/inspection/defects/${id}`)
 export const createInspectionDefect = (data: any) => request.post('/equipment/inspection/defects', data)
+export const updateInspectionDefect = (id: number, data: any) => request.put(`/equipment/inspection/defects/${id}`, data)
 export const assignInspectionDefect = (id: number, data: any) => request.put(`/equipment/inspection/defects/${id}/assign`, data)
 export const resolveInspectionDefect = (id: number, data: any) => request.put(`/equipment/inspection/defects/${id}/resolve`, data)
 
