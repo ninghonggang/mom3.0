@@ -177,6 +177,7 @@ type Router struct {
 	wmsItemHandler                  *wms.WMSItemHandler
 	wmsInboundHandler               *wms.WMSInboundHandler
 	wmsOutboundHandler              *wms.WMSOutboundHandler
+	vmiHandler                     *wms.VmiHandler
 	productUnitHandler               *mdm.ProductUnitHandler
 	eamAssetHandler                 *eam.AssetHandler
 	mesHandler                       *mes.MesHandler
@@ -341,6 +342,7 @@ func New(
 	wmsItemHandler *wms.WMSItemHandler,
 	wmsInboundHandler *wms.WMSInboundHandler,
 	wmsOutboundHandler *wms.WMSOutboundHandler,
+	vmiHandler *wms.VmiHandler,
 	productUnitHandler *mdm.ProductUnitHandler,
 	eamAssetHandler *eam.AssetHandler,
 	mesHandler *mes.MesHandler,
@@ -502,6 +504,7 @@ func New(
 		wmsItemHandler:         wmsItemHandler,
 		wmsInboundHandler:    wmsInboundHandler,
 		wmsOutboundHandler:   wmsOutboundHandler,
+		vmiHandler:          vmiHandler,
 		productUnitHandler:    productUnitHandler,
 		eamAssetHandler:      eamAssetHandler,
 		mesHandler:           mesHandler,
@@ -1413,6 +1416,21 @@ func (r *Router) Init(engine *gin.Engine) {
 				outbound.POST("", r.wmsOutboundHandler.Create)
 				outbound.PUT("/:id", r.wmsOutboundHandler.Update)
 				outbound.DELETE("/:id", r.wmsOutboundHandler.Delete)
+			}
+
+			// VMI库存管理
+			vmi := wms.Group("/vmi")
+			{
+				vmi.GET("/vendor/page", r.vmiHandler.ListVendors)
+				vmi.GET("/vendor/:id", r.vmiHandler.GetVendor)
+				vmi.POST("/vendor", r.vmiHandler.CreateVendor)
+				vmi.PUT("/vendor/:id", r.vmiHandler.UpdateVendor)
+				vmi.DELETE("/vendor/:id", r.vmiHandler.DeleteVendor)
+				vmi.GET("/material/page", r.vmiHandler.ListMaterials)
+				vmi.GET("/material/:id", r.vmiHandler.GetMaterial)
+				vmi.GET("/transaction/page", r.vmiHandler.ListTransactions)
+				vmi.POST("/consume", r.vmiHandler.Consume)
+				vmi.POST("/replenish", r.vmiHandler.Replenish)
 			}
 
 			// 采购退货
