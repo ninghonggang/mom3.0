@@ -182,6 +182,7 @@ type Router struct {
 	mesHandler                       *mes.MesHandler
 	workSchedulingHandler            *mes.WorkSchedulingHandler
 	jobReportHandler                *mes.JobReportHandler
+	mobileJobReportHandler          *mes.MobileJobReportHandler
 	eamRepairJobHandler              *eam.EamRepairJobHandler
 	personSkillHandler               *mes.PersonSkillHandler
 	completeInspectHandler          *mes.CompleteInspectHandler
@@ -345,6 +346,7 @@ func New(
 	mesHandler *mes.MesHandler,
 	workSchedulingHandler *mes.WorkSchedulingHandler,
 	jobReportHandler *mes.JobReportHandler,
+	mobileJobReportHandler *mes.MobileJobReportHandler,
 	eamRepairJobHandler *eam.EamRepairJobHandler,
 	personSkillHandler *mes.PersonSkillHandler,
 	completeInspectHandler *mes.CompleteInspectHandler,
@@ -505,6 +507,7 @@ func New(
 		mesHandler:           mesHandler,
 		workSchedulingHandler:   workSchedulingHandler,
 		jobReportHandler:        jobReportHandler,
+		mobileJobReportHandler:  mobileJobReportHandler,
 		personSkillHandler:       personSkillHandler,
 		completeInspectHandler:          completeInspectHandler,
 		productionDailyReportHandler:  productionDailyReportHandler,
@@ -916,6 +919,18 @@ func (r *Router) Init(engine *gin.Engine) {
 			jobReport.GET("/get", r.jobReportHandler.Get)
 			jobReport.GET("/page", r.jobReportHandler.Page)
 			jobReport.POST("/senior", r.jobReportHandler.Senior)
+		}
+
+		// 移动端报工
+		mobileJobReport := protected.Group("/mes/mobile-job-report")
+		{
+			mobileJobReport.GET("/page", r.mobileJobReportHandler.List)
+			mobileJobReport.GET("/:id", r.mobileJobReportHandler.Get)
+			mobileJobReport.POST("", r.mobileJobReportHandler.Create)
+			mobileJobReport.PUT("/:id/confirm", r.mobileJobReportHandler.Confirm)
+			mobileJobReport.PUT("/:id/audit", r.mobileJobReportHandler.Audit)
+			mobileJobReport.DELETE("/:id", r.mobileJobReportHandler.Delete)
+			mobileJobReport.GET("/pending-orders", r.mobileJobReportHandler.GetPendingOrders)
 		}
 
 		// MES工单排程
