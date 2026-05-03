@@ -97,3 +97,18 @@ type EnergyRecord struct {
 func (EnergyRecord) TableName() string {
 	return "ene_energy_record"
 }
+
+// SerialNumberCreateReq 序列号创建请求
+type SerialNumberCreateReq struct {
+	SerialNumber   string     `json:"serial_number" binding:"required"`
+	MaterialID     int64      `json:"material_id"`
+	MaterialCode   string     `json:"material_code"`
+	MaterialName   string     `json:"material_name"`
+	BatchNo        *string    `json:"batch_no"`
+	LineID         *int64     `json:"line_id"`
+	LineName       *string    `json:"line_name"`
+	OrderID        *int64     `json:"order_id"`
+	OrderNo        *string    `json:"order_no"`
+	ProductionDate *time.Time `json:"production_date"`
+	Status         int        `json:"status"`
+}

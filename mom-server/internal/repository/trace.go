@@ -54,3 +54,27 @@ func (r *TraceRepository) GetBackwardTrace(ctx context.Context, serialNumber str
 	err := r.db.WithContext(ctx).Where("serial_number = ?", serialNumber).Order("operate_time DESC").Find(&records).Error
 	return records, err
 }
+
+// ListSerial 获取序列号列表
+func (r *TraceRepository) ListSerial(ctx context.Context, tenantID int64, materialCode, status string, page, pageSize int) ([]model.SerialNumber, int64, error) {
+	var list []model.SerialNumber
+	query := r.db.WithContext(ctx).Model(&model.SerialNumber{}).Where("tenant_id = ?", tenantID)
+	if materialCode != "" {
+		query = query.Where("material_code LIKE ?", "%"+materialCode+"%")
+	}
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+	var total int64
+	err := query.Count(&total).Error
+	if err != nil {
+		return nil, 0, err
+	}
+	err = query.Offset((page - 1) * pageSize).Limit(pageSize).Order("id DESC").Find(&list).Error
+	return list, total, err
+}
+
+// CreateSerial 创建序列号
+func (r *TraceRepository) CreateSerial(ctx context.Context, sn *model.SerialNumber) error {
+	return r.db.WithContext(ctx).Create(sn).Error
+}

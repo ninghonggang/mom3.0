@@ -97,6 +97,7 @@ type Router struct {
 	electronicSOPHandler *production.ElectronicSOPHandler
 	codeRuleHandler    *production.CodeRuleHandler
 	flowCardHandler   *production.FlowCardHandler
+	costHandler       *production.CostHandler
 	noticeHandler     *system.NoticeHandler
 	printTemplateHandler *system.PrintTemplateHandler
 	capacityAnalysisHandler *aps.CapacityAnalysisHandler
@@ -254,6 +255,7 @@ func New(
 	electronicSOPHandler *production.ElectronicSOPHandler,
 	codeRuleHandler *production.CodeRuleHandler,
 	flowCardHandler *production.FlowCardHandler,
+	costHandler *production.CostHandler,
 	noticeHandler *system.NoticeHandler,
 	printTemplateHandler *system.PrintTemplateHandler,
 	capacityAnalysisHandler *aps.CapacityAnalysisHandler,
@@ -792,6 +794,15 @@ func (r *Router) Init(engine *gin.Engine) {
 			order.DELETE("/:id", r.productionOrderHandler.Delete)
 			order.PUT("/:id/start", r.productionOrderHandler.Start)
 			order.PUT("/:id/complete", r.productionOrderHandler.Complete)
+		}
+
+		// 生产成本
+		cost := protected.Group("/production/cost")
+		{
+			cost.GET("/list", r.costHandler.List)
+			cost.POST("", r.costHandler.Create)
+			cost.GET("/summary", r.costHandler.GetSummary)
+			cost.DELETE("/:id", r.costHandler.Delete)
 		}
 
 		// 人员技能矩阵
@@ -1412,6 +1423,8 @@ func (r *Router) Init(engine *gin.Engine) {
 		trace := protected.Group("/trace")
 		{
 			trace.GET("/serial", r.traceHandler.TraceBySerial)
+			trace.GET("/serial/list", r.traceHandler.ListSerial)
+			trace.POST("/serial", r.traceHandler.CreateSerial)
 			trace.GET("/batch", r.traceHandler.TraceByBatch)
 			trace.GET("/order/:id", r.traceHandler.TraceByOrder)
 			trace.GET("/forward", r.traceHandler.ForwardTrace)

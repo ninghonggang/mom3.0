@@ -45,6 +45,33 @@ func (s *TraceService) BackwardTrace(ctx context.Context, serialNumber string) (
 	return s.traceRepo.GetBackwardTrace(ctx, serialNumber)
 }
 
+// ListSerial 获取序列号列表
+func (s *TraceService) ListSerial(ctx context.Context, tenantID int64, materialCode, status string, page, pageSize int) ([]model.SerialNumber, int64, error) {
+	return s.traceRepo.ListSerial(ctx, tenantID, materialCode, status, page, pageSize)
+}
+
+// CreateSerial 创建序列号
+func (s *TraceService) CreateSerial(ctx context.Context, tenantID int64, req *model.SerialNumberCreateReq) (*model.SerialNumber, error) {
+	sn := &model.SerialNumber{
+		TenantID:       tenantID,
+		SerialNumber:   req.SerialNumber,
+		MaterialID:     req.MaterialID,
+		MaterialCode:   req.MaterialCode,
+		MaterialName:   req.MaterialName,
+		BatchNo:        req.BatchNo,
+		LineID:         req.LineID,
+		LineName:       req.LineName,
+		OrderID:        req.OrderID,
+		OrderNo:        req.OrderNo,
+		ProductionDate: req.ProductionDate,
+		Status:         req.Status,
+	}
+	if sn.Status == 0 {
+		sn.Status = 1 // 默认在制
+	}
+	return sn, s.traceRepo.CreateSerial(ctx, sn)
+}
+
 type EnergyService struct {
 	energyRepo *repository.EnergyRepository
 }

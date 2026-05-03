@@ -94,6 +94,48 @@ func (h *TraceHandler) BackwardTrace(c *gin.Context) {
 	response.Success(c, gin.H{"list": records})
 }
 
+// ListSerial 获取序列号列表
+// GET /trace/serial/list
+func (h *TraceHandler) ListSerial(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	if page < 1 {
+		page = 1
+	}
+	materialCode := c.Query("material_code")
+	status := c.Query("status")
+	list, total, err := h.traceSvc.ListSerial(c.Request.Context(), tenantID, materialCode, status, page, pageSize)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, gin.H{"list": list, "total": total, "page": page, "page_size": pageSize})
+}
+
+// CreateSerial 创建序列号
+// POST /trace/serial
+func (h *TraceHandler) CreateSerial(c *gin.Context) {
+	tenantID := middleware.GetTenantID(c)
+	if tenantID <= 0 {
+		tenantID = 1
+	}
+	var req model.SerialNumberCreateReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	sn, err := h.traceSvc.CreateSerial(c.Request.Context(), tenantID, &req)
+	if err != nil {
+		response.ErrorMsg(c, err.Error())
+		return
+	}
+	response.Success(c, sn)
+}
+
 type AndonHandler struct {
 	andonSvc *service.AndonService
 }
