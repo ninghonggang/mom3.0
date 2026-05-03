@@ -99,6 +99,7 @@ type Router struct {
 	flowCardHandler   *production.FlowCardHandler
 	costHandler       *production.CostHandler
 	noticeHandler     *system.NoticeHandler
+	factoryHandler   *system.FactoryHandler
 	printTemplateHandler *system.PrintTemplateHandler
 	capacityAnalysisHandler *aps.CapacityAnalysisHandler
 	deliveryRateHandler *aps.DeliveryRateHandler
@@ -257,6 +258,7 @@ func New(
 	flowCardHandler *production.FlowCardHandler,
 	costHandler *production.CostHandler,
 	noticeHandler *system.NoticeHandler,
+	factoryHandler *system.FactoryHandler,
 	printTemplateHandler *system.PrintTemplateHandler,
 	capacityAnalysisHandler *aps.CapacityAnalysisHandler,
 	deliveryRateHandler *aps.DeliveryRateHandler,
@@ -1906,6 +1908,19 @@ func (r *Router) Init(engine *gin.Engine) {
 			printTemplate.POST("", r.printTemplateHandler.Create)
 			printTemplate.PUT("/:id", r.printTemplateHandler.Update)
 			printTemplate.DELETE("/:id", r.printTemplateHandler.Delete)
+		}
+
+		// 工厂管理
+		factory := protected.Group("/system/factory")
+		{
+			factory.GET("/list", r.factoryHandler.List)
+			factory.GET("/:id", r.factoryHandler.Get)
+			factory.POST("", r.factoryHandler.Create)
+			factory.PUT("/:id", r.factoryHandler.Update)
+			factory.DELETE("/:id", r.factoryHandler.Delete)
+			factory.PUT("/default/:id", r.factoryHandler.SetDefault)
+			factory.GET("/current", r.factoryHandler.GetCurrentFactory)
+			factory.PUT("/current", r.factoryHandler.SetCurrentFactory)
 		}
 
 		// APS产能分析
