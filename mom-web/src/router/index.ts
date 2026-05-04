@@ -804,6 +804,88 @@ const routes: RouteRecordRaw[] = [
         name: 'ExecutionLogList',
         component: () => import('@/views/integration/ExecutionLogList.vue'),
         meta: { title: '执行日志', icon: 'List' }
+      },
+      // 供应商门户
+      {
+        path: 'supplier/asn',
+        name: 'ASNList',
+        component: () => import('@/views/supplier/ASNList.vue'),
+        meta: { title: 'ASN到货通知', icon: 'Bell' }
+      },
+      // 财务模块
+      {
+        path: 'fin/payment-request',
+        name: 'PaymentRequestList',
+        component: () => import('@/views/fin/PaymentRequestList.vue'),
+        meta: { title: '付款申请', icon: 'Money' }
+      },
+      {
+        path: 'fin/purchase-settlement',
+        name: 'PurchaseSettlementList',
+        component: () => import('@/views/fin/PurchaseSettlementList.vue'),
+        meta: { title: '采购结算', icon: 'Document' }
+      },
+      {
+        path: 'fin/sales-settlement',
+        name: 'SalesSettlementList',
+        component: () => import('@/views/fin/SalesSettlementList.vue'),
+        meta: { title: '销售结算', icon: 'DocumentCopy' }
+      },
+      // EAM模块
+      {
+        path: 'eam/factory',
+        name: 'FactoryList',
+        component: () => import('@/views/eam/FactoryList.vue'),
+        meta: { title: '厂区管理', icon: 'OfficeBuilding' }
+      },
+      {
+        path: 'eam/equipment-org',
+        name: 'EquipmentOrgList',
+        component: () => import('@/views/eam/EquipmentOrgList.vue'),
+        meta: { title: '设备层级', icon: 'Grid' }
+      },
+      {
+        path: 'eam/downtime',
+        name: 'DowntimeList',
+        component: () => import('@/views/eam/DowntimeList.vue'),
+        meta: { title: '停机记录', icon: 'Warning' }
+      },
+      // 模块首页
+      {
+        path: 'mes',
+        name: 'MesHome',
+        component: () => import('@/views/mes/MesHome.vue'),
+        meta: { title: 'MES作业', icon: 'Grid' }
+      },
+      {
+        path: 'eam',
+        name: 'EAMHome',
+        component: () => import('@/views/eam/EAMHome.vue'),
+        meta: { title: 'EAM资产管理', icon: 'Office' }
+      },
+      {
+        path: 'fin',
+        name: 'FinHome',
+        component: () => import('@/views/fin/FinHome.vue'),
+        meta: { title: '财务管理', icon: 'Money' }
+      },
+      {
+        path: 'integration',
+        name: 'IntegrationHome',
+        component: () => import('@/views/integration/IntegrationHome.vue'),
+        meta: { title: '集成管理', icon: 'Connection' }
+      },
+      {
+        path: 'agv',
+        name: 'AGVHome',
+        component: () => import('@/views/agv/AGVHome.vue'),
+        meta: { title: 'AGV管理', icon: 'Van' }
+      },
+      {
+        path: 'supplier',
+        name: 'SupplierHome',
+        component: () => import('@/views/supplier/SupplierHome.vue'),
+        meta: { title: '供应商门户', icon: 'Truck' }
       }
     ]
   },
