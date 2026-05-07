@@ -22,19 +22,15 @@ func NewEquipmentSpareService(spareRepo *repository.EquipmentSpareRepository, tx
 // Create 创建备件
 func (s *EquipmentSpareService) Create(tenantID int64, req *model.SpareCreateReq) error {
 	spare := &model.EquipmentSpare{
-		TenantID:      tenantID,
-		SpareCode:     req.SpareCode,
-		SpareName:     req.SpareName,
-		Category:      req.Category,
-		Specification: req.Specification,
-		Unit:          req.Unit,
-		Quantity:      req.Quantity,
-		MinQuantity:   req.MinQuantity,
-		MaxQuantity:   req.MaxQuantity,
-		Location:      req.Location,
-		UnitPrice:     req.UnitPrice,
-		Status:        "AVAILABLE",
-		Remark:        req.Remark,
+		TenantID:    tenantID,
+		SpareCode:   req.SpareCode,
+		SpareName:   req.SpareName,
+		Spec:        req.Spec,
+		Unit:        req.Unit,
+		Quantity:    req.Quantity,
+		MinQuantity: req.MinQuantity,
+		UnitPrice:   req.UnitPrice,
+		Status:      1, // AVAILABLE
 	}
 	return s.spareRepo.Create(spare)
 }
@@ -49,14 +45,10 @@ func (s *EquipmentSpareService) Update(tenantID int64, req *model.SpareUpdateReq
 		return nil
 	}
 	spare.SpareName = req.SpareName
-	spare.Category = req.Category
-	spare.Specification = req.Specification
+	spare.Spec = req.Spec
 	spare.Unit = req.Unit
 	spare.MinQuantity = req.MinQuantity
-	spare.MaxQuantity = req.MaxQuantity
-	spare.Location = req.Location
 	spare.UnitPrice = req.UnitPrice
-	spare.Remark = req.Remark
 	return s.spareRepo.Update(spare)
 }
 

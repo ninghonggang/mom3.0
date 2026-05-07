@@ -8,27 +8,22 @@ import (
 type EquipmentSpare struct {
 	ID            uint      `gorm:"primaryKey" json:"id"`
 	TenantID      int64     `gorm:"index;not null;default:1" json:"tenant_id"`
-	SpareCode     string    `gorm:"size:50;uniqueIndex" json:"spare_code"` // 备件编码
-	SpareName     string    `gorm:"size:200" json:"spare_name"`           // 备件名称
-	Category      string    `gorm:"size:50" json:"category"`              // 备件类别
-	Specification string    `gorm:"size:200" json:"specification"`       // 规格型号
-	Unit          string    `gorm:"size:20" json:"unit"`                 // 单位
-	Quantity      float64   `gorm:"default:0" json:"quantity"`           // 当前库存
-	MinQuantity   float64   `gorm:"default:0" json:"min_quantity"`      // 最小库存
-	MaxQuantity   float64   `gorm:"default:0" json:"max_quantity"`      // 最大库存
-	Location      string    `gorm:"size:200" json:"location"`            // 存放位置
-	UnitPrice     float64   `json:"unit_price"`                          // 单价
-	Status        string    `gorm:"size:20;default:'AVAILABLE'" json:"status"` // AVAILABLE/RESERVED/USED/SCRAPPED
-	Remark        string    `gorm:"type:text" json:"remark"`             // 备注
-	CreatedBy     string    `gorm:"size:100" json:"created_by"`
-	UpdatedBy     string    `gorm:"size:100" json:"updated_by"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	SpareCode     string    `gorm:"column:spare_part_code;size:50;uniqueIndex:idx_tenant_spare" json:"spare_code"`    // 备件编码
+	SpareName     string    `gorm:"column:spare_part_name;size:100" json:"spare_name"`                              // 备件名称
+	Spec          string    `gorm:"column:spec;size:100" json:"spec"`                                               // 规格型号
+	Unit          string    `gorm:"column:unit;size:20" json:"unit"`                                                 // 单位
+	Quantity      float64   `gorm:"column:quantity;type:decimal(18,2);default:0" json:"quantity"`                   // 当前库存
+	MinQuantity   float64   `gorm:"column:min_quantity;type:decimal(18,2)" json:"min_quantity"`                      // 最小库存
+	UnitPrice     float64   `gorm:"column:price;type:decimal(18,2)" json:"unit_price"`                              // 单价
+	Supplier      string    `gorm:"column:supplier;size:100" json:"supplier"`                                        // 供应商
+	Status        int       `gorm:"column:status;default:1" json:"status"`                                           // 状态
+	CreatedAt     time.Time `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt     time.Time `gorm:"column:updated_at" json:"updated_at"`
 }
 
 // TableName 表名
 func (EquipmentSpare) TableName() string {
-	return "eam_spare"
+	return "equ_spare_part"
 }
 
 // EquipmentSpareTransaction 备件事务
@@ -55,31 +50,23 @@ func (EquipmentSpareTransaction) TableName() string {
 
 // SpareCreateReq 备件创建请求
 type SpareCreateReq struct {
-	SpareCode     string  `json:"spare_code" binding:"required"`
-	SpareName     string  `json:"spare_name" binding:"required"`
-	Category      string  `json:"category"`
-	Specification string  `json:"specification"`
-	Unit          string  `json:"unit"`
-	Quantity      float64 `json:"quantity"`
-	MinQuantity   float64 `json:"min_quantity"`
-	MaxQuantity   float64 `json:"max_quantity"`
-	Location      string  `json:"location"`
-	UnitPrice     float64 `json:"unit_price"`
-	Remark        string  `json:"remark"`
+	SpareCode    string  `json:"spare_code" binding:"required"`
+	SpareName    string  `json:"spare_name" binding:"required"`
+	Spec         string  `json:"spec"`
+	Unit         string  `json:"unit"`
+	Quantity     float64 `json:"quantity"`
+	MinQuantity  float64 `json:"min_quantity"`
+	UnitPrice    float64 `json:"unit_price"`
 }
 
 // SpareUpdateReq 备件更新请求
 type SpareUpdateReq struct {
-	ID            uint    `json:"id" binding:"required"`
-	SpareName     string  `json:"spare_name"`
-	Category      string  `json:"category"`
-	Specification string  `json:"specification"`
-	Unit          string  `json:"unit"`
-	MinQuantity   float64 `json:"min_quantity"`
-	MaxQuantity   float64 `json:"max_quantity"`
-	Location      string  `json:"location"`
-	UnitPrice     float64 `json:"unit_price"`
-	Remark        string  `json:"remark"`
+	ID           uint    `json:"id" binding:"required"`
+	SpareName    string  `json:"spare_name"`
+	Spec         string  `json:"spec"`
+	Unit         string  `json:"unit"`
+	MinQuantity  float64 `json:"min_quantity"`
+	UnitPrice    float64 `json:"unit_price"`
 }
 
 // SpareTransactionReq 备件事务请求

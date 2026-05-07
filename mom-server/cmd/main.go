@@ -332,6 +332,8 @@ func main() {
 		&model.Contact{},
 		&model.BankAccount{},
 		&model.Attachment{},
+		&model.MdmFactory{},
+		&model.TenantFactory{},
 	)
 
 	// 第7批：质量管理表
