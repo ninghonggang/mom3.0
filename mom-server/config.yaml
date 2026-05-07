@@ -12,7 +12,7 @@ database:
   port: 5432
   user: "momadmin"
   password: "mom123456"
-  dbname: "mom3_db"
+  dbname: "mom3.0"
   sslmode: "disable"
 
 redis:

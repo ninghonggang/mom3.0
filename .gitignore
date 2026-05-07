@@ -38,3 +38,4 @@ mom-server/.omc/
 
 # Zone.Identifier (Windows junk)
 *:Zone.Identifier
+.gstack/

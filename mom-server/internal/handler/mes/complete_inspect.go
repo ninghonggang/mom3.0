@@ -1,12 +1,12 @@
 package mes
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"mom-server/internal/middleware"
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
 )
 
@@ -28,11 +28,11 @@ func (h *CompleteInspectHandler) GetConfig(c *gin.Context) {
 
 	config, err := h.completeInspectSvc.GetConfig(c.Request.Context(), paramCode)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": config})
+	response.Success(c, config)
 }
 
 // GetOrderDayBom POST /mes/complete-inspect/get-orderDay-bom - 获取日计划Bom信息
@@ -41,17 +41,17 @@ func (h *CompleteInspectHandler) GetOrderDayBom(c *gin.Context) {
 
 	var req model.MesWorkSchedulingBaseVO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	list, err := h.completeInspectSvc.GetOrderDayBom(c.Request.Context(), tenantID, &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": list})
+	response.Success(c, list)
 }
 
 // GetOrderDayBomPage POST /mes/complete-inspect/get-orderDay-bom-page - 获取日计划Bom信息(分页)
@@ -60,7 +60,7 @@ func (h *CompleteInspectHandler) GetOrderDayBomPage(c *gin.Context) {
 
 	var req model.MesWorkSchedulingPageReqVO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
@@ -73,15 +73,11 @@ func (h *CompleteInspectHandler) GetOrderDayBomPage(c *gin.Context) {
 
 	list, total, err := h.completeInspectSvc.GetOrderDayBomPage(c.Request.Context(), tenantID, &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": list,
-		"meta": gin.H{"total": total, "page": req.Page, "page_size": req.PageSize},
-	})
+	response.PageSuccess(c, list, total, int(req.Page), int(req.PageSize))
 }
 
 // GetOrderDayWorkerPage POST /mes/complete-inspect/get-orderDay-worker-page - 获取日计划Worker信息(分页)
@@ -90,7 +86,7 @@ func (h *CompleteInspectHandler) GetOrderDayWorkerPage(c *gin.Context) {
 
 	var req model.MesWorkSchedulingPageReqVO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
@@ -103,15 +99,11 @@ func (h *CompleteInspectHandler) GetOrderDayWorkerPage(c *gin.Context) {
 
 	list, total, err := h.completeInspectSvc.GetOrderDayWorkerPage(c.Request.Context(), tenantID, &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": list,
-		"meta": gin.H{"total": total, "page": req.Page, "page_size": req.PageSize},
-	})
+	response.PageSuccess(c, list, total, int(req.Page), int(req.PageSize))
 }
 
 // GetOrderDayEquipmentPage POST /mes/complete-inspect/get-orderDay-equipment-page - 获取日计划Equipment信息(分页)
@@ -120,7 +112,7 @@ func (h *CompleteInspectHandler) GetOrderDayEquipmentPage(c *gin.Context) {
 
 	var req model.MesWorkSchedulingPageReqVO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
@@ -133,15 +125,11 @@ func (h *CompleteInspectHandler) GetOrderDayEquipmentPage(c *gin.Context) {
 
 	list, total, err := h.completeInspectSvc.GetOrderDayEquipmentPage(c.Request.Context(), tenantID, &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": list,
-		"meta": gin.H{"total": total, "page": req.Page, "page_size": req.PageSize},
-	})
+	response.PageSuccess(c, list, total, int(req.Page), int(req.PageSize))
 }
 
 // GetOrderDayEquipment POST /mes/complete-inspect/get-orderDay-equipment - 获取日计划设备信息
@@ -150,17 +138,17 @@ func (h *CompleteInspectHandler) GetOrderDayEquipment(c *gin.Context) {
 
 	var req model.MesWorkSchedulingBaseVO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	list, err := h.completeInspectSvc.GetOrderDayEquipment(c.Request.Context(), tenantID, &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": list})
+	response.Success(c, list)
 }
 
 // GetOrderDayWorker POST /mes/complete-inspect/get-orderDay-worker - 获取日计划人员信息
@@ -169,17 +157,17 @@ func (h *CompleteInspectHandler) GetOrderDayWorker(c *gin.Context) {
 
 	var req model.MesWorkSchedulingBaseVO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	list, err := h.completeInspectSvc.GetOrderDayWorker(c.Request.Context(), tenantID, &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": list})
+	response.Success(c, list)
 }
 
 // Update POST /mes/complete-inspect/update - 更新生产日工单
@@ -189,7 +177,7 @@ func (h *CompleteInspectHandler) Update(c *gin.Context) {
 
 	var req model.CompleteInspectUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
@@ -200,16 +188,16 @@ func (h *CompleteInspectHandler) Update(c *gin.Context) {
 	}
 
 	if orderDayID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "order_day_id is required"})
+		response.BadRequest(c, "order_day_id is required")
 		return
 	}
 
 	req.OrderDayID = orderDayID
 
 	if err := h.completeInspectSvc.Update(c.Request.Context(), tenantID, &req, username); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "更新成功"})
+	response.SuccessWithMsg(c, "更新成功", nil)
 }

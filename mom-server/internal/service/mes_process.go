@@ -7,6 +7,8 @@ import (
 
 	"mom-server/internal/model"
 	"mom-server/internal/repository"
+
+	"gorm.io/gorm"
 )
 
 // MesProcessService 工艺路线服务
@@ -28,6 +30,9 @@ func (s *MesProcessService) List(ctx context.Context, tenantID int64, query map[
 func (s *MesProcessService) GetByID(ctx context.Context, id uint) (*model.MesProcess, error) {
 	process, err := s.processRepo.GetByID(ctx, id)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("工艺路线不存在")
+		}
 		return nil, err
 	}
 	// 加载工序明细

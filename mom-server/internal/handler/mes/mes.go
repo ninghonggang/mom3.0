@@ -2,12 +2,12 @@ package mes
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"mom-server/internal/middleware"
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
 )
 
@@ -46,32 +46,28 @@ func (h *MesHandler) ListMonthPlans(c *gin.Context) {
 
 	list, total, err := h.orderMonthSvc.List(c.Request.Context(), tenantID, query)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": list,
-		"meta": gin.H{"total": total, "page": query["page"], "limit": query["limit"]},
-	})
+	response.PageSuccess(c, list, total, query["page"].(int), query["limit"].(int))
 }
 
 // GetMonthPlan GET /month-plans/:id
 func (h *MesHandler) GetMonthPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	order, err := h.orderMonthSvc.Get(c.Request.Context(), int64(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": order})
+	response.Success(c, order)
 }
 
 // CreateMonthPlan POST /month-plans
@@ -81,24 +77,24 @@ func (h *MesHandler) CreateMonthPlan(c *gin.Context) {
 
 	var req model.OrderMonthCreate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	order, err := h.orderMonthSvc.Create(c.Request.Context(), tenantID, &req, username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": order})
+	response.Success(c, order)
 }
 
 // UpdateMonthPlan PUT /month-plans/:id
 func (h *MesHandler) UpdateMonthPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
@@ -106,33 +102,33 @@ func (h *MesHandler) UpdateMonthPlan(c *gin.Context) {
 
 	var req model.OrderMonthUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	order, err := h.orderMonthSvc.Update(c.Request.Context(), int64(id), &req, username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": order})
+	response.Success(c, order)
 }
 
 // DeleteMonthPlan DELETE /month-plans/:id
 func (h *MesHandler) DeleteMonthPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	if err := h.orderMonthSvc.Delete(c.Request.Context(), int64(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除成功"})
+	response.SuccessWithMsg(c, "删除成功", nil)
 }
 
 // ========== 月计划状态操作 ==========
@@ -141,7 +137,7 @@ func (h *MesHandler) DeleteMonthPlan(c *gin.Context) {
 func (h *MesHandler) SubmitMonthPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
@@ -149,18 +145,18 @@ func (h *MesHandler) SubmitMonthPlan(c *gin.Context) {
 	username := middleware.GetUsername(c)
 
 	if err := h.orderMonthSvc.Submit(c.Request.Context(), int64(id), userID, username); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "提交成功"})
+	response.SuccessWithMsg(c, "提交成功", nil)
 }
 
 // ApproveMonthPlan POST /month-plans/:id/approve
 func (h *MesHandler) ApproveMonthPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
@@ -173,18 +169,18 @@ func (h *MesHandler) ApproveMonthPlan(c *gin.Context) {
 	c.ShouldBindJSON(&req)
 
 	if err := h.orderMonthSvc.Approve(c.Request.Context(), int64(id), userID, username, req.Comment); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "审核成功"})
+	response.SuccessWithMsg(c, "审核成功", nil)
 }
 
 // ReleaseMonthPlan POST /month-plans/:id/release
 func (h *MesHandler) ReleaseMonthPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
@@ -192,18 +188,18 @@ func (h *MesHandler) ReleaseMonthPlan(c *gin.Context) {
 	username := middleware.GetUsername(c)
 
 	if err := h.orderMonthSvc.Release(c.Request.Context(), int64(id), userID, username); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "下达成功"})
+	response.SuccessWithMsg(c, "下达成功", nil)
 }
 
 // CloseMonthPlan POST /month-plans/:id/close
 func (h *MesHandler) CloseMonthPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
@@ -211,18 +207,18 @@ func (h *MesHandler) CloseMonthPlan(c *gin.Context) {
 	username := middleware.GetUsername(c)
 
 	if err := h.orderMonthSvc.Close(c.Request.Context(), int64(id), userID, username); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "关闭成功"})
+	response.SuccessWithMsg(c, "关闭成功", nil)
 }
 
 // CancelMonthPlan POST /month-plans/:id/cancel
 func (h *MesHandler) CancelMonthPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
@@ -235,28 +231,28 @@ func (h *MesHandler) CancelMonthPlan(c *gin.Context) {
 	c.ShouldBindJSON(&req)
 
 	if err := h.orderMonthSvc.Cancel(c.Request.Context(), int64(id), userID, username, req.Comment); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "取消成功"})
+	response.SuccessWithMsg(c, "取消成功", nil)
 }
 
 // GetMonthPlanAudits GET /month-plans/:id/audits
 func (h *MesHandler) GetMonthPlanAudits(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	audits, err := h.orderMonthSvc.GetAudits(c.Request.Context(), int64(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": audits})
+	response.Success(c, audits)
 }
 
 // ========== 日计划 CRUD ==========
@@ -290,31 +286,27 @@ func (h *MesHandler) ListDayPlans(c *gin.Context) {
 
 	list, total, err := h.orderDaySvc.List(c.Request.Context(), tenantID, query)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": list,
-		"meta": gin.H{"total": total, "page": query["page"], "limit": query["limit"]},
-	})
+	response.PageSuccess(c, list, total, query["page"].(int), query["limit"].(int))
 }
 
 // GetDayPlan GET /day-plans/:id
 func (h *MesHandler) GetDayPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	order, err := h.orderDaySvc.Get(c.Request.Context(), int64(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": order})
+	response.Success(c, order)
 }
 
 // CreateDayPlan POST /day-plans
@@ -324,24 +316,24 @@ func (h *MesHandler) CreateDayPlan(c *gin.Context) {
 
 	var req model.OrderDayCreate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	order, err := h.orderDaySvc.Create(c.Request.Context(), tenantID, &req, username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": order})
+	response.Success(c, order)
 }
 
 // UpdateDayPlan PUT /day-plans/:id
 func (h *MesHandler) UpdateDayPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
@@ -349,33 +341,33 @@ func (h *MesHandler) UpdateDayPlan(c *gin.Context) {
 
 	var req model.OrderDayUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	order, err := h.orderDaySvc.Update(c.Request.Context(), int64(id), &req, username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": order})
+	response.Success(c, order)
 }
 
 // DeleteDayPlan DELETE /day-plans/:id
 func (h *MesHandler) DeleteDayPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	if err := h.orderDaySvc.Delete(c.Request.Context(), int64(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除成功"})
+	response.SuccessWithMsg(c, "删除成功", nil)
 }
 
 // ========== 日计划状态操作 ==========
@@ -384,7 +376,7 @@ func (h *MesHandler) DeleteDayPlan(c *gin.Context) {
 func (h *MesHandler) PublishDayPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
@@ -392,34 +384,34 @@ func (h *MesHandler) PublishDayPlan(c *gin.Context) {
 	username := middleware.GetUsername(c)
 
 	if err := h.orderDaySvc.Publish(c.Request.Context(), int64(id), userID, username); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "发布成功"})
+	response.SuccessWithMsg(c, "发布成功", nil)
 }
 
 // CompleteDayPlan POST /day-plans/:id/complete
 func (h *MesHandler) CompleteDayPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	if err := h.orderDaySvc.Complete(c.Request.Context(), int64(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "完成成功"})
+	response.SuccessWithMsg(c, "完成成功", nil)
 }
 
 // TerminateDayPlan POST /day-plans/:id/terminate
 func (h *MesHandler) TerminateDayPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
@@ -427,36 +419,36 @@ func (h *MesHandler) TerminateDayPlan(c *gin.Context) {
 	username := middleware.GetUsername(c)
 
 	if err := h.orderDaySvc.Terminate(c.Request.Context(), int64(id), userID, username); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "终止成功"})
+	response.SuccessWithMsg(c, "终止成功", nil)
 }
 
 // KitCheckDayPlan POST /day-plans/:id/kit-check
 func (h *MesHandler) KitCheckDayPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	userID := middleware.GetUserID(c)
 
 	if err := h.orderDaySvc.KitCheck(c.Request.Context(), int64(id), userID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "齐套检查完成"})
+	response.SuccessWithMsg(c, "齐套检查完成", nil)
 }
 
 // DecomposeMonthPlan POST /month-plans/:id/decompose
 func (h *MesHandler) DecomposeMonthPlan(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
@@ -464,26 +456,26 @@ func (h *MesHandler) DecomposeMonthPlan(c *gin.Context) {
 
 	days, err := h.orderMonthSvc.Decompose(c.Request.Context(), int64(id), username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": days, "message": fmt.Sprintf("成功分解到 %d 个日计划", len(days))})
+	response.SuccessWithMsg(c, fmt.Sprintf("成功分解到 %d 个日计划", len(days)), days)
 }
 
 // GetDayPlansByMonth GET /month-plans/:id/day-plans
 func (h *MesHandler) GetDayPlansByMonth(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	days, err := h.orderDaySvc.GetByMonthPlanID(c.Request.Context(), int64(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": days, "meta": gin.H{"total": len(days)}})
+	response.Success(c, gin.H{"list": days, "total": len(days)})
 }

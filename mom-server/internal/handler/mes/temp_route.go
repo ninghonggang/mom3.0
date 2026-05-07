@@ -1,12 +1,12 @@
 package mes
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"mom-server/internal/middleware"
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
 )
 
@@ -26,17 +26,17 @@ func (h *TempRouteHandler) Create(c *gin.Context) {
 
 	var req model.TempRouteCreate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	tempRoute, err := h.tempRouteSvc.Create(c.Request.Context(), tenantID, &req, username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": tempRoute})
+	response.Success(c, tempRoute)
 }
 
 // Update PUT /mes/orderday/temp-route/update
@@ -45,73 +45,73 @@ func (h *TempRouteHandler) Update(c *gin.Context) {
 
 	var req model.TempRouteUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	id, err := strconv.ParseInt(c.Query("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	tempRoute, err := h.tempRouteSvc.Update(c.Request.Context(), id, &req, username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": tempRoute})
+	response.Success(c, tempRoute)
 }
 
 // Delete DELETE /mes/orderday/temp-route/:id
 func (h *TempRouteHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	if err := h.tempRouteSvc.Delete(c.Request.Context(), int64(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除成功"})
+	response.SuccessWithMsg(c, "删除成功", nil)
 }
 
 // ListByOrderDay GET /mes/orderday/temp-route/listByOrderDay?orderDayId=
 func (h *TempRouteHandler) ListByOrderDay(c *gin.Context) {
 	orderDayID, err := strconv.ParseInt(c.Query("orderDayId"), 10, 64)
 	if err != nil || orderDayID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的日计划ID"})
+		response.BadRequest(c, "无效的日计划ID")
 		return
 	}
 
 	list, err := h.tempRouteSvc.ListByOrderDayID(c.Request.Context(), orderDayID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": list, "meta": gin.H{"total": len(list)}})
+	response.Success(c, gin.H{"list": list, "total": len(list)})
 }
 
 // Get GET /mes/orderday/temp-route/:id
 func (h *TempRouteHandler) Get(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	tempRoute, err := h.tempRouteSvc.GetByID(c.Request.Context(), int64(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": tempRoute})
+	response.Success(c, tempRoute)
 }
 
 // Approve PUT /mes/orderday/temp-route/approve
@@ -120,14 +120,14 @@ func (h *TempRouteHandler) Approve(c *gin.Context) {
 
 	var req model.TempRouteApprove
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.tempRouteSvc.Approve(c.Request.Context(), req.ID, req.Status, username); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "审核成功"})
+	response.SuccessWithMsg(c, "审核成功", nil)
 }

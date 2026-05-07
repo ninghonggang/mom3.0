@@ -161,7 +161,7 @@
       <el-form :model="vendorForm" label-width="100px">
         <el-form-item label="供应商" required>
           <el-select v-model="vendorForm.vendor_id" placeholder="请选择供应商" style="width: 100%">
-            <el-option v-for="v in supplierList" :key="v.id" :label="v.supplier_name" :value="v.id" />
+            <el-option v-for="v in supplierList" :key="v.id" :label="v.name" :value="v.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="仓库" required>
@@ -247,8 +247,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getVmiVendorList, createVmiVendor, updateVmiVendor, deleteVmiVendor, getVmiMaterialList, getVmiTransactionList, consumeVmi, replenishVmi } from '@/api/vmi'
-import { getSupplierList } from '@/api/supplier'
-import { getWarehouseList } from '@/api/warehouse'
+import { getSupplierList } from '@/api/scp'
+import { getWarehouseList } from '@/api/wms'
 
 const activeTab = ref('vendor')
 

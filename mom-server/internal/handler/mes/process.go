@@ -1,12 +1,12 @@
 package mes
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"mom-server/internal/middleware"
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
 )
 
@@ -42,32 +42,28 @@ func (h *ProcessHandler) List(c *gin.Context) {
 
 	list, total, err := h.processSvc.List(c.Request.Context(), tenantID, query)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": list,
-		"meta": gin.H{"total": total, "page": query["page"], "limit": query["limit"]},
-	})
+	response.Success(c, gin.H{"list": list, "total": total, "page": query["page"], "page_size": query["limit"]})
 }
 
 // Get 获取工艺路线详情
 func (h *ProcessHandler) Get(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	process, err := h.processSvc.GetByID(c.Request.Context(), uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": process})
+	response.Success(c, process)
 }
 
 // GetByMaterial 获取产品的有效工艺路线
@@ -75,17 +71,17 @@ func (h *ProcessHandler) GetByMaterial(c *gin.Context) {
 	tenantID := middleware.GetTenantID(c)
 	materialID, err := strconv.ParseInt(c.Query("material_id"), 10, 64)
 	if err != nil || materialID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的物料ID"})
+		response.BadRequest(c, "无效的物料ID")
 		return
 	}
 
 	list, err := h.processSvc.GetByMaterialID(c.Request.Context(), tenantID, materialID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": list})
+	response.Success(c, gin.H{"list": list})
 }
 
 // Create 创建工艺路线
@@ -94,63 +90,63 @@ func (h *ProcessHandler) Create(c *gin.Context) {
 
 	var req model.MesProcessCreate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	process, err := h.processSvc.Create(c.Request.Context(), tenantID, &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": process})
+	response.Success(c, process)
 }
 
 // Update 更新工艺路线
 func (h *ProcessHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	var req model.MesProcessUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	process, err := h.processSvc.Update(c.Request.Context(), uint(id), &req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": process})
+	response.Success(c, process)
 }
 
 // Delete 删除工艺路线
 func (h *ProcessHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	if err := h.processSvc.Delete(c.Request.Context(), uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除成功"})
+	response.Success(c, gin.H{"message": "删除成功"})
 }
 
 // UpdateStatus 更新状态
 func (h *ProcessHandler) UpdateStatus(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
@@ -158,47 +154,47 @@ func (h *ProcessHandler) UpdateStatus(c *gin.Context) {
 		Status string `json:"status" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.processSvc.UpdateStatus(c.Request.Context(), uint(id), req.Status); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "状态更新成功"})
+	response.Success(c, gin.H{"message": "状态更新成功"})
 }
 
 // Copy 复制工艺路线
 func (h *ProcessHandler) Copy(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	process, err := h.processSvc.Copy(c.Request.Context(), uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": process})
+	response.Success(c, process)
 }
 
 // Validate 验证工艺路线
 func (h *ProcessHandler) Validate(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	if err := h.processSvc.ValidateProcess(c.Request.Context(), uint(id)); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "验证通过"})
+	response.Success(c, gin.H{"message": "验证通过"})
 }

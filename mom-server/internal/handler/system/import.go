@@ -2,7 +2,6 @@ package system
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -122,7 +121,7 @@ func (h *ImportHandler) DownloadTemplate(c *gin.Context) {
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", "物料导入模板.xlsx"))
 
 	if err := f.Write(c.Writer); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to write template"})
+		response.ErrorMsg(c, "Failed to write template")
 	}
 }
 

@@ -1,13 +1,13 @@
 package eam
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 
 	"mom-server/internal/middleware"
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
 )
 
@@ -54,19 +54,11 @@ func (h *SpareHandler) List(c *gin.Context) {
 
 	spares, total, err := h.svc.ListPage(tenantID, query, page, pageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取备件列表失败"})
+		response.ErrorMsg(c, "获取备件列表失败")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"message": "success",
-		"data": gin.H{
-			"list":  spares,
-			"total": total,
-			"page":  page,
-		},
-	})
+	response.PageSuccess(c, spares, total, page, pageSize)
 }
 
 // Get 获取备件详情
@@ -83,25 +75,21 @@ func (h *SpareHandler) Get(c *gin.Context) {
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	spare, err := h.svc.GetByID(tenantID, uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取备件失败"})
+		response.ErrorMsg(c, "获取备件失败")
 		return
 	}
 	if spare == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "备件不存在"})
+		response.NotFound(c, "备件不存在")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"message": "success",
-		"data": spare,
-	})
+	response.Success(c, spare)
 }
 
 // Create 创建备件
@@ -118,19 +106,16 @@ func (h *SpareHandler) Create(c *gin.Context) {
 
 	var req model.SpareCreateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		response.BadRequest(c, "参数错误")
 		return
 	}
 
 	if err := h.svc.Create(tenantID, &req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建备件失败"})
+		response.ErrorMsg(c, "创建备件失败")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"message": "success",
-	})
+	response.SuccessWithMsg(c, "success", nil)
 }
 
 // Update 更新备件
@@ -147,19 +132,16 @@ func (h *SpareHandler) Update(c *gin.Context) {
 
 	var req model.SpareUpdateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		response.BadRequest(c, "参数错误")
 		return
 	}
 
 	if err := h.svc.Update(tenantID, &req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新备件失败"})
+		response.ErrorMsg(c, "更新备件失败")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"message": "success",
-	})
+	response.SuccessWithMsg(c, "success", nil)
 }
 
 // Delete 删除备件
@@ -176,19 +158,16 @@ func (h *SpareHandler) Delete(c *gin.Context) {
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	if err := h.svc.Delete(tenantID, uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除备件失败"})
+		response.ErrorMsg(c, "删除备件失败")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"message": "success",
-	})
+	response.SuccessWithMsg(c, "success", nil)
 }
 
 // Input 备件入库
@@ -205,7 +184,7 @@ func (h *SpareHandler) Input(c *gin.Context) {
 
 	var req model.SpareTransactionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		response.BadRequest(c, "参数错误")
 		return
 	}
 
@@ -213,14 +192,11 @@ func (h *SpareHandler) Input(c *gin.Context) {
 	handlerName := ""
 
 	if err := h.svc.In(tenantID, handlerID, handlerName, &req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "入库失败"})
+		response.ErrorMsg(c, "入库失败")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"message": "success",
-	})
+	response.SuccessWithMsg(c, "success", nil)
 }
 
 // Output 备件出库
@@ -237,7 +213,7 @@ func (h *SpareHandler) Output(c *gin.Context) {
 
 	var req model.SpareTransactionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		response.BadRequest(c, "参数错误")
 		return
 	}
 
@@ -245,14 +221,11 @@ func (h *SpareHandler) Output(c *gin.Context) {
 	handlerName := ""
 
 	if err := h.svc.Out(tenantID, handlerID, handlerName, &req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "出库失败"})
+		response.ErrorMsg(c, "出库失败")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"message": "success",
-	})
+	response.SuccessWithMsg(c, "success", nil)
 }
 
 // Transactions 获取事务记录
@@ -269,19 +242,15 @@ func (h *SpareHandler) Transactions(c *gin.Context) {
 
 	spareID, err := strconv.ParseUint(c.Query("spare_id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的备件ID"})
+		response.BadRequest(c, "无效的备件ID")
 		return
 	}
 
 	txs, err := h.svc.GetTransactions(tenantID, uint(spareID))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取事务记录失败"})
+		response.ErrorMsg(c, "获取事务记录失败")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 200,
-		"message": "success",
-		"data": txs,
-	})
+	response.Success(c, txs)
 }

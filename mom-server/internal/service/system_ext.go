@@ -2,8 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
+
 	"mom-server/internal/model"
 	"mom-server/internal/repository"
+
+	"gorm.io/gorm"
 )
 
 type PrintTemplateService struct {
@@ -50,7 +54,14 @@ func (s *NoticeService) List(ctx context.Context, query string) ([]model.Notice,
 }
 
 func (s *NoticeService) GetByID(ctx context.Context, id uint) (*model.Notice, error) {
-	return s.repo.GetByID(ctx, id)
+	notice, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("通知公告不存在")
+		}
+		return nil, err
+	}
+	return notice, nil
 }
 
 func (s *NoticeService) Create(ctx context.Context, n *model.Notice) error {

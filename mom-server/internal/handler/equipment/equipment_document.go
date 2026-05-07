@@ -1,12 +1,12 @@
 package equipment
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"mom-server/internal/middleware"
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
 )
 
@@ -37,25 +37,25 @@ func (h *EquipmentDocumentHandler) List(c *gin.Context) {
 
 	list, total, err := h.svc.List(c.Request.Context(), tenantID, query)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": list, "total": total})
+	response.Success(c, gin.H{"list": list, "total": total})
 }
 
 func (h *EquipmentDocumentHandler) Get(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	doc, err := h.svc.GetByID(c.Request.Context(), uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": doc})
+	response.Success(c, doc)
 }
 
 func (h *EquipmentDocumentHandler) Create(c *gin.Context) {
@@ -63,63 +63,63 @@ func (h *EquipmentDocumentHandler) Create(c *gin.Context) {
 	username := middleware.GetUsername(c)
 	var req model.EquipmentDocumentCreate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	doc, err := h.svc.Create(c.Request.Context(), tenantID, &req, username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": doc})
+	response.Success(c, doc)
 }
 
 func (h *EquipmentDocumentHandler) Update(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	var req model.EquipmentDocumentUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.svc.Update(c.Request.Context(), uint(id), &req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "更新成功"})
+	response.SuccessWithMsg(c, "更新成功", nil)
 }
 
 func (h *EquipmentDocumentHandler) Delete(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	if err := h.svc.Delete(c.Request.Context(), uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除成功"})
+	response.SuccessWithMsg(c, "删除成功", nil)
 }
 
 func (h *EquipmentDocumentHandler) ListByEquipment(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("equipment_id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的设备ID"})
+		response.BadRequest(c, "无效的设备ID")
 		return
 	}
 
 	list, err := h.svc.ListByEquipmentID(c.Request.Context(), int64(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": list})
+	response.Success(c, list)
 }

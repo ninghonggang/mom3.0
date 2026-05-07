@@ -585,6 +585,16 @@ func main() {
 		&model.ScpQadSyncLog{},
 	)
 
+	// 第47批：IDOC接口表 + 移动报工表
+	log.Println("迁移第47批：IDOC接口表+移动报工表")
+	migrateBatch(db, "第47批-IDOC接口表",
+		&model.IdocRecord{},
+		&model.IdocTypeConfig{},
+	)
+	migrateBatch(db, "第47批-移动报工表",
+		&model.MobileJobReport{},
+	)
+
 	// 初始化JWT
 	jwtUtil := jwt.New(&cfg.Server.JWT)
 

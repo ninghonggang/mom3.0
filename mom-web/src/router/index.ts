@@ -330,6 +330,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/wms/DeliveryOrderList.vue'),
         meta: { title: '发货单', icon: 'Upload' }
       },
+      {
+        path: 'wms/vmi',
+        name: 'VmiList',
+        component: () => import('@/views/wms/VmiList.vue'),
+        meta: { title: 'VMI管理', icon: 'Box' }
+      },
       // 质量管理
       {
         path: 'quality/iqc',
@@ -473,6 +479,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/scp/CustomerInquiryList.vue'),
         meta: { title: '客户询价', icon: 'Message' }
       },
+      {
+        path: 'scp/customer-credit',
+        name: 'CustomerCreditList',
+        component: () => import('@/views/scp/CustomerCreditList.vue'),
+        meta: { title: '客户信用', icon: 'CreditCard' }
+      },
       // 统一告警
       {
         path: 'alert/rules',
@@ -591,6 +603,12 @@ const routes: RouteRecordRaw[] = [
         name: 'DynamicRuleList',
         component: () => import('@/views/quality/DynamicRuleList.vue'),
         meta: { title: '动态规则', icon: 'Setting' }
+      },
+      {
+        path: 'quality/certificate',
+        name: 'QualityCertificateList',
+        component: () => import('@/views/quality/QualityCertificateList.vue'),
+        meta: { title: '质量证书', icon: 'Document' }
       },
       {
         path: 'quality/aql',
@@ -773,6 +791,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/mes/MaterialTrace.vue'),
         meta: { title: '物料追溯', icon: 'Search' }
       },
+      {
+        path: 'mes/mobile-job-report',
+        name: 'MobileJobReportList',
+        component: () => import('@/views/mes/MobileJobReportList.vue'),
+        meta: { title: '移动报工', icon: 'Cellphone' }
+      },
       // AGV模块
       {
         path: 'agv/task',
@@ -804,6 +828,12 @@ const routes: RouteRecordRaw[] = [
         name: 'ExecutionLogList',
         component: () => import('@/views/integration/ExecutionLogList.vue'),
         meta: { title: '执行日志', icon: 'List' }
+      },
+      {
+        path: 'integration/idoc',
+        name: 'IdocList',
+        component: () => import('@/views/integration/IdocList.vue'),
+        meta: { title: 'IDOC管理', icon: 'Connection' }
       },
       // 供应商门户
       {

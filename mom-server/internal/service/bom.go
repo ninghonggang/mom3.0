@@ -9,6 +9,8 @@ import (
 	"mom-server/internal/dto"
 	"mom-server/internal/model"
 	"mom-server/internal/repository"
+
+	"gorm.io/gorm"
 )
 
 type BOMService struct {
@@ -25,13 +27,23 @@ func (s *BOMService) List(ctx context.Context) ([]model.MdmBOM, int64, error) {
 }
 
 func (s *BOMService) GetByID(ctx context.Context, id uint) (*model.MdmBOM, error) {
-	return s.bomRepo.GetByID(ctx, id)
+	bom, err := s.bomRepo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("BOM不存在")
+		}
+		return nil, err
+	}
+	return bom, nil
 }
 
 // GetWithItems 获取BOM及明细
 func (s *BOMService) GetWithItems(ctx context.Context, id uint) (*BOMWithItems, error) {
 	bom, err := s.bomRepo.GetByID(ctx, id)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("BOM不存在")
+		}
 		return nil, err
 	}
 	items, err := s.bomItemRepo.ListByBOMID(ctx, id)

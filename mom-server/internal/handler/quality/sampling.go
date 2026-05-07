@@ -1,12 +1,12 @@
 package quality
 
 import (
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"mom-server/internal/middleware"
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/response"
 	"mom-server/internal/service"
 )
 
@@ -26,55 +26,55 @@ func (h *QMSSamplingHandler) CreatePlan(c *gin.Context) {
 
 	var req model.QMSSamplingPlanCreateReqVO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	plan, err := h.svc.CreatePlan(c.Request.Context(), tenantID, &req, username)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": plan})
+	response.Success(c, plan)
 }
 
 // UpdatePlan PUT /qms/sampling/plan/update
 func (h *QMSSamplingHandler) UpdatePlan(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	var req model.QMSSamplingPlanUpdateReqVO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.svc.UpdatePlan(c.Request.Context(), id, &req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "更新成功"})
+	response.SuccessWithMsg(c, "更新成功", nil)
 }
 
 // DeletePlan DELETE /qms/sampling/plan/:id
 func (h *QMSSamplingHandler) DeletePlan(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	if err := h.svc.DeletePlan(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "删除成功"})
+	response.SuccessWithMsg(c, "删除成功", nil)
 }
 
 // ListPlan GET /qms/sampling/plan/list
@@ -95,67 +95,63 @@ func (h *QMSSamplingHandler) ListPlan(c *gin.Context) {
 
 	list, total, err := h.svc.ListPlan(c.Request.Context(), tenantID, query)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": list,
-		"meta": gin.H{"total": total, "page": query["page"], "limit": query["limit"]},
-	})
+	response.PageSuccess(c, list, total, query["page"].(int), query["limit"].(int))
 }
 
 // GetPlan GET /qms/sampling/plan/:id
 func (h *QMSSamplingHandler) GetPlan(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	plan, err := h.svc.GetPlan(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": plan})
+	response.Success(c, plan)
 }
 
 // UpdateRules PUT /qms/sampling/plan/:id/rules
 func (h *QMSSamplingHandler) UpdateRules(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的ID"})
+		response.BadRequest(c, "无效的ID")
 		return
 	}
 
 	var req model.QMSSamplingRulesUpdateReqVO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.svc.UpdateRules(c.Request.Context(), id, &req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "规则更新成功"})
+	response.SuccessWithMsg(c, "规则更新成功", nil)
 }
 
 // Calculate GET /qms/sampling/calculate
 func (h *QMSSamplingHandler) Calculate(c *gin.Context) {
 	planID, err := strconv.ParseInt(c.Query("planId"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的planId"})
+		response.BadRequest(c, "无效的planId")
 		return
 	}
 
 	batchQty, err := strconv.ParseFloat(c.Query("batchQty"), 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的batchQty"})
+		response.BadRequest(c, "无效的batchQty")
 		return
 	}
 
@@ -164,11 +160,11 @@ func (h *QMSSamplingHandler) Calculate(c *gin.Context) {
 		BatchQty: batchQty,
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": result})
+	response.Success(c, result)
 }
 
 // CreateRecord POST /qms/sampling/record
@@ -177,16 +173,16 @@ func (h *QMSSamplingHandler) CreateRecord(c *gin.Context) {
 
 	var req model.QMSSamplingRecordCreateReqVO
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	if err := h.svc.CreateRecord(c.Request.Context(), tenantID, &req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "message": "抽样记录创建成功"})
+	response.SuccessWithMsg(c, "抽样记录创建成功", nil)
 }
 
 // ListRecord GET /qms/sampling/record/list
@@ -212,13 +208,9 @@ func (h *QMSSamplingHandler) ListRecord(c *gin.Context) {
 
 	list, total, err := h.svc.ListRecord(c.Request.Context(), tenantID, query)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.ErrorMsg(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": list,
-		"meta": gin.H{"total": total, "page": query["page"], "limit": query["limit"]},
-	})
+	response.PageSuccess(c, list, total, query["page"].(int), query["limit"].(int))
 }

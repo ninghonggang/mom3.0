@@ -91,29 +91,26 @@ func (r *MobileJobReportRepository) GetPendingOrders(ctx context.Context, tenant
 	err := r.db.WithContext(ctx).Raw(`
 		SELECT
 			po.id as order_id,
-			po.order_code,
-			p.product_code,
-			p.product_name,
-			pp.process_name,
-			pp.id as process_id,
-			ws.id as workstation_id,
-			ws.workstation_name,
-			po.planned_quantity,
+			po.order_no as order_code,
+			po.material_code as product_code,
+			po.material_name as product_name,
+			'' as process_name,
+			0 as process_id,
+			po.workshop_id as workstation_id,
+			po.workshop_name as workstation_name,
+			po.quantity as planned_quantity,
 			COALESCE(SUM(mjr.reported_quantity), 0) as reported_quantity,
-			(po.planned_quantity - COALESCE(SUM(mjr.reported_quantity), 0)) as remaining_quantity,
+			(po.quantity - COALESCE(SUM(mjr.reported_quantity), 0)) as remaining_quantity,
 			po.priority,
-			po.due_date
+			po.plan_end_date as due_date
 		FROM production_orders po
-		LEFT JOIN mdm_product p ON po.product_id = p.id
-		LEFT JOIN production_process pp ON po.process_id = pp.id
-		LEFT JOIN business_workstation ws ON po.workstation_id = ws.id
 		LEFT JOIN mobile_job_report mjr ON po.id = mjr.order_id AND mjr.status >= 1
 		WHERE po.tenant_id = ?
 			AND po.status = 2
 			AND (? = 0 OR po.workshop_id = ?)
-		GROUP BY po.id, p.product_code, p.product_name, pp.process_name, pp.id, ws.id, ws.workstation_name, po.planned_quantity, po.priority, po.due_date
-		HAVING (po.planned_quantity - COALESCE(SUM(mjr.reported_quantity), 0)) > 0
-		ORDER BY po.priority DESC, po.due_date ASC
+		GROUP BY po.id, po.order_no, po.material_code, po.material_name, po.workshop_id, po.workshop_name, po.quantity, po.priority, po.plan_end_date
+		HAVING (po.quantity - COALESCE(SUM(mjr.reported_quantity), 0)) > 0
+		ORDER BY po.priority DESC, po.plan_end_date ASC
 	`, tenantID, workshopID, workshopID).Scan(&list).Error
 	if err != nil {
 		return nil, err
