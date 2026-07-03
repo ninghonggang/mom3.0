@@ -1,1594 +1,724 @@
-# MOM3.0 SCP供应链模块设计文档
+# MOM 3.0 SCP 供应链模块设计文档
 
-**版本**: V2.0 | **所属模块**: M16 SCP供应链 | **基于**: [MOM3.0_主设计文档](./MOM3.0_主设计文档.md)
+> 版本：V2.0 | 最后更新：2026-07-03 | 维护人：架构组 / 小二
+> 适用范围：MOM 3.0 SCP（Supply Chain Planning）供应链管理域
+> 模板主干：[MOM3.0_模块设计模板.md](MOM3.0_模块设计模板.md)
+> 模块代码：`mom-server/internal/handler/scp/*` `mom-server/internal/service/scp*` `mom-server/internal/model/scp*`
+> 数据库表：核心 8 张（采购/销售/报价/ASN/供应商/客户/KPI/RFQ）
+> 状态：**✅ V2.0 完成 - 按统一模板重写,旧版 1594 行大砍至 800 行**
+
+> **V2.0 重大变更**：基于 V1.x（1594 行,12 章节 0 Mermaid）按 V2.0 模板重写。技术栈对齐：Vue 3.4 + Element Plus 2.5 / Go 1.24 + Gin + GORM / PostgreSQL 18。
+
+---
+
+## 0. 文档元信息
+
+| 字段 | 值 |
+|---|---|
+| 模块代号 | `scp` |
+| 模块名 | SCP 供应链管理 |
+| 技术栈 | Vue 3.4 + Element Plus 2.5 / Go 1.24 + Gin + GORM 2.x / PostgreSQL 18 |
+| 前端入口 | `mom-web/src/views/scp/*.vue`（8 个视图） |
+| 后端入口 | `mom-server/internal/handler/scp/*.go` |
+| API 前缀 | `/api/v1/scp/*` |
+| 数据库表 | 8 张核心 |
+| 状态 | ✅ V2.0（第 1 批 P0 第 3 个） |
 
 ---
 
 ## 1. 模块概述
 
-### 1.1 功能定位
+### 1.1 业务定位
 
-SCP供应链模块覆盖从客户需求到供应商交付的完整供应链链路，包括采购管理、销售管理、询价管理、供应商绩效等核心功能。
+SCP 是 MOM 3.0 的供应链管理模块，覆盖采购、销售、询价、报价、ASN（到货通知）、供应商绩效、客户管理等核心业务。对接 **ERP/APS/WMS/MES**，实现供应链全链路协同。
+
+**价值流位置**：`客户询价(SCP) → 销售订单(SCP) → MPS(APS) → 采购订单(SCP) → ASN(SCP) → WMS 收货 → MES 领料 → 发货(SCP/WMS) → 客户`
+
+模块覆盖**采购订单、询价单 RFQ、供应商报价、销售订单、客户询价、ASN 到货通知、供应商绩效、客户管理**8 个子业务。
 
 ### 1.2 核心功能
 
-| 功能 | 说明 |
+| # | 功能 | 简述 | 优先级 |
+|---|------|------|--------|
+| 1 | 采购订单管理 | PO 创建/审批/跟踪 | P0 |
+| 2 | 询价单 RFQ | 询价发起/供应商响应 | P0 |
+| 3 | 供应商报价 | 报价录入/比价 | P1 |
+| 4 | 销售订单管理 | SO 创建/确认/变更 | P0 |
+| 5 | 客户询价 | 客户询价/报价 | P0 |
+| 6 | ASN 到货通知 | 供应商发货预告 | P0 |
+| 7 | 供应商绩效 | 交付率/质量 KPI | P1 |
+| 8 | 客户管理 | 客户档案/信用评估 | P1 |
+
+### 1.3 Top 3 干系人
+
+| 角色 | 诉求 |
 |------|------|
-| 采购订单 | 采购申请、审批、执行、收货 |
-| 询价RFQ | 供应商询价、报价、比价 |
-| 供应商报价 | 供应商历史报价管理 |
-| 销售订单 | 销售接单、确认、发货 |
-| 客户询价 | 客户询价处理流程 |
-| 供应商绩效 | KPI评分管理 |
+| **采购员** | PO 创建/审批、供应商对账 |
+| **销售员** | SO 创建/确认、订单跟踪 |
+| **供应链主管** | 供应商绩效、客户信用评估 |
+
+### 1.4 Top 3 质量目标
+
+| 指标 | 目标值 |
+|------|--------|
+| 采购订单创建 P95 | ≤ 1s |
+| 销售订单确认 P95 | ≤ 1s |
+| ASN 到货准确率 | ≥ 98% |
 
 ---
 
-## 2. 页面清单
+## 2. 依赖关系
 
-| 页面 | 路由路径 | 核心功能 |
-|------|----------|----------|
-| 采购订单 | `/scp/purchase` | 采购订单CRUD、审批、发布 |
-| 询价单 | `/scp/rfq` | RFQ发布、报价、比价 |
-| 供应商报价 | `/scp/supplier-quote` | 报价记录查询 |
-| 销售订单 | `/scp/sales-order` | 销售订单CRUD、确认 |
-| 客户询价 | `/scp/customer-inquiry` | 客户询价处理 |
-| 供应商绩效 | `/scp/supplier-kpi` | KPI评分、排名 |
+### 2.1 上游模块
 
----
+| 模块 | 接口 | 频度 |
+|------|------|------|
+| **ERP (SAP/QAD)** | 销售订单/采购订单同步 | 实时 |
+| **MDM 主数据** | 物料/客户/供应商 | 实时 |
 
-## 3. UI设计规范
+### 2.2 下游模块
 
-### 3.1 页面基本结构
+| 模块 | 接口 | 频度 |
+|------|------|------|
+| **APS 计划** | 销售订单→MPS,采购订单→物料需求 | 实时 |
+| **WMS 仓储** | PO→入库,SO→出库 | 实时 |
+| **MES 生产** | SO 关联工单 | 实时 |
+| **QMS 质量** | 供应商 KPI | 日终 |
 
-同MES模块标准布局：搜索+工具栏+表格+详情弹窗。
+### 2.3 外部系统
 
-### 3.2 采购订单详情页按钮
+| 系统 | 方向 | 协议 | 用途 |
+|------|------|------|------|
+| **ERP (SAP/QAD)** | 双向 | IDOC/REST | 订单/物料同步 |
+| **客户 EDI 平台** | 双向 | EDI/X12 | 订单/ASN |
+| **供应商门户** | 双向 | HTTPS | 询价/报价 |
 
-```vue
-<template #footer>
-  <el-button @click="detailVisible = false">关闭</el-button>
-  <el-button type="success" v-if="detailData.approval_status === 'PENDING'" @click="handleApprove">
-    审批通过
-  </el-button>
-  <el-button type="danger" v-if="detailData.approval_status === 'PENDING'" @click="handleReject">
-    拒绝
-  </el-button>
-  <el-button type="warning" v-if="['DRAFT', 'PENDING', 'APPROVED'].includes(detailData.status)" @click="handleCancel">
-    取消
-  </el-button>
-  <el-button type="primary" v-if="detailData.status === 'APPROVED'" @click="handleIssue">
-    发布执行
-  </el-button>
-  <el-button type="danger" v-if="['ISSUED', 'PARTIAL', 'RECEIVED'].includes(detailData.status)" @click="handleClose">
-    关闭订单
-  </el-button>
-</template>
-```
+### 2.4 标准对齐
 
-### 3.3 状态映射
-
-**采购订单状态**
-
-| 状态值 | 标签类型 | 显示文本 |
-|--------|----------|----------|
-| DRAFT | info | 草稿 |
-| PENDING | warning | 待审批 |
-| APPROVED | primary | 审批通过 |
-| ISSUED | primary | 已发布 |
-| PARTIAL | warning | 部分收货 |
-| RECEIVED | success | 已收货 |
-| CLOSED | info | 已关闭 |
-| CANCELLED | info | 已取消 |
-
-**客户询价状态**
-
-| 状态值 | 标签类型 | 显示文本 |
-|--------|----------|----------|
-| DRAFT | info | 草稿 |
-| SENT | primary | 已发送 |
-| QUOTED | warning | 已报价 |
-| WON | success | 已赢单 |
-| LOST | danger | 已丢单 |
-| CANCELLED | info | 已取消 |
+| 标准 | 段 |
+|------|---|
+| **ISA-95** | Level 4（计划层） |
+| **MESA** | MESA 11 项 #9 Supply Chain Management |
 
 ---
 
-## 4. 业务流程
+## 3. 功能清单
 
-### 4.1 采购订单流程
+### 3.1 已实现
 
+| # | 功能 | 端点 | 优先级 | 日期 |
+|---|------|------|--------|------|
+| 1 | 采购订单 CRUD | `/api/v1/scp/purchase-orders/*` | P0 | 2026-04 |
+| 2 | 询价单 RFQ | `/api/v1/scp/rfq/*` | P0 | 2026-04 |
+| 3 | 供应商报价 | `/api/v1/scp/supplier-quote/*` | P1 | 2026-04 |
+| 4 | 销售订单 CRUD | `/api/v1/scp/sales-orders/*` | P0 | 2026-04 |
+| 5 | 客户询价 | `/api/v1/scp/customer-inquiry/*` | P0 | 2026-04 |
+| 6 | ASN 到货通知 | `/api/v1/scp/asn/*` | P0 | 2026-04 |
+| 7 | 供应商 KPI | `/api/v1/scp/supplier-kpi/*` | P1 | 2026-04 |
+| 8 | 客户档案 | `/api/v1/scp/customer/*` | P1 | 2026-04 |
+| 9 | 供应商档案 | `/api/v1/scp/supplier/*` | P0 | 2026-04 |
+
+### 3.2 部分实现
+
+| # | 功能 | 缺口 | 计划 |
+|---|------|------|------|
+| 1 | EDI 自动化 | 仅手动导入 | V2.1 |
+| 2 | 智能比价 | 基础对比 | V3.0 |
+
+### 3.3 未实现
+
+| # | 功能 | 优先级 |
+|---|------|--------|
+| 1 | 区块链溯源 | P2 |
+| 2 | 供应商金融 | P2 |
+
+---
+
+## 4. 页面与交互
+
+### 4.1 页面清单
+
+| 路由 | 标题 | 状态 |
+|------|------|------|
+| `/scp/purchase-orders` | 采购订单 | ✅ |
+| `/scp/sales-orders` | 销售订单 | ✅ |
+| `/scp/rfq` | 询价单 | ✅ |
+| `/scp/supplier-quote` | 供应商报价 | ✅ |
+| `/scp/customer-inquiry` | 客户询价 | ✅ |
+| `/scp/asn` | ASN 到货通知 | ✅ |
+| `/scp/supplier-kpi` | 供应商绩效 | ✅ |
+| `/scp/customer` | 客户管理 | ✅ |
+
+### 4.2 采购订单特有列
+
+| 列名 | 类型 | 宽度 | 固定 |
+|------|------|------|------|
+| PO 单号 | link | 160px | ✅ |
+| 供应商 | string | 200px | ❌ |
+| 订单金额 | decimal | 140px | ❌ |
+| 状态 | tag | 100px | ❌ |
+| 下单日期 | date | 120px | ❌ |
+| 预计到货 | date | 120px | ❌ |
+| 操作 | buttons | 200px | ✅ |
+
+### 4.3 PO 创建表单（关键联动）
+
+- 选供应商 → 自动带出该供应商的默认付款条件、币种
+- 选物料 → 自动带出默认单价、税率
+- 提交前：金额校验、供应商资质校验
+
+---
+
+## 5. 业务流程（★ 必有图）
+
+### 5.1 核心流程：采购订单（询价→比价→下单→收货）
+
+```mermaid
+flowchart TD
+    A[采购需求] --> B{已知供应商?}
+    B -->|否| C[发起询价 RFQ]
+    B -->|是| D[直接下单 PO]
+    C --> E[发送给 N 个供应商]
+    E --> F[供应商响应报价]
+    F --> G[比价分析]
+    G --> H[选定供应商]
+    H --> D
+    D --> I[PO 审批]
+    I --> J{审批通过}
+    J -->|是| K[PO 生效]
+    J -->|否| L[驳回,通知采购员]
+    K --> M[发送给供应商]
+    M --> N[供应商发货 + ASN 通知]
+    N --> O[WMS 收货入库]
+    O --> P[PO 状态=CLOSED]
+    L --> A
+
+    style A fill:#e1f5ff
+    style P fill:#d4edda
+    style L fill:#f8d7da
 ```
-创建 → 提交审批 → 审批通过 → 发布执行 → 供应商发货 → ASN到货 → 收货入库
+
+### 5.2 核心流程：销售订单（询价→报价→订单→发货）
+
+```mermaid
+flowchart TD
+    A[客户询价] --> B[销售员评估]
+    B --> C{可承接?}
+    C -->|否| D[婉拒,记录原因]
+    C -->|是| E[内部成本核算]
+    E --> F[生成报价单]
+    F --> G[客户确认]
+    G -->|确认| H[创建销售订单 SO]
+    G -->|议价| I[重新报价]
+    I --> F
+    G -->|拒绝| D
+    H --> J[SO 审批]
+    J --> K{审批通过}
+    K -->|是| L[SO 生效]
+    K -->|否| M[驳回]
+    L --> N[推送 APS 触发 MPS]
+    N --> O[推送 WMS 备货]
+    O --> P[发货出库]
+    P --> Q[SO 状态=SHIPPED]
+
+    style A fill:#e1f5ff
+    style Q fill:#d4edda
+    style D fill:#f8d7da
 ```
 
-### 4.2 客户询价流程
+### 5.3 异常流程：供应商延迟交货
 
+```mermaid
+flowchart TD
+    A[每日定时扫描] --> B[读 SO 关联 PO]
+    B --> C{预计到货日 vs 当前}
+    C -->|> 3 天| D[正常]
+    C -->|1-3 天| E[黄色预警]
+    C -->|已超期| F[红色告警]
+    D --> G[继续]
+    E --> G
+    F --> H[推送采购员 + 供应商]
+    H --> I{供应商回复}
+    I -->|新交期| J[更新 PO 预计到货]
+    I -->|无法交付| K[启动备选供应商]
+    I -->|无回复| L[升级到采购主管]
+    J --> G
+    K --> M[创建备选 PO]
+    M --> G
+    L --> N[采购主管介入处理]
+
+    style E fill:#fff3cd
+    style F fill:#f8d7da
+    style L fill:#f8d7da
 ```
-创建询价 → 发送供应商 → 收集报价 → 选择最优 → 赢单/丢单
+
+### 5.4 跨系统流程：ERP 订单同步
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant ERP as ERP/SAP
+    participant SCP as SCP
+    participant APS as APS
+    participant DB as PostgreSQL
+
+    ERP->>SCP: IDOC 订单同步
+    SCP->>DB: UPSERT sales_orders
+    SCP->>SCP: 校验订单有效性
+    alt 订单有效
+        SCP->>APS: 事件 sales.order.confirmed
+        APS->>DB: 触发 MPS 计算
+    else 订单无效
+        SCP->>ERP: 错误回执
+    end
+```
+
+### 5.5 BPMN 2.0 采购审批（金额分级）
+
+```plantuml
+@startuml
+|采购员|
+start
+:创建 PO;
+:自审;
+if (金额 > 1万?) then (是)
+  |采购主管|
+  :审批;
+  if (金额 > 10万?) then (是)
+    |总经理|
+    :终审;
+  else (否)
+  endif
+else (否)
+endif
+:PO 生效;
+:发送供应商;
+stop
+@enduml
 ```
 
 ---
 
-## 5. 数据模型
+## 6. 状态机（★ 必有图）
 
-### 5.1 采购订单
+### 6.1 核心实体：采购订单（PurchaseOrder）
+
+#### 6.1.1 状态值与显示
+
+| 状态值 | 业务含义 | Element Plus type |
+|--------|---------|------------------|
+| `DRAFT` | 草稿 | info |
+| `PENDING_APPROVAL` | 待审批 | warning |
+| `APPROVED` | 已审批 | primary |
+| `REJECTED` | 已驳回 | danger |
+| `SENT` | 已发送供应商 | primary |
+| `ACKNOWLEDGED` | 供应商确认 | primary |
+| `PARTIALLY_RECEIVED` | 部分收货 | warning |
+| `RECEIVED` | 全部收货 | success |
+| `CLOSED` | 已关闭 | info |
+| `CANCELLED` | 已取消 | info |
+
+> 状态字段存储类型：**`varchar(30) + mdm_status_dict`**（`entity='purchase_order'`）
+
+#### 6.1.2 状态机图
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT : 创建
+    DRAFT --> PENDING_APPROVAL : 提交审批
+    PENDING_APPROVAL --> APPROVED : 审批通过
+    PENDING_APPROVAL --> REJECTED : 驳回
+    REJECTED --> DRAFT : 修改重提
+    APPROVED --> SENT : 发送供应商
+    SENT --> ACKNOWLEDGED : 供应商确认
+    ACKNOWLEDGED --> PARTIALLY_RECEIVED : 部分到货
+    ACKNOWLEDGED --> RECEIVED : 全部到货
+    PARTIALLY_RECEIVED --> RECEIVED : 剩余到货
+    RECEIVED --> CLOSED : 财务结算
+    DRAFT --> CANCELLED : 取消
+    PENDING_APPROVAL --> CANCELLED : 取消
+    APPROVED --> CANCELLED : 取消 (actor=采购主管)
+    CLOSED --> [*]
+    CANCELLED --> [*]
+```
+
+#### 6.1.3 转移明细
+
+| 源 | 目标 | 触发 | 守卫 | 动作 | 角色 |
+|----|------|------|------|------|------|
+| DRAFT | PENDING_APPROVAL | 提交 | 金额>阈值 | 触发 BPM | 采购员 |
+| PENDING_APPROVAL | APPROVED | 通过 | 审批链全通过 | 写 `approved_at` | 采购主管 |
+| SENT | ACKNOWLEDGED | 确认 | 供应商在门户确认 | 写 `acknowledged_at` | 供应商 |
+| ACKNOWLEDGED | PARTIALLY_RECEIVED | 部分收货 | 收货数<订单数 | 累计收货数 | WMS |
+
+### 6.2 核心实体：销售订单（SalesOrder）
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT : 创建
+    DRAFT --> PENDING_APPROVAL : 提交
+    PENDING_APPROVAL --> CONFIRMED : 审批通过
+    PENDING_APPROVAL --> REJECTED : 驳回
+    CONFIRMED --> IN_PRODUCTION : 触发 MPS
+    IN_PRODUCTION --> READY_TO_SHIP : 生产完成
+    READY_TO_SHIP --> SHIPPED : 发货
+    SHIPPED --> CLOSED : 客户确认收货
+    CONFIRMED --> CANCELLED : 取消
+    IN_PRODUCTION --> CANCELLED : 强制取消
+    CLOSED --> [*]
+    CANCELLED --> [*]
+```
+
+| 状态值 | Element Plus type |
+|--------|------------------|
+| DRAFT | info |
+| PENDING_APPROVAL | warning |
+| CONFIRMED | primary |
+| IN_PRODUCTION | primary |
+| READY_TO_SHIP | warning |
+| SHIPPED | success |
+| CLOSED | info |
+| CANCELLED | info |
+| REJECTED | danger |
+
+### 6.3 字段类型说明
+
+> MOM 3.0 SCP 选 **`varchar(30) + mdm_status_dict`**
+
+---
+
+## 7. 数据模型（★ 必有 ER 图）
+
+### 7.1 核心 ER 图
+
+```mermaid
+erDiagram
+    SCP_PURCHASE_ORDER ||--o{ SCP_PURCHASE_ORDER_ITEM : "contains"
+    SCP_PURCHASE_ORDER ||--o{ SCP_ASN : "has_asn"
+    SCP_RFQ ||--o{ SCP_SUPPLIER_QUOTE : "receives"
+    SCP_SUPPLIER_QUOTE }o--|| SCP_PURCHASE_ORDER : "converts_to"
+    SCP_SALES_ORDER ||--o{ SCP_SALES_ORDER_ITEM : "contains"
+    SCP_CUSTOMER_INQUIRY ||--o{ SCP_SALES_ORDER : "converts_to"
+    SCP_SUPPLIER ||--o{ SCP_SUPPLIER_KPI : "evaluated"
+    SCP_CUSTOMER ||--o{ SCP_SALES_ORDER : "places"
+
+    SCP_PURCHASE_ORDER {
+        bigint id PK
+        bigint tenant_id
+        varchar po_no UK
+        bigint supplier_id FK
+        decimal total_amount
+        varchar currency "CNY/USD/EUR"
+        varchar status_v2 "DRAFT/PENDING_APPROVAL/APPROVED/SENT/..."
+        timestamp order_date
+        timestamp expected_date
+        timestamp approved_at
+    }
+    SCP_SALES_ORDER {
+        bigint id PK
+        bigint tenant_id
+        varchar so_no UK
+        bigint customer_id FK
+        decimal total_amount
+        varchar status_v2 "DRAFT/CONFIRMED/IN_PRODUCTION/..."
+        timestamp order_date
+        timestamp delivery_date
+    }
+    SCP_ASN {
+        bigint id PK
+        bigint tenant_id
+        varchar asn_no UK
+        bigint po_id FK
+        timestamp expected_arrival
+        varchar status_v2 "PENDING/IN_TRANSIT/ARRIVED/RECEIVED"
+    }
+    SCP_SUPPLIER {
+        bigint id PK
+        bigint tenant_id
+        varchar supplier_code UK
+        varchar supplier_name
+        varchar status_v2 "ACTIVE/INACTIVE/BLACKLIST"
+    }
+```
+
+**关系说明**：
+
+| 表 A | 表 B | 关系 |
+|------|------|------|
+| `SCP_PURCHASE_ORDER` | `SCP_ASN` | 1:N |
+| `SCP_RFQ` | `SCP_SUPPLIER_QUOTE` | 1:N |
+| `SCP_SUPPLIER_QUOTE` | `SCP_PURCHASE_ORDER` | N:1(可转) |
+| `SCP_SALES_ORDER` | `SCP_CUSTOMER` | N:1 |
+
+### 7.2 核心表
+
+#### `scp_purchase_order`
+
+| 字段 | 类型 | 必填 | 默认 | 索引 | 说明 |
+|------|------|------|------|------|------|
+| `id` | `bigint` | ✅ | auto | PK | |
+| `tenant_id` | `bigint` | ✅ | - | IDX | |
+| `po_no` | `varchar(50)` | ✅ | - | UK | PO 单号(`PO-YYYYMMDD-NNNN`) |
+| `supplier_id` | `bigint` | ✅ | - | IDX | |
+| `total_amount` | `decimal(18,2)` | ✅ | - | - | |
+| `currency` | `varchar(10)` | ✅ | 'CNY' | - | |
+| `status` | `int` | ✅ | 1 | IDX | **旧** |
+| `status_v2` | `varchar(30)` | ❌ | NULL | IDX | **新** |
+| `order_date` | `date` | ✅ | - | - | |
+| `expected_date` | `date` | ❌ | NULL | - | 预计到货 |
+| `approved_at` | `timestamptz` | ❌ | NULL | - | |
+| `created_at` | `timestamptz` | - | now() | - | |
+| `updated_at` | `timestamptz` | - | now() | - | |
+| `deleted_at` | `timestamptz` | - | null | IDX | |
+
+#### `scp_sales_order`
+
+字段结构类似,核心字段：`so_no` / `customer_id` / `total_amount` / `status_v2` / `delivery_date`。
+
+#### `scp_asn`
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| order_no | VARCHAR(50) | 采购单号 |
-| supplier_id | BIGINT | 供应商ID |
-| order_date | DATE | 订货日期 |
-| expected_date | DATE | 期望交付日期 |
-| total_amount | DECIMAL(18,2) | 订单总额 |
-| status | VARCHAR(20) | 状态 |
-| approval_status | VARCHAR(20) | 审批状态 |
+| `id` | `bigint` PK | |
+| `asn_no` | `varchar(50)` UK | ASN 编号 |
+| `po_id` | `bigint` FK | 关联 PO |
+| `expected_arrival` | `date` | 预计到货日 |
+| `status_v2` | `varchar(30)` | PENDING/IN_TRANSIT/ARRIVED/RECEIVED |
 
-### 5.2 客户询价
+### 7.3 索引策略
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| inquiry_no | VARCHAR(50) | 询价单号 |
-| customer_id | BIGINT | 客户ID |
-| inquiry_date | DATE | 询价日期 |
-| quoted_amount | DECIMAL(18,2) | 报价金额 |
-| winner_supplier_id | BIGINT | 中标供应商 |
-| status | VARCHAR(20) | 状态 |
+| 表 | 索引 | 用途 |
+|----|------|------|
+| `scp_purchase_order` | `idx_supplier_status` | 供应商 PO 列表 |
+| `scp_sales_order` | `idx_customer_status` | 客户 SO 列表 |
+| `scp_asn` | `idx_expected_arrival` | 即将到货扫描 |
 
----
+### 7.4 枚举字典
 
-## 6. API接口
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /scp/purchase-orders/list | 采购订单列表 |
-| POST | /scp/purchase-orders | 创建采购订单 |
-| POST | /scp/purchase-orders/:id/submit | 提交审批 |
-| POST | /scp/purchase-orders/:id/approve | 审批通过 |
-| POST | /scp/purchase-orders/:id/issue | 发布执行 |
-| GET | /scp/rfq/list | 询价单列表 |
-| POST | /scp/rfq/:id/award | RFQ授标 |
-| GET | /scp/customer-inquiry/list | 客户询价列表 |
-| POST | /scp/customer-inquiry/:id/send | 发送询价 |
-| POST | /scp/customer-inquiry/:id/quote | 报价 |
-| POST | /scp/customer-inquiry/:id/win | 标记赢单 |
+| 枚举 | 值 |
+|------|---|
+| PO 状态 | `('DRAFT','PENDING_APPROVAL','APPROVED','REJECTED','SENT','ACKNOWLEDGED','PARTIALLY_RECEIVED','RECEIVED','CLOSED','CANCELLED')` |
+| SO 状态 | `('DRAFT','PENDING_APPROVAL','CONFIRMED','IN_PRODUCTION','READY_TO_SHIP','SHIPPED','CLOSED','CANCELLED','REJECTED')` |
+| ASN 状态 | `('PENDING','IN_TRANSIT','ARRIVED','RECEIVED')` |
+| 供应商状态 | `('ACTIVE','INACTIVE','BLACKLIST')` |
 
 ---
 
-## 7. 关联文档
+## 8. API 规范
 
-- [MOM3.0_主设计文档](./MOM3.0_主设计文档.md) - 系统总览
-- [MOM3.0_UI设计规范](./MOM3.0_UI设计规范.md) - UI规范详情
+### 8.1 路由清单（核心 20 条）
 
----
+| 方法 | 路径 | 说明 | 幂等 |
+|------|------|------|------|
+| GET | `/api/v1/scp/purchase-orders/list` | PO 列表 | — |
+| POST | `/api/v1/scp/purchase-orders` | 创建 PO | ✅ |
+| PUT | `/api/v1/scp/purchase-orders/:id` | 更新 PO | ✅ |
+| POST | `/api/v1/scp/purchase-orders/:id/approve` | 审批 PO | ❌ |
+| POST | `/api/v1/scp/purchase-orders/:id/send` | 发送供应商 | ❌ |
+| POST | `/api/v1/scp/purchase-orders/:id/cancel` | 取消 PO | ❌ |
+| GET | `/api/v1/scp/sales-orders/list` | SO 列表 | — |
+| POST | `/api/v1/scp/sales-orders` | 创建 SO | ✅ |
+| POST | `/api/v1/scp/sales-orders/:id/confirm` | 确认 SO | ❌ |
+| POST | `/api/v1/scp/sales-orders/:id/cancel` | 取消 SO | ❌ |
+| GET | `/api/v1/scp/rfq/list` | 询价单列表 | — |
+| POST | `/api/v1/scp/rfq` | 发起询价 | ✅ |
+| POST | `/api/v1/scp/rfq/:id/quote` | 供应商报价 | ✅ |
+| GET | `/api/v1/scp/supplier-quote/list` | 报价列表 | — |
+| GET | `/api/v1/scp/asn/list` | ASN 列表 | — |
+| POST | `/api/v1/scp/asn` | 创建 ASN | ✅ |
+| GET | `/api/v1/scp/supplier-kpi/list` | 供应商 KPI | — |
+| GET | `/api/v1/scp/customer/list` | 客户列表 | — |
+| POST | `/api/v1/scp/customer` | 创建客户 | ✅ |
+| GET | `/api/v1/scp/supplier/list` | 供应商列表 | — |
 
-## 8. 数据表DDL（待补充）
+### 8.2 请求/响应示例
 
-### 8.1 采购计划表 (scp_purchase_plan)
+#### 8.2.1 创建采购订单
 
-```sql
--- 采购计划表：存储MPS/MRP驱动的采购计划
-CREATE TABLE scp_purchase_plan (
-    id BIGSERIAL PRIMARY KEY,
-    tenant_id BIGINT NOT NULL DEFAULT 1,
-    plan_no VARCHAR(50) UNIQUE NOT NULL,           -- 计划单号
-    plan_type VARCHAR(20) NOT NULL,                -- 计划类型：MPS/MRP
-    source_type VARCHAR(20),                        -- 来源类型：工单/预测/安全库存
-    source_no VARCHAR(50),                         -- 来源单号
-    supplier_id BIGINT,                             -- 供应商ID
-    supplier_code VARCHAR(50),                      -- 供应商编码
-    supplier_name VARCHAR(200),                     -- 供应商名称
-    plan_date DATE NOT NULL,                        -- 计划日期
-    required_date DATE,                             -- 需求日期
-    total_amount DECIMAL(18,2),                     -- 计划总额
-    total_qty DECIMAL(18,4),                        -- 计划总量
-    confirmed_qty DECIMAL(18,4),                     -- 已确认数量
-    status VARCHAR(20) DEFAULT 'DRAFT',             -- 状态：DRAFT/CONFIRMED/PUBLISHED/CLOSED
-    approval_status VARCHAR(20) DEFAULT 'PENDING',  -- 审批状态
-    remarks TEXT,
-    created_by VARCHAR(100),
-    updated_by VARCHAR(100),
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
+```http
+POST /api/v1/scp/purchase-orders HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer ***…9...
+Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000
 
--- 采购计划明细表
-CREATE TABLE scp_purchase_plan_item (
-    id BIGSERIAL PRIMARY KEY,
-    plan_id BIGINT NOT NULL REFERENCES scp_purchase_plan(id),
-    line_no INTEGER NOT NULL,                       -- 行号
-    material_id BIGINT NOT NULL,                    -- 物料ID
-    material_code VARCHAR(50) NOT NULL,             -- 物料编码
-    material_name VARCHAR(200),                     -- 物料名称
-    specification VARCHAR(200),                      -- 规格型号
-    unit VARCHAR(20),                               -- 单位
-    plan_qty DECIMAL(18,4) NOT NULL,                -- 计划数量
-    confirmed_qty DECIMAL(18,4),                     -- 已确认数量
-    delivered_qty DECIMAL(18,4),                     -- 已发货数量
-    unit_price DECIMAL(18,4),                       -- 单价
-    line_amount DECIMAL(18,4),                       -- 行金额
-    required_date DATE,                              -- 需求日期
-    promised_date DATE,                              -- 承诺日期
-    status VARCHAR(20) DEFAULT 'PENDING',           -- 状态
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-### 8.2 供应商主表 (scp_supplier)
-
-```sql
--- 供应商主表
-CREATE TABLE scp_supplier (
-    id BIGSERIAL PRIMARY KEY,
-    tenant_id BIGINT NOT NULL DEFAULT 1,
-    code VARCHAR(50) UNIQUE NOT NULL,               -- 供应商编码
-    name VARCHAR(200) NOT NULL,                     -- 供应商名称
-    type VARCHAR(20),                               -- 供应商类型：原材料/辅料/设备/服务
-    category VARCHAR(50),                           -- 物料类别
-    level VARCHAR(10) DEFAULT 'B',                  -- 供应商等级：A/B/C
-    contact VARCHAR(100),                            -- 联系人
-    phone VARCHAR(50),                              -- 联系电话
-    email VARCHAR(100),                             -- 邮箱
-    address VARCHAR(500),                           -- 地址
-    status INTEGER DEFAULT 1,                       -- 状态：1=启用/2=禁用
-    credit_limit DECIMAL(18,2),                     -- 信用额度
-    payment_terms VARCHAR(100),                     -- 付款条款
-    tax_rate DECIMAL(5,2),                          -- 税率
-    bank_name VARCHAR(200),                          -- 开户银行
-    bank_account VARCHAR(100),                       -- 银行账号
-    tax_no VARCHAR(50),                             -- 税务登记号
-    business_license VARCHAR(200),                   -- 营业执照
-    cert_expire_date DATE,                          -- 证书过期日期
-    evaluation_score DECIMAL(5,2),                  -- 评价得分
-    last_eval_date DATE,                           -- 最近评价日期
-    remarks TEXT,
-    created_by VARCHAR(100),
-    updated_by VARCHAR(100),
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-### 8.3 供应商联系人表 (scp_supplier_contact)
-
-```sql
--- 供应商联系人表
-CREATE TABLE scp_supplier_contact (
-    id BIGSERIAL PRIMARY KEY,
-    tenant_id BIGINT NOT NULL DEFAULT 1,
-    supplier_id BIGINT NOT NULL,                    -- 供应商ID
-    contact_name VARCHAR(100) NOT NULL,             -- 联系人姓名
-    gender VARCHAR(10),                              -- 性别
-    position VARCHAR(100),                          -- 职位
-    department VARCHAR(100),                        -- 部门
-    phone VARCHAR(50),                              -- 办公电话
-    mobile VARCHAR(50),                             -- 手机
-    email VARCHAR(100),                             -- 邮箱
-    fax VARCHAR(50),                                -- 传真
-    is_primary INTEGER DEFAULT 0,                   -- 是否主要联系人
-    remarks TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-### 8.4 供应商银行账户表 (scp_supplier_bank)
-
-```sql
--- 供应商银行账户表
-CREATE TABLE scp_supplier_bank (
-    id BIGSERIAL PRIMARY KEY,
-    tenant_id BIGINT NOT NULL DEFAULT 1,
-    supplier_id BIGINT NOT NULL,                    -- 供应商ID
-    bank_name VARCHAR(200) NOT NULL,                -- 开户银行
-    bank_branch VARCHAR(200),                       -- 支行名称
-    bank_account VARCHAR(100) NOT NULL,              -- 银行账号
-    account_name VARCHAR(200),                      -- 账户名称
-    account_type VARCHAR(20),                       -- 账户类型：对公/对私
-    is_default INTEGER DEFAULT 0,                   -- 是否默认账户
-    currency VARCHAR(10) DEFAULT 'CNY',             -- 币种
-    swift_code VARCHAR(20),                         -- SWIFT代码
-    remarks TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-### 8.5 客户主表 (scp_customer)
-
-```sql
--- 客户主表
-CREATE TABLE scp_customer (
-    id BIGSERIAL PRIMARY KEY,
-    tenant_id BIGINT NOT NULL DEFAULT 1,
-    code VARCHAR(50) UNIQUE NOT NULL,               -- 客户编码
-    name VARCHAR(200) NOT NULL,                     -- 客户名称
-    type VARCHAR(20),                               -- 客户类型：企业/个人
-    category VARCHAR(50),                           -- 客户类别
-    level VARCHAR(10) DEFAULT 'B',                  -- 客户等级：A/B/C
-    contact VARCHAR(100),                            -- 联系人
-    phone VARCHAR(50),                              -- 联系电话
-    email VARCHAR(100),                             -- 邮箱
-    address VARCHAR(500),                           -- 地址
-    status INTEGER DEFAULT 1,                       -- 状态：1=启用/2=禁用
-    credit_limit DECIMAL(18,2),                     -- 信用额度
-    used_credit DECIMAL(18,2) DEFAULT 0,            -- 已用信用
-    payment_terms VARCHAR(100),                     -- 付款条款
-    tax_rate DECIMAL(5,2),                          -- 税率
-    tax_no VARCHAR(50),                             -- 税务登记号
-    bank_name VARCHAR(200),                        -- 开户银行
-    bank_account VARCHAR(100),                     -- 银行账号
-    delivery_address VARCHAR(500),                 -- 交货地址
-    sales_person VARCHAR(100),                      -- 业务员
-    discount_rate DECIMAL(5,2),                     -- 折扣率
-    remarks TEXT,
-    created_by VARCHAR(100),
-    updated_by VARCHAR(100),
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-### 8.6 客户联系人表 (scp_customer_contact)
-
-```sql
--- 客户联系人表
-CREATE TABLE scp_customer_contact (
-    id BIGSERIAL PRIMARY KEY,
-    tenant_id BIGINT NOT NULL DEFAULT 1,
-    customer_id BIGINT NOT NULL,                    -- 客户ID
-    contact_name VARCHAR(100) NOT NULL,            -- 联系人姓名
-    gender VARCHAR(10),                              -- 性别
-    position VARCHAR(100),                          -- 职位
-    department VARCHAR(100),                        -- 部门
-    phone VARCHAR(50),                              -- 办公电话
-    mobile VARCHAR(50),                             -- 手机
-    email VARCHAR(100),                             -- 邮箱
-    fax VARCHAR(50),                                -- 传真
-    is_primary INTEGER DEFAULT 0,                  -- 是否主要联系人
-    is_delivery INTEGER DEFAULT 0,                  -- 是否收货联系人
-    remarks TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-### 8.7 客户银行账户表 (scp_customer_bank)
-
-```sql
--- 客户银行账户表
-CREATE TABLE scp_customer_bank (
-    id BIGSERIAL PRIMARY KEY,
-    tenant_id BIGINT NOT NULL DEFAULT 1,
-    customer_id BIGINT NOT NULL,                    -- 客户ID
-    bank_name VARCHAR(200) NOT NULL,                -- 开户银行
-    bank_branch VARCHAR(200),                       -- 支行名称
-    bank_account VARCHAR(100) NOT NULL,              -- 银行账号
-    account_name VARCHAR(200),                      -- 账户名称
-    account_type VARCHAR(20),                       -- 账户类型
-    is_default INTEGER DEFAULT 0,                   -- 是否默认账户
-    currency VARCHAR(10) DEFAULT 'CNY',             -- 币种
-    remarks TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-### 8.8 客户信用表 (scp_customer_credit)
-
-```sql
--- 客户信用表
-CREATE TABLE scp_customer_credit (
-    id BIGSERIAL PRIMARY KEY,
-    tenant_id BIGINT NOT NULL DEFAULT 1,
-    customer_id BIGINT NOT NULL,                    -- 客户ID
-    credit_limit DECIMAL(18,2) NOT NULL,           -- 信用额度
-    used_credit DECIMAL(18,2) DEFAULT 0,            -- 已用信用
-    available_credit DECIMAL(18,2),                 -- 可用信用
-    frozen_credit DECIMAL(18,2) DEFAULT 0,          -- 冻结信用
-    credit_level VARCHAR(10),                       -- 信用等级
-    overdue_amount DECIMAL(18,2) DEFAULT 0,         -- 逾期金额
-    overdue_times INTEGER DEFAULT 0,                 -- 逾期次数
-    last_overdue_date DATE,                         -- 最近逾期日期
-    eval_date DATE,                                 -- 评估日期
-    eval_by VARCHAR(100),                           -- 评估人
-    effective_date DATE,                            -- 生效日期
-    expire_date DATE,                               -- 失效日期
-    status INTEGER DEFAULT 1,                       -- 状态
-    remarks TEXT,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- 客户信用记录表
-CREATE TABLE scp_customer_credit_log (
-    id BIGSERIAL PRIMARY KEY,
-    tenant_id BIGINT NOT NULL DEFAULT 1,
-    credit_id BIGINT NOT NULL,                      -- 信用ID
-    customer_id BIGINT NOT NULL,                    -- 客户ID
-    change_type VARCHAR(20) NOT NULL,               -- 变更类型：USE/RELEASE/FREEZE/UNFREEZE/ADJUST
-    change_amount DECIMAL(18,2),                    -- 变更金额
-    before_credit DECIMAL(18,2),                     -- 变更前信用
-    after_credit DECIMAL(18,2),                      -- 变更后信用
-    order_no VARCHAR(50),                           -- 相关单号
-    reason VARCHAR(500),                            -- 变更原因
-    operator VARCHAR(100),                         -- 操作人
-    created_at TIMESTAMP DEFAULT NOW()
-);
-```
-
----
-
-## 9. 供应商确认流程API
-
-### 9.1 供应商待确认列表
-
-```
-POST /wms/purchase-plan-main/supplier-to-confirm
-```
-
-**功能说明**：供应商查看待确认的要货计划
-
-**请求参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| supplier_id | BIGINT | 是 | 供应商ID |
-| status | STRING | 否 | 状态筛选 |
-
-**响应示例**：
-
-```json
 {
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "list": [
-      {
-        "id": 1,
-        "plan_no": "PP-2026-04001",
-        "plan_date": "2026-04-01",
-        "required_date": "2026-04-15",
-        "total_amount": 125500.00,
-        "status": "READY",
-        "item_count": 5
-      }
-    ],
-    "total": 10
-  }
-}
-```
-
-### 9.2 供应商确认明细
-
-```
-GET /wms/purchase-plan-main/supplier-confirm-detail
-```
-
-**功能说明**：供应商确认弹窗明细，查看计划详细信息
-
-**查询参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| plan_id | BIGINT | 是 | 计划ID |
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "plan": {
-      "id": 1,
-      "plan_no": "PP-2026-04001",
-      "supplier_name": "华东精密机械有限公司",
-      "plan_date": "2026-04-01",
-      "required_date": "2026-04-15"
-    },
-    "items": [
-      {
-        "line_no": 1,
-        "material_code": "MAT-RAW-001",
-        "material_name": "钢板A3",
-        "specification": "1200*2400mm",
-        "plan_qty": 100,
-        "unit": "PCS",
-        "confirmed_qty": 80,
-        "remarks": "分批交货"
-      }
-    ]
-  }
-}
-```
-
-### 9.3 供应商确认保存
-
-```
-POST /wms/purchase-plan-main/supplier-confirm
-```
-
-**功能说明**：供应商确认要货计划，可部分接受
-
-**请求参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| plan_id | BIGINT | 是 | 计划ID |
-| confirm_items | ARRAY | 是 | 确认明细 |
-
-**confirm_items结构**：
-
-| 参数名 | 类型 | 说明 |
-|--------|------|------|
-| item_id | BIGINT | 计划明细ID |
-| confirmed_qty | DECIMAL | 确认数量 |
-| promised_date | DATE | 承诺日期 |
-| remarks | STRING | 备注 |
-
-### 9.4 计划员确认
-
-```
-POST /wms/purchase-plan-main/planer-confirm
-```
-
-**功能说明**：计划员审核供应商确认结果
-
-**请求参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| plan_id | BIGINT | 是 | 计划ID |
-| action | STRING | 是 | 动作：ACCEPT/REJECT |
-| reason | STRING | 否 | 驳回原因 |
-
----
-
-## 10. 采购统计API
-
-### 10.1 采购汇总统计
-
-```
-GET /scp/purchase-statistics/summary
-```
-
-**功能说明**：采购金额/数量汇总统计
-
-**查询参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| start_date | DATE | 否 | 开始日期 |
-| end_date | DATE | 否 | 结束日期 |
-| supplier_id | BIGINT | 否 | 供应商ID |
-| group_by | STRING | 否 | 分组维度：supplier/material/month |
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "total_amount": 1250000.00,
-    "total_qty": 5000,
-    "order_count": 150,
-    "supplier_count": 25,
-    "trends": [
-      {"month": "2026-01", "amount": 350000.00, "qty": 1200},
-      {"month": "2026-02", "amount": 420000.00, "qty": 1800}
-    ]
-  }
-}
-```
-
-### 10.2 供应商采购排名
-
-```
-GET /scp/purchase-statistics/supplier-ranking
-```
-
-**功能说明**：按供应商统计采购金额排名
-
-**查询参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| start_date | DATE | 否 | 开始日期 |
-| end_date | DATE | 否 | 结束日期 |
-| limit | INTEGER | 否 | 返回条数，默认100 |
-
-### 10.3 物料采购分析
-
-```
-GET /scp/purchase-statistics/material-analysis
-```
-
-**功能说明**：按物料分析采购趋势
-
-**查询参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| material_code | STRING | 否 | 物料编码 |
-| start_date | DATE | 否 | 开始日期 |
-| end_date | DATE | 否 | 结束日期 |
-
-### 10.4 采购计划执行率
-
-```
-GET /scp/purchase-statistics/plan-execution
-```
-
-**功能说明**：采购计划执行情况统计
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "total_plans": 100,
-    "completed": 75,
-    "in_progress": 15,
-    "pending": 10,
-    "execution_rate": 85.5,
-    "on_time_rate": 92.3
-  }
-}
-```
-
----
-
-## 11. 客户管理API
-
-### 11.1 客户档案CRUD
-
-#### 创建客户
-
-```
-POST /mdm/customer/create
-POST /scp/customer/create
-```
-
-**请求参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| code | STRING | 是 | 客户编码 |
-| name | STRING | 是 | 客户名称 |
-| type | STRING | 否 | 客户类型 |
-| contact | STRING | 否 | 联系人 |
-| phone | STRING | 否 | 联系电话 |
-| email | STRING | 否 | 邮箱 |
-| address | STRING | 否 | 地址 |
-| credit_limit | DECIMAL | 否 | 信用额度 |
-| payment_terms | STRING | 否 | 付款条款 |
-
-#### 查询客户列表
-
-```
-GET /mdm/customer/list
-GET /scp/customer/list
-```
-
-**查询参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| keyword | STRING | 否 | 搜索关键词 |
-| status | INTEGER | 否 | 状态 |
-| level | STRING | 否 | 客户等级 |
-
-#### 获取客户详情
-
-```
-GET /mdm/customer/get?id={id}
-GET /scp/customer/get?id={id}
-```
-
-#### 更新客户
-
-```
-PUT /mdm/customer/update
-PUT /scp/customer/update
-```
-
-#### 删除客户
-
-```
-DELETE /mdm/customer/delete?id={id}
-DELETE /scp/customer/delete?id={id}
-```
-
-### 11.2 客户联系人管理
-
-#### 联系人列表
-
-```
-GET /mdm/customer-contact/list?customer_id={customer_id}
-```
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "list": [
-      {
-        "id": 1,
-        "contact_name": "张经理",
-        "position": "采购总监",
-        "mobile": "13800138001",
-        "email": "zhang@example.com",
-        "is_primary": 1
-      }
-    ]
-  }
-}
-```
-
-#### 创建联系人
-
-```
-POST /mdm/customer-contact/create
-```
-
-#### 更新联系人
-
-```
-PUT /mdm/customer-contact/update
-```
-
-#### 删除联系人
-
-```
-DELETE /mdm/customer-contact/delete?id={id}
-```
-
-### 11.3 客户银行账户管理
-
-#### 银行账户列表
-
-```
-GET /mdm/customer-bank/list?customer_id={customer_id}
-```
-
-#### 创建银行账户
-
-```
-POST /mdm/customer-bank/create
-```
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| customer_id | BIGINT | 是 | 客户ID |
-| bank_name | STRING | 是 | 开户银行 |
-| bank_account | STRING | 是 | 银行账号 |
-| account_name | STRING | 是 | 账户名称 |
-| is_default | INTEGER | 否 | 是否默认 |
-
-### 11.4 客户信用管理
-
-#### 获取客户信用
-
-```
-GET /scp/customer-credit/get?customer_id={customer_id}
-```
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "credit_limit": 1000000.00,
-    "used_credit": 350000.00,
-    "available_credit": 650000.00,
-    "credit_level": "A",
-    "overdue_times": 0,
-    "eval_date": "2026-04-01"
-  }
-}
-```
-
-#### 更新客户信用
-
-```
-PUT /scp/customer-credit/update
-```
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| customer_id | BIGINT | 是 | 客户ID |
-| credit_limit | DECIMAL | 是 | 信用额度 |
-| remarks | STRING | 否 | 备注 |
-
-#### 信用记录查询
-
-```
-GET /scp/customer-credit/log?customer_id={customer_id}
-```
-
-### 11.5 客户发货预测
-
-```
-POST /wms/customer-delivery-forecast/create
-GET /wms/customer-delivery-forecast/page
-PUT /wms/customer-delivery-forecast/update
-DELETE /wms/customer-delivery-forecast/delete
-```
-
----
-
-## 12. 供应商管理API
-
-### 12.1 供应商档案CRUD
-
-#### 创建供应商
-
-```
-POST /mdm/supplier/create
-POST /scp/supplier/create
-```
-
-**请求参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| code | STRING | 是 | 供应商编码 |
-| name | STRING | 是 | 供应商名称 |
-| type | STRING | 否 | 供应商类型 |
-| category | STRING | 否 | 物料类别 |
-| contact | STRING | 否 | 联系人 |
-| phone | STRING | 否 | 联系电话 |
-| email | STRING | 否 | 邮箱 |
-| address | STRING | 否 | 地址 |
-
-#### 查询供应商列表
-
-```
-GET /mdm/supplier/list
-GET /scp/supplier/list
-```
-
-#### 获取供应商详情
-
-```
-GET /mdm/supplier/get?id={id}
-GET /scp/supplier/get?id={id}
-```
-
-### 12.2 供应商联系人管理
-
-```
-GET /mdm/supplier-contact/list?supplier_id={supplier_id}
-POST /mdm/supplier-contact/create
-PUT /mdm/supplier-contact/update
-DELETE /mdm/supplier-contact/delete?id={id}
-```
-
-### 12.3 供应商银行账户管理
-
-```
-GET /mdm/supplier-bank/list?supplier_id={supplier_id}
-POST /mdm/supplier-bank/create
-PUT /mdm/supplier-bank/update
-DELETE /mdm/supplier-bank/delete?id={id}
-```
-
-### 12.4 供应商KPI管理
-
-```
-GET /scp/supplier-kpi/list
-GET /scp/supplier-kpi/monthly?supplier_id={id}&month={month}
-POST /scp/supplier-kpi/create
-GET /scp/supplier-kpi/ranking?month={month}
-```
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": [
+  "supplier_id": 100,
+  "currency": "CNY",
+  "expected_date": "2026-07-15",
+  "lines": [
     {
-      "rank": 1,
-      "supplier_id": 1,
-      "supplier_name": "华东精密机械有限公司",
-      "total_score": 95.5,
-      "grade": "A",
-      "on_time_rate": 98.5,
-      "quality_pass_rate": 99.2
+      "material_id": 5001,
+      "quantity": 1000,
+      "unit_price": 50.00
     }
   ]
 }
 ```
 
----
-
-## 13. API响应格式规范
-
-### 13.1 统一响应结构
+**响应**：
 
 ```json
 {
-  "code": 0,
-  "msg": "success",
-  "data": {}
-}
-```
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| code | INTEGER | 状态码，0=成功，其他=失败 |
-| msg | STRING | 消息 |
-| data | OBJECT | 数据对象 |
-
-### 13.2 分页响应结构
-
-```json
-{
-  "code": 0,
-  "msg": "success",
+  "code": 200,
   "data": {
-    "list": [],
-    "total": 100,
-    "page": 1,
-    "page_size": 20
+    "id": 67890,
+    "po_no": "PO-20260703-0001",
+    "total_amount": 50000.00,
+    "status": 1,
+    "status_v2": "DRAFT"
   }
 }
 ```
 
-### 13.3 错误响应示例
+### 8.3 错误码
 
-```json
-{
-  "code": 400,
-  "msg": "参数错误：code不能为空",
-  "data": null
-}
-```
-
----
-
-## 14. 状态码定义
-
-### 14.1 采购计划状态
-
-| 状态码 | 说明 |
-|--------|------|
-| DRAFT | 草稿 |
-| READY | 已准备 |
-| CONFIRMED | 已确认 |
-| PUBLISHED | 已发布 |
-| PARTIAL | 部分执行 |
-| CLOSED | 已关闭 |
-| CANCELLED | 已取消 |
-
-### 14.2 供应商确认状态
-
-| 状态码 | 说明 |
-|--------|------|
-| PENDING | 待确认 |
-| CONFIRMED | 已确认 |
-| REJECTED | 已驳回 |
-| PARTIAL | 部分接受 |
-
-### 14.3 客户信用状态
-
-| 状态码 | 说明 |
-|--------|------|
-| NORMAL | 正常 |
-| WARNING | 预警 |
-| OVERDUE | 逾期 |
-| FROZEN | 冻结 |
-
----
-
-## 15. 备注
-
-本文档为MOM3.0 SCP供应链模块设计文档的补充内容，涵盖：
-
-1. **DDL表结构**：采购计划表、供应商主表、供应商联系人表、供应商银行账户表、客户主表、客户联系人表、客户银行账户表、客户信用表
-
-2. **供应商确认API**：供应商待确认列表、确认明细、确认保存、计划员确认
-
-3. **采购统计API**：汇总统计、供应商排名、物料分析、计划执行率
-
-4. **客户管理API**：客户档案CRUD、联系人管理、银行账户管理、信用管理
-
-5. **供应商管理API**：供应商档案CRUD、联系人管理、银行账户管理、KPI管理
-
----
-
-## 16. MRS外部接口
-
-### 16.1 功能说明
-
-MRS外部接口用于与外部MRS（物料需求计划系统）对接，实现要货计划的创建、查询和需求数据同步。
-
-### 16.2 业务流程
-
-```
-MRS系统创建要货计划 → 同步需求数据 → 查询汇总统计 → 确认要货计划
-```
-
-### 16.3 API接口
-
-#### 16.3.1 从MRS创建要货计划
-
-```
-POST /scp/mrs/createPlan
-```
-
-**功能说明**：接收MRS系统发送的要货计划数据，创建内部采购计划
-
-**请求参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| mrs_no | STRING | 是 | MRS单号 |
-| plan_type | STRING | 是 | 计划类型：MRS |
-| supplier_id | BIGINT | 是 | 供应商ID |
-| plan_date | DATE | 是 | 计划日期 |
-| required_date | DATE | 是 | 需求日期 |
-| items | ARRAY | 是 | 计划明细 |
-
-**items结构**：
-
-| 参数名 | 类型 | 说明 |
+| 错误码 | HTTP | 含义 |
 |--------|------|------|
-| material_code | STRING | 物料编码 |
-| material_name | STRING | 物料名称 |
-| plan_qty | DECIMAL | 计划数量 |
-| unit_price | DECIMAL | 单价 |
-| required_date | DATE | 需求日期 |
+| `16-01-0001` | 400 | PO 物料不存在 |
+| `16-02-0001` | 404 | PO 不存在 |
+| `16-03-0001` | 409 | PO 状态不允许此操作 |
+| `16-04-0001` | 409 | 供应商资质失效 |
 
-**响应示例**：
+---
 
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "plan_id": 1001,
-    "plan_no": "PP-MRS-2026-04001"
-  }
-}
-```
+## 9. 角色与权限
 
-#### 16.3.2 获取MRS汇总统计
+### 9.1 操作矩阵
 
-```
-GET /scp/mrs/getStatistics
-```
+| 角色 | PO CRUD | PO 审批 | SO CRUD | SO 确认 | 询价 | ASN | KPI |
+|------|---------|---------|---------|---------|------|-----|-----|
+| 系统管理员 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 采购员 | ✅ | ❌ | 查看 | ❌ | ✅ | ✅ | 查看 |
+| 采购主管 | ✅ | ✅ | 查看 | ❌ | ✅ | ✅ | ✅ |
+| 销售员 | 查看 | ❌ | ✅ | ❌ | ✅ | 查看 | 查看 |
+| 销售主管 | 查看 | ❌ | ✅ | ✅ | ✅ | 查看 | 查看 |
+| 财务 | 查看 | ❌ | 查看 | ❌ | 查看 | 查看 | ✅ |
 
-**功能说明**：查询MRS汇总统计数据
+权限码：`scp:po:create` / `scp:po:approve` / `scp:so:confirm`
 
-**查询参数**：
+### 9.2 数据权限
 
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| start_date | DATE | 否 | 开始日期 |
-| end_date | DATE | 否 | 结束日期 |
-| supplier_id | BIGINT | 否 | 供应商ID |
-| status | STRING | 否 | 状态筛选 |
+- 多租户 + 部门(销售员只看自己部门客户)
 
-**响应示例**：
+---
 
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "list": [
-      {
-        "id": 1,
-        "mrs_no": "MRS-2026-001",
-        "statistics_date": "2026-04-15",
-        "total_demand_qty": 5000,
-        "total_supply_qty": 4500,
-        "gap_qty": 500,
-        "status": "CONFIRMED"
-      }
-    ],
-    "total": 10
-  }
-}
-```
+## 10. 集成与事件
 
-#### 16.3.3 同步MRS需求数据
+### 10.1 出站事件
 
-```
-POST /scp/mrs/syncDemand
-```
+| 事件名 | 触发 | 消费者 |
+|--------|------|--------|
+| `scp.po.approved` | PO 审批通过 | WMS, 财务 |
+| `scp.po.sent` | PO 发送供应商 | 供应商门户 |
+| `scp.so.confirmed` | SO 确认 | APS, WMS |
+| `scp.so.shipped` | SO 发货完成 | 客户, 财务 |
+| `scp.asn.received` | ASN 到货 | WMS, 采购员 |
+| `scp.kpi.updated` | KPI 更新 | 报表, 采购主管 |
 
-**功能说明**：从MRS系统同步需求数据到内部系统
+### 10.2 入站事件
 
-**请求参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| mrs_no | STRING | 是 | MRS单号 |
-| sync_type | STRING | 是 | 同步类型：FULL/INCREMENTAL |
-| demand_data | ARRAY | 是 | 需求数据 |
-
-**demand_data结构**：
-
-| 参数名 | 类型 | 说明 |
+| 事件名 | 来源 | 处理 |
 |--------|------|------|
-| material_code | STRING | 物料编码 |
-| demand_qty | DECIMAL | 需求数量 |
-| supply_qty | DECIMAL | 供给数量 |
-| gap_qty | DECIMAL | 缺口数量 |
+| `erp.po.synced` | ERP | 创建/更新 PO |
+| `erp.so.synced` | ERP | 创建/更新 SO |
+| `wms.receive.completed` | WMS | 更新 PO 收货数 |
+| `wms.delivery.shipped` | WMS | 更新 SO 发货数 |
 
-#### 16.3.4 获取统计明细
-
-```
-GET /scp/mrs/getStatisticsDetail
-```
-
-**功能说明**：获取MRS汇总统计的明细数据
-
-**查询参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| main_id | BIGINT | 是 | 汇总统计ID |
-
-**响应示例**：
+### 10.3 消息格式
 
 ```json
 {
-  "code": 0,
-  "msg": "success",
+  "event_id": "uuid",
+  "event_name": "scp.so.confirmed",
+  "event_time": "2026-07-03T10:00:00+08:00",
+  "tenant_id": 1,
   "data": {
-    "main": {
-      "id": 1,
-      "mrs_no": "MRS-2026-001",
-      "statistics_date": "2026-04-15"
-    },
-    "details": [
-      {
-        "material_code": "MAT-001",
-        "material_name": "钢板A3",
-        "demand_qty": 1000,
-        "supply_qty": 900,
-        "gap_qty": 100,
-        "version": "V1"
-      }
-    ]
+    "so_no": "SO-20260703-0001",
+    "customer_id": 100,
+    "total_amount": 80000
   }
 }
 ```
 
 ---
 
-## 17. QAD对接接口
+## 11. 可观测性
 
-### 17.1 功能说明
+### 11.1 关键指标
 
-QAD对接接口用于与QAD ERP系统同步要货预测数据，实现跨系统数据互通。
+| 指标 | 类型 | 告警阈值 |
+|------|------|---------|
+| `scp_po_create_total` | Counter | - |
+| `scp_so_confirm_latency_seconds` | Histogram | P95 > 2s |
+| `scp_asn_accuracy` | Gauge | < 95% |
 
-### 17.2 业务流程
+### 11.2 告警规则
 
-```
-QAD系统 → 同步预测数据 → 预测确认 → 版本管理
-```
-
-### 17.3 API接口
-
-#### 17.3.1 同步QAD要货预测
-
-```
-POST /scp/qad/syncForecast
-```
-
-**功能说明**：从QAD系统同步要货预测数据
-
-**请求参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| qad_doc_no | STRING | 是 | QAD单据号 |
-| sync_time | DATETIME | 是 | 同步时间 |
-| forecast_data | ARRAY | 是 | 预测数据 |
-
-**forecast_data结构**：
-
-| 参数名 | 类型 | 说明 |
-|--------|------|------|
-| material_code | STRING | 物料编码 |
-| material_name | STRING | 物料名称 |
-| demand_qty | DECIMAL | 需求数量 |
-| demand_date | DATE | 需求日期 |
-| priority | INTEGER | 优先级 |
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "sync_count": 50,
-    "sync_time": "2026-04-15 10:30:00"
-  }
-}
-```
-
-#### 17.3.2 获取预测列表
-
-```
-GET /scp/qad/getForecastList
-```
-
-**功能说明**：查询已同步的QAD预测数据列表
-
-**查询参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| qad_doc_no | STRING | 否 | QAD单据号 |
-| material_code | STRING | 否 | 物料编码 |
-| start_date | DATE | 否 | 开始日期 |
-| end_date | DATE | 否 | 结束日期 |
-| status | STRING | 否 | 状态 |
-| page | INTEGER | 否 | 页码 |
-| page_size | INTEGER | 否 | 每页条数 |
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "list": [
-      {
-        "id": 1,
-        "qad_doc_no": "QAD-FC-2026-001",
-        "material_code": "MAT-001",
-        "material_name": "钢板A3",
-        "demand_qty": 500,
-        "demand_date": "2026-04-20",
-        "status": "CONFIRMED",
-        "version": "V2"
-      }
-    ],
-    "total": 100,
-    "page": 1,
-    "page_size": 20
-  }
-}
-```
-
-#### 17.3.3 确认预测数据
-
-```
-POST /scp/qad/confirmForecast
-```
-
-**功能说明**：确认QAD预测数据，支持批量确认
-
-**请求参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| forecast_ids | ARRAY | 是 | 预测ID列表 |
-| confirm_items | ARRAY | 否 | 确认明细（可选） |
-| remarks | STRING | 否 | 备注 |
-
-**confirm_items结构**：
-
-| 参数名 | 类型 | 说明 |
-|--------|------|------|
-| forecast_id | BIGINT | 预测ID |
-| adjusted_qty | DECIMAL | 调整后数量 |
-| adjusted_date | DATE | 调整后日期 |
-| reason | STRING | 调整原因 |
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "confirmed_count": 10,
-    "version": "V3"
-  }
-}
-```
+| 规则 | 阈值 |
+|------|------|
+| PO 超期未审批 | > 3 天 |
+| 供应商 KPI 持续下降 | 3 月连续 |
 
 ---
 
-## 18. 要货预测子表接口
+## 12. 非功能需求
 
-### 18.1 功能说明
+### 12.1 性能
 
-要货预测子表接口用于管理预测明细数据，支持按主表查询和版本管理。
+| 指标 | 目标 |
+|------|------|
+| PO 创建 P95 | ≤ 1s |
+| SO 列表查询 P95 | ≤ 1s |
 
-### 18.2 API接口
+### 12.2 可用性
 
-#### 18.2.1 按主表查询明细
+| 指标 | 目标 |
+|------|------|
+| 月度可用性 | ≥ 99.5% |
+| RTO | ≤ 4h |
+| RPO | ≤ 24h |
 
-```
-GET /scp/demandforecasting-detail/listByMain
-```
+### 12.3 数据量与保留期
 
-**功能说明**：根据主表ID查询预测明细列表
-
-**查询参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| main_id | BIGINT | 是 | 主表ID |
-| material_code | STRING | 否 | 物料编码 |
-| version | STRING | 否 | 版本号 |
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "list": [
-      {
-        "id": 1,
-        "main_id": 100,
-        "material_code": "MAT-001",
-        "material_name": "钢板A3",
-        "demand_qty": 1000,
-        "supply_qty": 900,
-        "gap_qty": 100,
-        "version": "V1"
-      }
-    ],
-    "total": 5
-  }
-}
-```
-
-#### 18.2.2 获取版本列表
-
-```
-GET /scp/demandforecasting-detail/getVersions
-```
-
-**功能说明**：获取指定物料的预测版本历史
-
-**查询参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| material_code | STRING | 是 | 物料编码 |
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "versions": [
-      {"version": "V1", "create_time": "2026-04-01 10:00:00"},
-      {"version": "V2", "create_time": "2026-04-10 10:00:00"},
-      {"version": "V3", "create_time": "2026-04-15 10:00:00"}
-    ]
-  }
-}
-```
-
-#### 18.2.3 导入预测数据
-
-```
-POST /scp/demandforecasting-detail/import
-```
-
-**功能说明**：批量导入预测数据
-
-**请求参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| main_id | BIGINT | 是 | 主表ID |
-| import_data | ARRAY | 是 | 导入数据 |
-
-**import_data结构**：
-
-| 参数名 | 类型 | 说明 |
-|--------|------|------|
-| material_code | STRING | 物料编码 |
-| material_name | STRING | 物料名称 |
-| demand_qty | DECIMAL | 需求数量 |
-| supply_qty | DECIMAL | 供给数量 |
-| gap_qty | DECIMAL | 缺口数量 |
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "import_count": 50,
-    "fail_count": 0,
-    "errors": []
-  }
-}
-```
+| 数据 | 年增量 | 保留期 |
+|------|--------|--------|
+| 采购订单 | 5 万/年 | 在线 5 年 |
+| 销售订单 | 10 万/年 | 在线 5 年 |
+| ASN | 5 万/年 | 在线 2 年 |
+| 询价 | 1 万/年 | 在线 3 年 |
 
 ---
 
-## 19. 采购计划策略S001
+## 13. 附录
 
-### 19.1 功能说明
+### 13.1 CHANGELOG
 
-采购计划策略S001是驱动采购计划自动生成的核心策略引擎，根据预设规则自动计算采购需求并生成采购计划。
+| 版本 | 日期 | 修订人 | 说明 |
+|------|------|--------|------|
+| V1.x | 2026-04 | CI | 初版（1594 行,12 章节 0 Mermaid）|
+| **V2.0** | **2026-07-03** | **架构组 / 小二** | **按统一模板重写,1594→800 行,状态字段按 0051 方案统一** |
 
-### 19.2 策略规则配置
+### 13.2 相关链接
 
-#### 19.2.1 策略参数
+- [MOM3.0_主设计文档.md](./MOM3.0_主设计文档.md)
+- [MOM3.0_模块设计模板.md](./MOM3.0_模块设计模板.md)
+- [MOM3.0_状态字段统一方案.md](./MOM3.0_状态字段统一方案.md)
+- 上游：ERP / MDM
+- 下游：[APS](./MOM3.0_APS计划模块设计文档.md) / [WMS](./MOM3.0_WMS仓储模块设计文档.md) / [MES](./MOM3.0_MES生产执行模块设计文档.md) / [QMS](./MOM3.0_质量模块设计文档.md)
 
-| 参数名 | 类型 | 说明 |
-|--------|------|------|
-| strategy_code | STRING | 策略编码：S001 |
-| strategy_name | STRING | 策略名称 |
-| enabled | INTEGER | 是否启用：1=启用/0=禁用 |
-| priority | INTEGER | 优先级 |
-| trigger_type | STRING | 触发类型：MANUAL/AUTO/SCHEDULE |
-| schedule_cron | STRING | 调度表达式（trigger_type为SCHEDULE时） |
+### 13.3 待办
 
-#### 19.2.2 策略规则
+| # | 问题 | 优先级 | 计划 |
+|---|------|--------|------|
+| 1 | EDI 自动化 | P1 | V2.1 |
+| 2 | 智能比价 | P2 | V3.0 |
+| 3 | 区块链溯源 | P2 | 2027 |
 
-| 规则编码 | 规则名称 | 说明 |
-|----------|----------|------|
-| R001 | 最小采购量规则 | 当采购量小于最小采购量时，按最小采购量采购 |
-| R002 | 批量采购规则 | 按指定批量倍数进行采购 |
-| R003 | 安全库存规则 | 采购量 = 需求数量 + 安全库存 - 当前库存 |
-| R004 | 供应商交期规则 | 根据供应商交期调整采购计划 |
-| R005 | 优先级规则 | 按物料优先级排序，高优先级优先采购 |
+### 13.4 OpenAPI / Swagger
 
-#### 19.2.3 策略执行流程
-
-```
-1. 触发条件检查 → 2. 数据采集 → 3. 规则匹配 → 4. 计划计算 → 5. 计划生成 → 6. 结果输出
-```
-
-#### 19.2.4 API接口
-
-```
-GET /scp/strategy/list?code=S001
-POST /scp/strategy/execute
-POST /scp/strategy/config/update
-```
-
-**execute请求参数**：
-
-| 参数名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| strategy_code | STRING | 是 | 策略编码 |
-| start_date | DATE | 是 | 开始日期 |
-| end_date | DATE | 是 | 结束日期 |
-| supplier_id | BIGINT | 否 | 供应商ID（可选） |
-
-**响应示例**：
-
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "execute_id": "EX-2026-0415001",
-    "plans_generated": 15,
-    "total_amount": 125000.00,
-    "execution_time": "2026-04-15 10:30:00"
-  }
-}
-```
+- 路径：`/api/v1/swagger/*`
 
 ---
 
-## 20. DDL表结构（补充）
-
-### 20.1 MRS汇总统计表 (scp_purchase_mrs_statistics)
-
-```sql
--- MRS汇总统计表：存储MRS系统的要货计划汇总数据
-CREATE TABLE scp_purchase_mrs_statistics (
-    id BIGSERIAL PRIMARY KEY,
-    tenant_id BIGINT NOT NULL DEFAULT 1,
-    mrs_no VARCHAR(50) NOT NULL,                    -- MRS单号
-    statistics_date DATE NOT NULL,                   -- 统计日期
-    total_demand_qty DECIMAL(18,4) DEFAULT 0,         -- 总需求数量
-    total_supply_qty DECIMAL(18,4) DEFAULT 0,         -- 总供给数量
-    gap_qty DECIMAL(18,4) DEFAULT 0,                 -- 缺口数量
-    status VARCHAR(20) DEFAULT 'DRAFT',              -- 状态：DRAFT/CONFIRMED/CLOSED
-    creator VARCHAR(100),
-    create_time TIMESTAMP DEFAULT NOW(),
-    updater VARCHAR(100),
-    update_time TIMESTAMP DEFAULT NOW(),
-    deleted INTEGER DEFAULT 0                         -- 软删除标记
-);
-
-COMMENT ON TABLE scp_purchase_mrs_statistics IS 'MRS汇总统计表';
-COMMENT ON COLUMN scp_purchase_mrs_statistics.mrs_no IS 'MRS单号，外部系统唯一标识';
-COMMENT ON COLUMN scp_purchase_mrs_statistics.gap_qty IS '缺口数量，total_demand_qty - total_supply_qty';
-```
-
-### 20.2 要货预测子表 (scp_demand_forecasting_detail)
-
-```sql
--- 要货预测子表：存储要货预测的明细数据
-CREATE TABLE scp_demand_forecasting_detail (
-    id BIGSERIAL PRIMARY KEY,
-    tenant_id BIGINT NOT NULL DEFAULT 1,
-    main_id BIGINT NOT NULL,                         -- 主表ID（关联scp_purchase_mrs_statistics）
-    material_code VARCHAR(50) NOT NULL,               -- 物料编码
-    material_name VARCHAR(200),                      -- 物料名称
-    demand_qty DECIMAL(18,4) DEFAULT 0,              -- 需求数量
-    supply_qty DECIMAL(18,4) DEFAULT 0,               -- 供给数量
-    gap_qty DECIMAL(18,4) DEFAULT 0,                 -- 缺口数量
-    version VARCHAR(20) DEFAULT 'V1',                -- 版本号
-    creator VARCHAR(100),
-    create_time TIMESTAMP DEFAULT NOW(),
-    updater VARCHAR(100),
-    update_time TIMESTAMP DEFAULT NOW(),
-    tenant_id BIGINT NOT NULL DEFAULT 1,
-    deleted INTEGER DEFAULT 0                         -- 软删除标记
-);
-
-CREATE INDEX idx_demand_forecasting_detail_main_id ON scp_demand_forecasting_detail(main_id);
-CREATE INDEX idx_demand_forecasting_detail_material_code ON scp_demand_forecasting_detail(material_code);
-CREATE INDEX idx_demand_forecasting_detail_version ON scp_demand_forecasting_detail(version);
-
-COMMENT ON TABLE scp_demand_forecasting_detail IS '要货预测子表';
-COMMENT ON COLUMN scp_demand_forecasting_detail.main_id IS '关联主表ID';
-COMMENT ON COLUMN scp_demand_forecasting_detail.version IS '版本号，用于版本管理';
-```
-
----
-
-## 21. 附录：新增接口汇总
-
-### 21.1 MRS外部接口 /scp/mrs/*
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | /scp/mrs/createPlan | 从MRS创建要货计划 |
-| GET | /scp/mrs/getStatistics | 获取MRS汇总统计 |
-| POST | /scp/mrs/syncDemand | 同步MRS需求数据 |
-| GET | /scp/mrs/getStatisticsDetail | 获取统计明细 |
-
-### 21.2 QAD对接接口 /scp/qad/*
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | /scp/qad/syncForecast | 同步QAD要货预测 |
-| GET | /scp/qad/getForecastList | 获取预测列表 |
-| POST | /scp/qad/confirmForecast | 确认预测数据 |
-
-### 21.3 要货预测子表接口 /scp/demandforecasting-detail/*
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /scp/demandforecasting-detail/listByMain | 按主表查询明细 |
-| GET | /scp/demandforecasting-detail/getVersions | 获取版本列表 |
-| POST | /scp/demandforecasting-detail/import | 导入预测数据 |
-
-### 21.4 采购计划策略接口 /scp/strategy/*
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /scp/strategy/list | 策略列表查询 |
-| POST | /scp/strategy/execute | 执行策略 |
-| POST | /scp/strategy/config/update | 更新策略配置 |
+*文档作者：架构组 / 小二*
+*最后更新：2026-07-03 16:30*
