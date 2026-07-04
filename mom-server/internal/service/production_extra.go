@@ -66,7 +66,8 @@ func (s *DispatchService) Start(ctx context.Context, id string) error {
 		return err
 	}
 	return s.repo.Update(ctx, dispatchID, map[string]interface{}{
-		"status": 2,
+		"status":     2,
+		"status_v2":  "IN_PROGRESS", // 双轨:MOM 3.0 V2.1
 	})
 }
 
@@ -77,6 +78,7 @@ func (s *DispatchService) Complete(ctx context.Context, id string) error {
 		return err
 	}
 	return s.repo.Update(ctx, dispatchID, map[string]interface{}{
-		"status": 3,
+		"status":     3,
+		"status_v2":  "COMPLETED", // 双轨:MOM 3.0 V2.1
 	})
 }

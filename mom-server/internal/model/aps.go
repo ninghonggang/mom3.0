@@ -14,11 +14,20 @@ type MRP struct {
 	MRPType      string     `json:"mrp_type" gorm:"size:20"` // MPS/MRP
 	PlanDate     *time.Time `json:"plan_date"` // 计划日期
 	Status       int        `json:"status" gorm:"default:1"` // 1待计算/2计算中/3已完成
+	StatusV2     string     `json:"status_v2" gorm:"size:30;index"` // 双轨:MOM 3.0 V2.1
 	Remark       *string    `json:"remark" gorm:"size:500"`
 }
 
 func (MRP) TableName() string {
 	return "aps_mrp"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2)
+func (o *MRP) StatusCode() string {
+	if o.StatusV2 != "" {
+		return o.StatusV2
+	}
+	return map[int]string{1: "PENDING", 2: "RUNNING", 3: "COMPLETED", 4: "FAILED"}[o.Status]
 }
 
 // MRPItem MRP明细
@@ -51,10 +60,19 @@ type MPS struct {
 	MaterialName  string     `json:"material_name" gorm:"size:100"`
 	Quantity     float64    `json:"quantity" gorm:"type:decimal(18,4)"`
 	Status       int        `json:"status" gorm:"default:1"`
+	StatusV2     string     `json:"status_v2" gorm:"size:30;index"` // 双轨:MOM 3.0 V2.1
 }
 
 func (MPS) TableName() string {
 	return "aps_mps"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2)
+func (o *MPS) StatusCode() string {
+	if o.StatusV2 != "" {
+		return o.StatusV2
+	}
+	return map[int]string{1: "DRAFT", 2: "RELEASED", 3: "IN_PROGRESS", 4: "COMPLETED", 5: "CANCELLED"}[o.Status]
 }
 
 // SchedulePlan 排程计划
@@ -67,11 +85,20 @@ type SchedulePlan struct {
 	EndDate      *time.Time `json:"end_date"`
 	Algorithm    string     `json:"algorithm" gorm:"size:20"` // 遗传/粒子群/启发式
 	Status       int        `json:"status" gorm:"default:1"` // 1待排程/2排程中/3已完成
+	StatusV2     string     `json:"status_v2" gorm:"size:30;index"` // 双轨:MOM 3.0 V2.1
 	Remark       *string    `json:"remark" gorm:"size:500"`
 }
 
 func (SchedulePlan) TableName() string {
 	return "aps_schedule_plan"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2)
+func (o *SchedulePlan) StatusCode() string {
+	if o.StatusV2 != "" {
+		return o.StatusV2
+	}
+	return map[int]string{1: "PENDING", 2: "RUNNING", 3: "COMPLETED", 4: "FAILED"}[o.Status]
 }
 
 // ScheduleResult 排程结果
@@ -90,10 +117,19 @@ type ScheduleResult struct {
 	ActualStartTime *time.Time `json:"actual_start_time"`
 	ActualEndTime *time.Time `json:"actual_end_time"`
 	Status       int        `json:"status" gorm:"default:1"` // 1待执行/2执行中/3已完成
+	StatusV2     string     `json:"status_v2" gorm:"size:30;index"` // 双轨:MOM 3.0 V2.1
 }
 
 func (ScheduleResult) TableName() string {
 	return "aps_schedule_result"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2)
+func (o *ScheduleResult) StatusCode() string {
+	if o.StatusV2 != "" {
+		return o.StatusV2
+	}
+	return map[int]string{1: "PENDING", 2: "IN_PROGRESS", 3: "COMPLETED"}[o.Status]
 }
 
 // Resource 资源
@@ -129,9 +165,18 @@ type WorkCenter struct {
 	UtilizationTarget float64 `json:"utilization_target" gorm:"type:decimal(5,2);default:85"`
 	SetupTime        int     `json:"setup_time" gorm:"default:0"`
 	Status           string  `json:"status" gorm:"size:20;default:ACTIVE"`
+	StatusV2         string  `json:"status_v2" gorm:"size:30;index"` // 双轨:MOM 3.0 V2.1
 	Description      string  `json:"description" gorm:"size:500"`
 }
 
 func (WorkCenter) TableName() string {
 	return "aps_work_center"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2)
+func (o *WorkCenter) StatusCode() string {
+	if o.StatusV2 != "" {
+		return o.StatusV2
+	}
+	return o.Status // 已是 varchar
 }

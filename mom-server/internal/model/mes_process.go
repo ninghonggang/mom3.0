@@ -17,6 +17,7 @@ type MesProcess struct {
 	MaterialName  *string    `json:"material_name" gorm:"size:100"`
 	Version       string     `json:"version" gorm:"size:20"` // 版本号
 	Status       string     `json:"status" gorm:"size:20;default:'DRAFT'"` // DRAFT草稿/ACTIVE生效/EXPIRED失效
+	StatusV2     string     `json:"status_v2" gorm:"size:30;index"`       // 双轨:varchar - MOM 3.0 V2.1
 	EffDate      *time.Time `json:"eff_date" gorm:"type:date"` // 生效日期
 	ExpDate      *time.Time `json:"exp_date" gorm:"type:date"` // 失效日期
 	Remark       *string    `json:"remark" gorm:"size:500"`

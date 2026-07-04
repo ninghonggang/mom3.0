@@ -73,6 +73,7 @@ func (s *ProductionOrderService) Update(ctx context.Context, id string, order *m
 	if oldOrder.Status != order.Status {
 		s.changeLogSvc.RecordChange(ctx, int64(orderID), order.OrderNo, ChangeTypeStatusChange, oldOrder.Status, order.Status, "", changedBy)
 		updates["status"] = order.Status
+		updates["status_v2"] = order.StatusV2 // 双轨:MOM 3.0 V2.1
 	}
 
 	// 更新其他字段
@@ -116,7 +117,8 @@ func (s *ProductionOrderService) Start(ctx context.Context, id string, changedBy
 	s.changeLogSvc.RecordChange(ctx, int64(orderID), oldOrder.OrderNo, ChangeTypeStatusChange, oldOrder.Status, 2, "开始生产", changedBy)
 
 	return s.repo.Update(ctx, orderID, map[string]interface{}{
-		"status": 2, // 生产中
+		"status":     2, // 生产中
+		"status_v2":  "IN_PROGRESS", // 双轨:MOM 3.0 V2.1
 	})
 }
 
@@ -137,7 +139,8 @@ func (s *ProductionOrderService) Complete(ctx context.Context, id string, change
 	s.changeLogSvc.RecordChange(ctx, int64(orderID), oldOrder.OrderNo, ChangeTypeStatusChange, oldOrder.Status, 3, "完成生产", changedBy)
 
 	return s.repo.Update(ctx, orderID, map[string]interface{}{
-		"status": 3, // 已完成
+		"status":     3, // 已完成
+		"status_v2":  "COMPLETED", // 双轨:MOM 3.0 V2.1
 	})
 }
 

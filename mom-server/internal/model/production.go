@@ -69,11 +69,39 @@ type ProductionOrder struct {
 	ActualEndDate   *time.Time `json:"actual_end_date"` // 实际结束
 	Priority        int        `json:"priority" gorm:"default:1"`
 	Status          int        `json:"status" gorm:"default:1"` // 1待生产/2生产中/3已完成/4已取消
+	StatusV2        string     `json:"status_v2" gorm:"size:30;index"` // 双轨:status_v2 varchar(30) - MOM 3.0 V2.1
 	Remark          *string    `json:"remark" gorm:"size:500"`
 }
 
 func (ProductionOrder) TableName() string {
 	return "production_orders"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status int → 字典码)
+func (o *ProductionOrder) StatusCode() string {
+	if o.StatusV2 != "" {
+		return o.StatusV2
+	}
+	return map[int]string{1: "DRAFT", 2: "RELEASED", 3: "IN_PROGRESS", 4: "COMPLETED", 5: "CLOSED", 6: "CANCELLED"}[o.Status]
+}
+
+// SetStatus 同时写 status(int) + status_v2(varchar) - 双轨制
+func (o *ProductionOrder) SetStatus(code string) {
+	o.StatusV2 = code
+	switch code {
+	case "DRAFT":
+		o.Status = 1
+	case "RELEASED":
+		o.Status = 2
+	case "IN_PROGRESS":
+		o.Status = 3
+	case "COMPLETED":
+		o.Status = 4
+	case "CLOSED":
+		o.Status = 5
+	case "CANCELLED":
+		o.Status = 6
+	}
 }
 
 // ProductionReport 生产报工
@@ -93,11 +121,21 @@ type ProductionReport struct {
 	QualifiedQty  float64    `json:"qualified_qty" gorm:"type:decimal(18,4)"` // 合格数量
 	RejectedQty   float64    `json:"rejected_qty" gorm:"type:decimal(18,4);default:0"` // 不良数量
 	WorkTime      int        `json:"work_time"` // 工时(分钟)
+	Status        int        `json:"status" gorm:"default:1"` // 1已提交/2已确认/3已审核
+	StatusV2      string     `json:"status_v2" gorm:"size:30;index"` // 双轨:MOM 3.0 V2.1
 	Remark        *string    `json:"remark" gorm:"size:500"`
 }
 
 func (ProductionReport) TableName() string {
 	return "pro_production_report"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status int → 字典码)
+func (o *ProductionReport) StatusCode() string {
+	if o.StatusV2 != "" {
+		return o.StatusV2
+	}
+	return map[int]string{1: "SUBMITTED", 2: "CONFIRMED", 3: "AUDITED", 4: "REJECTED"}[o.Status]
 }
 
 // Dispatch 派工单
@@ -114,10 +152,19 @@ type Dispatch struct {
 	AssignUserName *string   `json:"assign_user_name" gorm:"size:50"`
 	Quantity      float64    `json:"quantity" gorm:"type:decimal(18,4)"` // 派工数量
 	Status        int        `json:"status" gorm:"default:1"` // 1待开始/2进行中/3已完成
+	StatusV2      string     `json:"status_v2" gorm:"size:30;index"` // 双轨:MOM 3.0 V2.1
 }
 
 func (Dispatch) TableName() string {
 	return "pro_dispatch"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status int → 字典码)
+func (o *Dispatch) StatusCode() string {
+	if o.StatusV2 != "" {
+		return o.StatusV2
+	}
+	return map[int]string{1: "PENDING", 2: "IN_PROGRESS", 3: "COMPLETED"}[o.Status]
 }
 
 // ProductionOrderChangeLog 生产工单变更日志

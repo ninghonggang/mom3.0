@@ -28,6 +28,7 @@ type MobileJobReport struct {
 	EndTime        time.Time  `json:"end_time"`                             // 结束时间
 	ReportType     int        `json:"report_type" gorm:"default:1"`         // 报工类型：1正常 2补报 3异常
 	Status         int        `json:"status" gorm:"default:1"`              // 状态：1已提交 2已确认 3已审核
+	StatusV2       string     `json:"status_v2" gorm:"size:30;index"`       // 双轨:varchar - MOM 3.0 V2.1
 	Remarks        string     `json:"remarks" gorm:"type:text"`             // 备注
 	ConfirmBy      int64      `json:"confirm_by"`                           // 确认人
 	ConfirmAt      *time.Time `json:"confirm_at"`                           // 确认时间
@@ -35,6 +36,14 @@ type MobileJobReport struct {
 	AuditAt        *time.Time `json:"audit_at"`                             // 审核时间
 	CreatedAt      time.Time  `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt      time.Time  `json:"updated_at" gorm:"autoUpdateTime"`
+}
+
+// StatusCode 返回有效状态码(优先 status_v2)
+func (o *MobileJobReport) StatusCode() string {
+	if o.StatusV2 != "" {
+		return o.StatusV2
+	}
+	return map[int]string{1: "SUBMITTED", 2: "CONFIRMED", 3: "AUDITED", 4: "REJECTED"}[o.Status]
 }
 
 func (MobileJobReport) TableName() string {

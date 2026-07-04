@@ -68,6 +68,7 @@ func (s *MPSService) Submit(ctx context.Context, id string) error {
 	}
 	return s.repo.Update(ctx, mpsID, map[string]interface{}{
 		"status": 2,
+		"status_v2": "RELEASED", // 双轨:MOM 3.0 V2.1
 	})
 }
 
@@ -224,7 +225,7 @@ type PurchaseSuggestion struct {
 // RunMRP 执行完整的MRP计算（基于MPS和BOM展开）
 func (s *MRPService) RunMRP(ctx context.Context, mrpID int64, planMonth string) error {
 	// 1. 更新MRP状态为计算中
-	if err := s.mrpRepo.Update(ctx, uint(mrpID), map[string]interface{}{"status": 2}); err != nil {
+	if err := s.mrpRepo.Update(ctx, uint(mrpID), map[string]interface{}{"status": 2, "status_v2": "RUNNING"}); err != nil {
 		return fmt.Errorf("更新MRP状态失败: %w", err)
 	}
 
@@ -283,7 +284,7 @@ func (s *MRPService) RunMRP(ctx context.Context, mrpID int64, planMonth string) 
 	}
 
 	// 6. 更新MRP状态为已完成
-	if err := s.mrpRepo.Update(ctx, uint(mrpID), map[string]interface{}{"status": 3}); err != nil {
+	if err := s.mrpRepo.Update(ctx, uint(mrpID), map[string]interface{}{"status": 3, "status_v2": "COMPLETED"}); err != nil {
 		return fmt.Errorf("更新MRP状态失败: %w", err)
 	}
 
@@ -349,7 +350,7 @@ func (s *MRPService) Calculate(ctx context.Context, id string) error {
 	}
 
 	// 更新状态为计算中
-	if err := s.mrpRepo.Update(ctx, mrpID, map[string]interface{}{"status": 2}); err != nil {
+	if err := s.mrpRepo.Update(ctx, mrpID, map[string]interface{}{"status": 2, "status_v2": "RUNNING"}); err != nil {
 		return err
 	}
 
@@ -378,6 +379,7 @@ func (s *MRPService) Calculate(ctx context.Context, id string) error {
 	// 更新MRP状态为已完成
 	return s.mrpRepo.Update(ctx, mrpID, map[string]interface{}{
 		"status": 3,
+		"status_v2": "COMPLETED", // 双轨:MOM 3.0 V2.1
 	})
 }
 
@@ -452,7 +454,8 @@ func (s *ScheduleService) Execute(ctx context.Context, id string) error {
 		seq++
 	}
 	return s.scheduleRepo.Update(ctx, planID, map[string]interface{}{
-		"status": 3, // 已完成
+		"status": 3,
+		"status_v2": "COMPLETED", // 双轨:MOM 3.0 V2.1 // 已完成
 	})
 }
 
@@ -618,7 +621,8 @@ func (s *ScheduleService) ExecuteSchedulingWithRule(ctx context.Context, req Sch
 
 	// 更新计划状态
 	if err := s.scheduleRepo.Update(ctx, uint(req.PlanID), map[string]interface{}{
-		"status": 3,
+		"status":     3,
+		"status_v2":  "COMPLETED", // 双轨:MOM 3.0 V2.1
 	}); err != nil {
 		return fmt.Errorf("更新计划状态失败: %w", err)
 	}
@@ -908,7 +912,8 @@ func (s *ScheduleService) ExecuteConstrainedScheduling(ctx context.Context, req 
 
 	// 更新计划状态
 	if err := s.scheduleRepo.Update(ctx, uint(req.PlanID), map[string]interface{}{
-		"status": 3,
+		"status":     3,
+		"status_v2":  "COMPLETED", // 双轨:MOM 3.0 V2.1
 	}); err != nil {
 		return fmt.Errorf("更新计划状态失败: %w", err)
 	}
