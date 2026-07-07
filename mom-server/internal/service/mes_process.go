@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 
 	"gorm.io/gorm"
@@ -77,7 +78,6 @@ func (s *MesProcessService) Create(ctx context.Context, tenantID int64, req *mod
 		ProcessCode:  req.ProcessCode,
 		ProcessName:  req.ProcessName,
 		Version:     req.Version,
-		Status:      req.Status,
 		EffDate:     effDate,
 		ExpDate:     expDate,
 	}
@@ -93,9 +93,12 @@ func (s *MesProcessService) Create(ctx context.Context, tenantID int64, req *mod
 	if req.Remark != "" {
 		process.Remark = &req.Remark
 	}
-	if process.Status == "" {
-		process.Status = "DRAFT"
+	// 状态统一通过 SetStatus 双轨写入(status + status_v2), 与 mdm_status_dict 对齐
+	statusCode := req.Status
+	if statusCode == "" {
+		statusCode = string(status.MesProcessDraft)
 	}
+	process.SetStatus(statusCode)
 
 	// 创建工艺路线
 	if err := s.processRepo.Create(ctx, process); err != nil {
@@ -169,7 +172,13 @@ func (s *MesProcessService) Update(ctx context.Context, id uint, req *model.MesP
 		updates["process_name"] = req.ProcessName
 	}
 	if req.Status != "" {
-		updates["status"] = req.Status
+		// 双轨制: 状态变更同时写 status + status_v2, 与 0051 迁移对齐
+		code := status.Code(req.Status)
+		if !code.IsValid(status.MesProcessAll) {
+			return nil, errors.New("无效的工艺路线状态: " + req.Status)
+		}
+		updates["status"] = code.String()
+		updates["status_v2"] = code.String()
 	}
 	if effDate != nil {
 		updates["eff_date"] = effDate

@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"mom-server/internal/pkg/status"
 )
 
 // ========== MES工艺路线模块 ==========
@@ -29,6 +31,26 @@ type MesProcess struct {
 
 func (MesProcess) TableName() string {
 	return "mes_process"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// 与 production.go ProductionOrder.StatusCode() 同模式,统一 MOM 3.0 切读路径
+func (p *MesProcess) StatusCode() string {
+	if p.StatusV2 != "" {
+		return p.StatusV2
+	}
+	return string(status.MesProcessFromLegacyVarchar(p.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制,与 mdm_status_dict 对齐)
+// 入参:字典码(DRAFT / ACTIVE / OBSOLETE),非法码自动 fallback DRAFT
+func (p *MesProcess) SetStatus(code string) {
+	c := status.Code(code)
+	if !c.IsValid(status.MesProcessAll) {
+		code = string(status.MesProcessDraft)
+	}
+	p.Status = code
+	p.StatusV2 = code
 }
 
 // MesProcessOperation 工艺路线工序表

@@ -68,8 +68,8 @@ type ProductionOrder struct {
 	ActualStartDate *time.Time `json:"actual_start_date"` // 实际开始
 	ActualEndDate   *time.Time `json:"actual_end_date"` // 实际结束
 	Priority        int        `json:"priority" gorm:"default:1"`
-	Status          int        `json:"status" gorm:"default:1"` // 1待生产/2生产中/3已完成/4已取消
-	StatusV2        string     `json:"status_v2" gorm:"size:30;index"` // 双轨:status_v2 varchar(30) - MOM 3.0 V2.1
+	Status          int        `json:"status" gorm:"default:1"` // legacy bigint,与 status_v2 双轨 - 1草稿/2已下达/3生产中/4已完成/5已关闭/6已取消
+	StatusV2        string     `json:"status_v2" gorm:"size:30;index"` // 双轨:status_v2 varchar(30) - MOM 3.0 V2.1, 与 mdm_status_dict 对齐
 	Remark          *string    `json:"remark" gorm:"size:500"`
 }
 
