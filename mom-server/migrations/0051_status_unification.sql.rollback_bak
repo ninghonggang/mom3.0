@@ -4,12 +4,8 @@
 -- 关联文档: docs/MOM3.0_状态字段统一方案.md
 -- 目标: 全 MOM 3.0 状态字段统一为 varchar(30) + 字典表 mdm_status_dict
 -- 策略: 双轨制 — 加 status_v2 字段,不删旧 status,逐步切读
---
--- 设计变更 2026-07-08(架构组 / 小二):
---   - 表名匹配 DB 实际: production_dispatch → pro_dispatch / production_report → pro_production_report
---   - boms 表 DB 未建(只在 model 层声明),用 ALTER TABLE IF EXISTS + DO 块容错跳过
---   - 拆 BEGIN/COMMIT 事务,改成逐行自动提交,允许单表失败不阻塞整体
---   - 校验循环改 EXCEPTION 容错,缺表输出 WARNING 不中断
+
+BEGIN;
 
 -- ============================================================
 -- 1. 建 mdm_status_dict 字典表
@@ -110,17 +106,17 @@ INSERT INTO mdm_status_dict (domain, entity, code, label, element_type, is_termi
 -- ============================================================
 -- 3. 加 status_v2 字段(双轨,不删旧 status)
 -- ============================================================
-ALTER TABLE production_orders         ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
-ALTER TABLE pro_dispatch              ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
-ALTER TABLE pro_production_report     ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
-ALTER TABLE mobile_job_report         ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
-ALTER TABLE mes_process               ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
-ALTER TABLE IF EXISTS boms            ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
-ALTER TABLE aps_mps                   ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
-ALTER TABLE aps_mrp                   ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
-ALTER TABLE aps_schedule_plan         ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
-ALTER TABLE aps_schedule_result       ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
-ALTER TABLE aps_work_center           ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
+ALTER TABLE production_orders     ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
+ALTER TABLE production_dispatch   ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
+ALTER TABLE production_report     ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
+ALTER TABLE mobile_job_report     ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
+ALTER TABLE mes_process           ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
+ALTER TABLE boms                  ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
+ALTER TABLE aps_mps               ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
+ALTER TABLE aps_mrp               ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
+ALTER TABLE aps_schedule_plan     ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
+ALTER TABLE aps_schedule_result   ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
+ALTER TABLE aps_work_center       ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
 
 -- ============================================================
 -- 4. 数据迁移:status(int/varchar) → status_v2(varchar)
@@ -132,30 +128,10 @@ UPDATE production_orders SET status_v2 = 'COMPLETED'   WHERE status = 3 AND stat
 UPDATE production_orders SET status_v2 = 'CANCELLED'   WHERE status = 4 AND status_v2 IS NULL;
 UPDATE production_orders SET status_v2 = 'CLOSED'      WHERE status = 5 AND status_v2 IS NULL;
 
--- pro_dispatch(原 production_dispatch,表名以 DB 为准)
-DO $$ BEGIN
-    UPDATE pro_dispatch SET status_v2 = 'PENDING'     WHERE status = 1 AND status_v2 IS NULL;
-    UPDATE pro_dispatch SET status_v2 = 'IN_PROGRESS' WHERE status = 2 AND status_v2 IS NULL;
-    UPDATE pro_dispatch SET status_v2 = 'COMPLETED'   WHERE status = 3 AND status_v2 IS NULL;
-EXCEPTION WHEN OTHERS THEN
-    RAISE WARNING 'pro_dispatch 数据迁移跳过: %', SQLERRM;
-END $$;
-
--- pro_production_report(原 production_report,表名以 DB 为准)
-DO $$ BEGIN
-    UPDATE pro_production_report SET status_v2 = 'SUBMITTED' WHERE status = 1 AND status_v2 IS NULL;
-    UPDATE pro_production_report SET status_v2 = 'CONFIRMED' WHERE status = 2 AND status_v2 IS NULL;
-    UPDATE pro_production_report SET status_v2 = 'AUDITED'   WHERE status = 3 AND status_v2 IS NULL;
-EXCEPTION WHEN OTHERS THEN
-    RAISE WARNING 'pro_production_report 数据迁移跳过: %', SQLERRM;
-END $$;
-
 -- mobile_job_report
 UPDATE mobile_job_report SET status_v2 = 'SUBMITTED' WHERE status = 1 AND status_v2 IS NULL;
 UPDATE mobile_job_report SET status_v2 = 'CONFIRMED' WHERE status = 2 AND status_v2 IS NULL;
 UPDATE mobile_job_report SET status_v2 = 'AUDITED'   WHERE status = 3 AND status_v2 IS NULL;
-
--- mobile_job_report 等其他表的 UPDATE 仍然在下面(原 0051 有)
 
 -- aps_mps
 UPDATE aps_mps SET status_v2 = 'DRAFT'       WHERE status = 1 AND status_v2 IS NULL;
@@ -180,56 +156,58 @@ UPDATE aps_schedule_result SET status_v2 = 'COMPLETED'    WHERE status = 3 AND s
 -- mes_process(原本就是 varchar,直接 copy)
 UPDATE mes_process SET status_v2 = status WHERE status_v2 IS NULL;
 
--- mdm.bom(boms 表 DB 未建,DO 块容错跳过)
-DO $$ BEGIN
-    UPDATE boms SET status_v2 = status WHERE status_v2 IS NULL;
-EXCEPTION WHEN OTHERS THEN
-    RAISE WARNING 'boms 表不存在或数据迁移跳过: % (待 0052 建表)', SQLERRM;
-END $$;
+-- mdm.bom(boms 表,与 mes_process 同模式,直接 copy)
+UPDATE boms SET status_v2 = status WHERE status_v2 IS NULL;
 
 -- aps_work_center(原本就是 varchar,直接 copy)
 UPDATE aps_work_center SET status_v2 = status WHERE status_v2 IS NULL;
 
 -- ============================================================
--- 5. 校验(若 status_v2 还有 NULL 报警;容错不存在的表)
+-- 5. 校验(若 status_v2 还有 NULL 报警)
 -- ============================================================
 DO $$
 DECLARE
-    tbl_list TEXT[] := ARRAY['production_orders', 'pro_dispatch', 'pro_production_report', 'mobile_job_report', 'mes_process', 'boms', 'aps_mps', 'aps_mrp', 'aps_schedule_plan', 'aps_schedule_result', 'aps_work_center'];
-    tbl TEXT;
+    rec RECORD;
     null_count INT;
 BEGIN
-    FOREACH tbl IN ARRAY tbl_list
+    FOR rec IN
+        SELECT 'production_orders'   AS tbl UNION ALL
+        SELECT 'production_dispatch' UNION ALL
+        SELECT 'production_report'   UNION ALL
+        SELECT 'mobile_job_report'   UNION ALL
+        SELECT 'mes_process'         UNION ALL
+        SELECT 'boms'                UNION ALL
+        SELECT 'aps_mps'             UNION ALL
+        SELECT 'aps_mrp'             UNION ALL
+        SELECT 'aps_schedule_plan'   UNION ALL
+        SELECT 'aps_schedule_result' UNION ALL
+        SELECT 'aps_work_center'
     LOOP
-        BEGIN
-            EXECUTE format('SELECT COUNT(*) FROM %I WHERE status_v2 IS NULL', tbl) INTO null_count;
-            IF null_count > 0 THEN
-                RAISE WARNING 'table %: % rows with NULL status_v2 (review needed)', tbl, null_count;
-            ELSE
-                RAISE NOTICE 'table %: status_v2 fully migrated ✓', tbl;
-            END IF;
-        EXCEPTION WHEN OTHERS THEN
-            RAISE WARNING 'table %: 跳过校验(表不存在或字段缺失) %', tbl, SQLERRM;
-        END;
+        EXECUTE format('SELECT COUNT(*) FROM %I WHERE status_v2 IS NULL', rec.tbl) INTO null_count;
+        IF null_count > 0 THEN
+            RAISE WARNING 'table %: % rows with NULL status_v2 (review needed)', rec.tbl, null_count;
+        ELSE
+            RAISE NOTICE 'table %: status_v2 fully migrated ✓', rec.tbl;
+        END IF;
     END LOOP;
 END $$;
 
--- 不需要 COMMIT(已逐行自动提交)
+COMMIT;
 
 -- ============================================================
 -- 回滚脚本(0051_status_unification.down.sql)
 -- ============================================================
 -- BEGIN;
--- ALTER TABLE production_orders         DROP COLUMN IF EXISTS status_v2;
--- ALTER TABLE pro_dispatch              DROP COLUMN IF EXISTS status_v2;
--- ALTER TABLE pro_production_report     DROP COLUMN IF EXISTS status_v2;
--- ALTER TABLE mobile_job_report         DROP COLUMN IF EXISTS status_v2;
--- ALTER TABLE mes_process               DROP COLUMN IF EXISTS status_v2;
--- ALTER TABLE IF EXISTS boms            DROP COLUMN IF EXISTS status_v2;
--- ALTER TABLE aps_mps                   DROP COLUMN IF EXISTS status_v2;
--- ALTER TABLE aps_mrp                   DROP COLUMN IF EXISTS status_v2;
--- ALTER TABLE aps_schedule_plan         DROP COLUMN IF EXISTS status_v2;
--- ALTER TABLE aps_schedule_result       DROP COLUMN IF EXISTS status_v2;
--- ALTER TABLE aps_work_center           DROP COLUMN IF EXISTS status_v2;
+-- ALTER TABLE production_orders     DROP COLUMN IF EXISTS status_v2;
+-- ALTER TABLE production_dispatch   DROP COLUMN IF EXISTS status_v2;
+-- ALTER TABLE production_report     DROP COLUMN IF EXISTS status_v2;
+-- ALTER TABLE mobile_job_report     DROP COLUMN IF EXISTS status_v2;
+-- ALTER TABLE mes_process           DROP COLUMN IF EXISTS status_v2;
+-- ALTER TABLE boms                  DROP COLUMN IF EXISTS status_v2;
+-- ALTER TABLE aps_mps               DROP COLUMN IF EXISTS status_v2;
+-- ALTER TABLE aps_mrp               DROP COLUMN IF EXISTS status_v2;
+-- ALTER TABLE aps_schedule_plan     DROP COLUMN IF EXISTS status_v2;
+-- ALTER TABLE aps_schedule_result   DROP COLUMN IF EXISTS status_v2;
+-- ALTER TABLE aps_work_center       DROP COLUMN IF EXISTS status_v2;
 -- -- mdm_status_dict 字典表本身保留(无副作用)
 -- COMMIT;
