@@ -315,3 +315,85 @@ const (
 	DispatchInProgress  Code = "IN_PROGRESS"
 	DispatchCompleted   Code = "COMPLETED"
 )
+// ========== scp.scp_mrs(BATCH 2026-07-08 P2 扩展 batch 2) ==========
+// 字典来源:scp_mrs.status 现有枚举
+// 状态机:DRAFT → PUBLISHED → CLOSED
+const (
+	ScpMrsDraft     Code = "DRAFT"
+	ScpMrsPublished Code = "PUBLISHED"
+	ScpMrsClosed    Code = "CLOSED"
+)
+
+var ScpMrsAll = []Code{ScpMrsDraft, ScpMrsPublished, ScpMrsClosed}
+
+func ScpMrsFromLegacyVarchar(s string) Code {
+	switch s {
+	case "DRAFT":
+		return ScpMrsDraft
+	case "PUBLISHED":
+		return ScpMrsPublished
+	case "CLOSED":
+		return ScpMrsClosed
+	default:
+		return ScpMrsDraft
+	}
+}
+
+// ========== scp.scp_purchase_plan(BATCH 2) ==========
+// 字典来源:scp_purchase_plan.status 现有枚举
+// 状态机:DRAFT → CONFIRMED → PUBLISHED → CLOSED
+const (
+	ScpPurchasePlanDraft     Code = "DRAFT"
+	ScpPurchasePlanConfirmed Code = "CONFIRMED"
+	ScpPurchasePlanPublished Code = "PUBLISHED"
+	ScpPurchasePlanClosed    Code = "CLOSED"
+)
+
+var ScpPurchasePlanAll = []Code{
+	ScpPurchasePlanDraft, ScpPurchasePlanConfirmed, ScpPurchasePlanPublished, ScpPurchasePlanClosed,
+}
+
+func ScpPurchasePlanFromLegacyVarchar(s string) Code {
+	switch s {
+	case "DRAFT":
+		return ScpPurchasePlanDraft
+	case "CONFIRMED":
+		return ScpPurchasePlanConfirmed
+	case "PUBLISHED":
+		return ScpPurchasePlanPublished
+	case "CLOSED":
+		return ScpPurchasePlanClosed
+	default:
+		return ScpPurchasePlanDraft
+	}
+}
+
+// ========== production.production_complete(BATCH 2) ==========
+// 字典来源:production_complete.status 现有枚举
+// 状态机:PENDING → INSPECTING → QUALIFIED → STORED
+const (
+	ProductionCompletePending    Code = "PENDING"
+	ProductionCompleteInspecting Code = "INSPECTING"
+	ProductionCompleteQualified  Code = "QUALIFIED"
+	ProductionCompleteStored     Code = "STORED"
+)
+
+var ProductionCompleteAll = []Code{
+	ProductionCompletePending, ProductionCompleteInspecting,
+	ProductionCompleteQualified, ProductionCompleteStored,
+}
+
+func ProductionCompleteFromLegacyVarchar(s string) Code {
+	switch s {
+	case "PENDING":
+		return ProductionCompletePending
+	case "INSPECTING":
+		return ProductionCompleteInspecting
+	case "QUALIFIED":
+		return ProductionCompleteQualified
+	case "STORED":
+		return ProductionCompleteStored
+	default:
+		return ProductionCompletePending
+	}
+}

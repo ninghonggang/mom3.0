@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"mom-server/internal/pkg/status"
 )
 
 // ProductionComplete 完工记录
@@ -16,7 +18,8 @@ type ProductionComplete struct {
 	WorkstationID    *int64    `json:"workstation_id" gorm:"index"`
 	CompleteQty       float64   `json:"complete_qty" gorm:"type:decimal(18,3);not null;default:0"`
 	QualifiedQty      float64   `json:"qualified_qty" gorm:"type:decimal(18,3);default:0"`
-	Status            string    `json:"status" gorm:"size:20;not null;default:PENDING"` // PENDING/INSPECTING/QUALIFIED/STORED
+	Status            string    `json:"status" gorm:"size:20;not null;default:PENDING"` // PENDING/INSPECTING/QUALIFIED/STORED(legacy,保留双轨)
+	StatusV2          string    `json:"status_v2" gorm:"size:30;index"`               // 双轨:varchar - MOM 3.0 V2.1(P2 扩展 batch 2)
 	CompleteTime      *time.Time `json:"complete_time"`
 	OperatorID        *int64    `json:"operator_id"`
 	OperatorName      *string   `json:"operator_name" gorm:"size:50"`
@@ -27,6 +30,25 @@ type ProductionComplete struct {
 
 func (ProductionComplete) TableName() string {
 	return "wms_production_complete"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// P2 扩展 batch 2,与 MdmBOM.StatusCode() 同模式
+func (c *ProductionComplete) StatusCode() string {
+	if c.StatusV2 != "" {
+		return c.StatusV2
+	}
+	return string(status.ProductionCompleteFromLegacyVarchar(c.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制)
+func (c *ProductionComplete) SetStatus(code string) {
+	cc := status.Code(code)
+	if !cc.IsValid(status.ProductionCompleteAll) {
+		code = string(status.ProductionCompletePending)
+	}
+	c.Status = code
+	c.StatusV2 = code
 }
 
 // ProductionCompleteItem 完工明细

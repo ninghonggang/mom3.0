@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"mom-server/internal/pkg/status"
 )
 
 // ScpPurchasePlan 采购计划主表
@@ -16,7 +18,8 @@ type ScpPurchasePlan struct {
 	PlanYear     int           `json:"plan_year" gorm:""`                   // 计划年份
 	PlanMonth    int           `json:"plan_month" gorm:""`                  // 计划月份(1-12)
 	Quarter      int           `json:"quarter" gorm:""`                     // 季度(1-4)
-	Status       string        `json:"status" gorm:"size:20;default:'DRAFT'"` // DRAFT/CONFIRMED/PUBLISHED/CLOSED
+	Status       string        `json:"status" gorm:"size:20;default:'DRAFT'"` // DRAFT/CONFIRMED/PUBLISHED/CLOSED(legacy,保留双轨)
+	StatusV2     string        `json:"status_v2" gorm:"size:30;index"`        // 双轨:varchar - MOM 3.0 V2.1(P2 扩展 batch 2)
 	TotalItems   int           `json:"total_items" gorm:"default:0"`         // 明细行数
 	TotalAmount  float64       `json:"total_amount" gorm:"type:decimal(18,2)"` // 计划总金额
 	Currency     string        `json:"currency" gorm:"size:10;default:'CNY'"` // 币种
@@ -36,6 +39,25 @@ type ScpPurchasePlan struct {
 
 func (ScpPurchasePlan) TableName() string {
 	return "scp_purchase_plan"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// P2 扩展 batch 2,与 MdmBOM.StatusCode() 同模式
+func (s *ScpPurchasePlan) StatusCode() string {
+	if s.StatusV2 != "" {
+		return s.StatusV2
+	}
+	return string(status.ScpPurchasePlanFromLegacyVarchar(s.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制)
+func (s *ScpPurchasePlan) SetStatus(code string) {
+	c := status.Code(code)
+	if !c.IsValid(status.ScpPurchasePlanAll) {
+		code = string(status.ScpPurchasePlanDraft)
+	}
+	s.Status = code
+	s.StatusV2 = code
 }
 
 // ScpPurchasePlanItem 采购计划明细表

@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"mom-server/internal/pkg/status"
 )
 
 // ScpMRS MRS汇总表
@@ -12,7 +14,8 @@ type ScpMRS struct {
 	TenantID     int64          `json:"tenant_id" gorm:"index;not null"`
 	MrsNo        string         `json:"mrs_no" gorm:"size:50;not null"`        // MRS单号
 	PlanMonth    string         `json:"plan_month" gorm:"size:7"`              // 计划月份 YYYY-MM
-	Status       string         `json:"status" gorm:"size:20;default:'DRAFT'"` // DRAFT/PUBLISHED/CLOSED
+	Status       string         `json:"status" gorm:"size:20;default:'DRAFT'"` // DRAFT/PUBLISHED/CLOSED(legacy,保留双轨)
+	StatusV2     string         `json:"status_v2" gorm:"size:30;index"`        // 双轨:varchar - MOM 3.0 V2.1(P2 扩展 batch 2)
 	SourceType   string         `json:"source_type" gorm:"size:20"`           // MANUAL/APS
 	SourceNo     string         `json:"source_no" gorm:"size:50"`              // 来源单号
 	TotalItems   int            `json:"total_items" gorm:"default:0"`
@@ -25,6 +28,25 @@ type ScpMRS struct {
 
 func (ScpMRS) TableName() string {
 	return "scp_mrs"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// P2 扩展 batch 2,与 MdmBOM.StatusCode() 同模式
+func (s *ScpMRS) StatusCode() string {
+	if s.StatusV2 != "" {
+		return s.StatusV2
+	}
+	return string(status.ScpMrsFromLegacyVarchar(s.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制)
+func (s *ScpMRS) SetStatus(code string) {
+	c := status.Code(code)
+	if !c.IsValid(status.ScpMrsAll) {
+		code = string(status.ScpMrsDraft)
+	}
+	s.Status = code
+	s.StatusV2 = code
 }
 
 // ScpMRSItem MRS明细

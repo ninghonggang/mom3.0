@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 )
 
@@ -93,7 +94,7 @@ func (s *ScpMRSService) UpdateMRS(ctx context.Context, tenantID int64, id string
 		return nil, err
 	}
 
-	if existing.Status != "DRAFT" {
+	if existing.StatusCode() != string(status.ScpMrsDraft) {
 		return nil, fmt.Errorf("只有草稿状态的MRS可以更新")
 	}
 
@@ -153,7 +154,7 @@ func (s *ScpMRSService) DeleteMRS(ctx context.Context, id string) error {
 		return err
 	}
 
-	if existing.Status != "DRAFT" {
+	if existing.StatusCode() != string(status.ScpMrsDraft) {
 		return fmt.Errorf("只有草稿状态的MRS可以删除")
 	}
 
@@ -173,7 +174,7 @@ func (s *ScpMRSService) PublishMRS(ctx context.Context, id string, userID int64)
 		return err
 	}
 
-	if existing.Status != "DRAFT" {
+	if existing.StatusCode() != string(status.ScpMrsDraft) {
 		return fmt.Errorf("只有草稿状态的MRS可以发布")
 	}
 
@@ -198,7 +199,7 @@ func (s *ScpMRSService) CloseMRS(ctx context.Context, id string) error {
 		return err
 	}
 
-	if existing.Status != "PUBLISHED" {
+	if existing.StatusCode() != string(status.ScpMrsPublished) {
 		return fmt.Errorf("只有已发布状态的MRS可以关闭")
 	}
 

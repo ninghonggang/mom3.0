@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 	"time"
 
@@ -106,7 +107,7 @@ func (s *ProductionCompleteService) StockIn(ctx context.Context, tenantID int64,
 		return nil, fmt.Errorf("完工单不存在: %w", err)
 	}
 
-	if complete.Status != "QUALIFIED" {
+	if complete.StatusCode() != string(status.ProductionCompleteQualified) {
 		return nil, fmt.Errorf("完工单状态必须为已质检，当前状态: %s", complete.Status)
 	}
 

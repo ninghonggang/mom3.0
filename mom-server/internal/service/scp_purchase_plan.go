@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 )
 
@@ -111,7 +112,7 @@ func (s *ScpPurchasePlanService) UpdatePurchasePlan(ctx context.Context, tenantI
 		return nil, err
 	}
 
-	if existing.Status != "DRAFT" {
+	if existing.StatusCode() != string(status.ScpPurchasePlanDraft) {
 		return nil, fmt.Errorf("只有草稿状态的采购计划可以更新")
 	}
 
@@ -183,7 +184,7 @@ func (s *ScpPurchasePlanService) DeletePurchasePlan(ctx context.Context, id stri
 		return err
 	}
 
-	if existing.Status != "DRAFT" {
+	if existing.StatusCode() != string(status.ScpPurchasePlanDraft) {
 		return fmt.Errorf("只有草稿状态的采购计划可以删除")
 	}
 
@@ -203,7 +204,7 @@ func (s *ScpPurchasePlanService) ConfirmPurchasePlan(ctx context.Context, id str
 		return err
 	}
 
-	if existing.Status != "DRAFT" {
+	if existing.StatusCode() != string(status.ScpPurchasePlanDraft) {
 		return fmt.Errorf("只有草稿状态的采购计划可以确认")
 	}
 
@@ -228,7 +229,7 @@ func (s *ScpPurchasePlanService) PublishPurchasePlan(ctx context.Context, id str
 		return err
 	}
 
-	if existing.Status != "CONFIRMED" {
+	if existing.StatusCode() != string(status.ScpPurchasePlanConfirmed) {
 		return fmt.Errorf("只有已确认状态的采购计划可以发布")
 	}
 
@@ -253,7 +254,7 @@ func (s *ScpPurchasePlanService) ClosePurchasePlan(ctx context.Context, id strin
 		return err
 	}
 
-	if existing.Status != "PUBLISHED" {
+	if existing.StatusCode() != string(status.ScpPurchasePlanPublished) {
 		return fmt.Errorf("只有已发布状态的采购计划可以关闭")
 	}
 
