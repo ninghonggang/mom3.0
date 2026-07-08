@@ -147,8 +147,8 @@ func (s *MesProcessService) Update(ctx context.Context, id uint, req *model.MesP
 		return nil, err
 	}
 
-	// 仅草稿状态可更新
-	if process.Status != "DRAFT" {
+	// 仅草稿状态可更新(V2.1: 走 StatusCode,跨双轨制兼容)
+	if process.StatusCode() != string(status.MesProcessDraft) {
 		return nil, errors.New("仅草稿状态可更新")
 	}
 
@@ -240,8 +240,8 @@ func (s *MesProcessService) Delete(ctx context.Context, id uint) error {
 		return err
 	}
 
-	// 仅草稿状态可删除
-	if process.Status != "DRAFT" {
+	// 仅草稿状态可删除(V2.1: 走 StatusCode,跨双轨制兼容)
+	if process.StatusCode() != string(status.MesProcessDraft) {
 		return errors.New("仅草稿状态可删除")
 	}
 
@@ -332,7 +332,7 @@ func (s *MesProcessService) ValidateProcess(ctx context.Context, id uint) error 
 	if err != nil {
 		return err
 	}
-	if process.Status != "ACTIVE" {
+	if process.StatusCode() != string(status.MesProcessActive) {
 		return errors.New("工艺路线状态必须为生效才能使用")
 	}
 	operations, err := s.opRepo.ListByProcessID(ctx, int64(id))

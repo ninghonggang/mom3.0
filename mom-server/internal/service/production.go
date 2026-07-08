@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 )
 
@@ -69,8 +70,8 @@ func (s *ProductionOrderService) Update(ctx context.Context, id string, order *m
 		updates["line_id"] = order.LineID
 	}
 
-	// 检查并记录状态变更
-	if oldOrder.Status != order.Status {
+	// 检查并记录状态变更(V2.1: 比较用 StatusCode 字典码,字段写回仍走双轨)
+	if oldOrder.StatusCode() != order.StatusCode() {
 		s.changeLogSvc.RecordChange(ctx, int64(orderID), order.OrderNo, ChangeTypeStatusChange, oldOrder.Status, order.Status, "", changedBy)
 		updates["status"] = order.Status
 		updates["status_v2"] = order.StatusV2 // 双轨:MOM 3.0 V2.1
@@ -113,12 +114,13 @@ func (s *ProductionOrderService) Start(ctx context.Context, id string, changedBy
 		return err
 	}
 
-	// 记录状态变更
-	s.changeLogSvc.RecordChange(ctx, int64(orderID), oldOrder.OrderNo, ChangeTypeStatusChange, oldOrder.Status, 2, "开始生产", changedBy)
+	// 记录状态变更(V2.1: 用 status 包常量,干掉 magic number)
+	targetCode := status.ProductionOrderInProgress
+	s.changeLogSvc.RecordChange(ctx, int64(orderID), oldOrder.OrderNo, ChangeTypeStatusChange, oldOrder.Status, status.ProductionOrderToLegacyInt(targetCode), "开始生产", changedBy)
 
 	return s.repo.Update(ctx, orderID, map[string]interface{}{
-		"status":     2, // 生产中
-		"status_v2":  "IN_PROGRESS", // 双轨:MOM 3.0 V2.1
+		"status":     status.ProductionOrderToLegacyInt(targetCode), // 双轨:legacy int 保留
+		"status_v2":  targetCode.String(),                             // 双轨:V2.1 字典码
 	})
 }
 
@@ -135,12 +137,13 @@ func (s *ProductionOrderService) Complete(ctx context.Context, id string, change
 		return err
 	}
 
-	// 记录状态变更
-	s.changeLogSvc.RecordChange(ctx, int64(orderID), oldOrder.OrderNo, ChangeTypeStatusChange, oldOrder.Status, 3, "完成生产", changedBy)
+	// 记录状态变更(V2.1: 用 status 包常量,干掉 magic number)
+	targetCode := status.ProductionOrderCompleted
+	s.changeLogSvc.RecordChange(ctx, int64(orderID), oldOrder.OrderNo, ChangeTypeStatusChange, oldOrder.Status, status.ProductionOrderToLegacyInt(targetCode), "完成生产", changedBy)
 
 	return s.repo.Update(ctx, orderID, map[string]interface{}{
-		"status":     3, // 已完成
-		"status_v2":  "COMPLETED", // 双轨:MOM 3.0 V2.1
+		"status":     status.ProductionOrderToLegacyInt(targetCode), // 双轨:legacy int 保留
+		"status_v2":  targetCode.String(),                             // 双轨:V2.1 字典码
 	})
 }
 
@@ -293,16 +296,16 @@ func (s *KanbanService) GetDashboardData(ctx context.Context) (*KanbanDashboard,
 		}
 	}
 
-	// 工单进度统计
+	// 工单进度统计(V2.1: switch StatusCode 字典码,不再比较 legacy int)
 	for _, order := range orders {
-		switch order.Status {
-		case 1:
+		switch order.StatusCode() {
+		case status.ProductionOrderDraft.String(), status.ProductionOrderReleased.String():
 			orderProgress.Pending++
-		case 2:
+		case status.ProductionOrderInProgress.String():
 			orderProgress.InProcess++
-		case 3:
+		case status.ProductionOrderCompleted.String():
 			orderProgress.Completed++
-		case 4:
+		case status.ProductionOrderClosed.String(), status.ProductionOrderCancelled.String():
 			orderProgress.Cancelled++
 		}
 	}
