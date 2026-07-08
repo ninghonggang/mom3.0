@@ -122,6 +122,35 @@ func MesProcessFromLegacyVarchar(s string) Code {
 	}
 }
 
+// ========== mdm.bom ==========
+// 字典来源: mdm_status_dict WHERE entity='bom'
+// 与 mes_process 同模式:DRAFT 草稿 / ACTIVE 生效 / OBSOLETE 失效
+// 原表 status varchar,枚举值 DRAFT/ACTIVE/EXPIRED,V2 兼容 EXPIRED→OBSOLETE
+const (
+	MDMBomDraft    Code = "DRAFT"
+	MDMBomActive   Code = "ACTIVE"
+	MDMBomObsolete Code = "OBSOLETE"
+)
+
+// MDMBomAll bom 完整允许状态集
+var MDMBomAll = []Code{
+	MDMBomDraft, MDMBomActive, MDMBomObsolete,
+}
+
+// MDMBomFromLegacyVarchar varchar legacy → V2(兼容 EXPIRED 别名,与 mes_process 同模式)
+func MDMBomFromLegacyVarchar(s string) Code {
+	switch s {
+	case "DRAFT":
+		return MDMBomDraft
+	case "ACTIVE":
+		return MDMBomActive
+	case "EXPIRED", "OBSOLETE":
+		return MDMBomObsolete
+	default:
+		return MDMBomDraft
+	}
+}
+
 // ========== production.mobile_job_report / production_report / dispatch ==========
 const (
 	ReportSubmitted Code = "SUBMITTED"

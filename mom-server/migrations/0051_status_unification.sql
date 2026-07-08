@@ -62,6 +62,12 @@ INSERT INTO mdm_status_dict (domain, entity, code, label, element_type, is_termi
 ('mes', 'mes_process', 'ACTIVE',    '生效',     'success', FALSE, 2, NULL, '工艺路线当前生效版本'),
 ('mes', 'mes_process', 'OBSOLETE',  '失效',     'info',    TRUE,  3, NULL, '工艺路线被新版本取代');
 
+-- mdm.bom(boms 表,与 mes_process 同模式)
+INSERT INTO mdm_status_dict (domain, entity, code, label, element_type, is_terminal, sort_order, legacy_int, description) VALUES
+('mdm', 'bom', 'DRAFT',     '草稿',     'info',    FALSE, 1, NULL, 'BOM 草稿'),
+('mdm', 'bom', 'ACTIVE',    '生效',     'success', FALSE, 2, NULL, 'BOM 当前生效版本'),
+('mdm', 'bom', 'OBSOLETE',  '失效',     'info',    TRUE,  3, NULL, 'BOM 被新版本取代');
+
 -- aps.mps
 INSERT INTO mdm_status_dict (domain, entity, code, label, element_type, is_terminal, sort_order, legacy_int, description) VALUES
 ('aps', 'mps', 'DRAFT',       '草稿',     'info',    FALSE, 1, 1, 'MPS 计划草稿'),
@@ -105,6 +111,7 @@ ALTER TABLE production_dispatch   ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30)
 ALTER TABLE production_report     ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
 ALTER TABLE mobile_job_report     ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
 ALTER TABLE mes_process           ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
+ALTER TABLE boms                  ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
 ALTER TABLE aps_mps               ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
 ALTER TABLE aps_mrp               ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
 ALTER TABLE aps_schedule_plan     ADD COLUMN IF NOT EXISTS status_v2 VARCHAR(30);
@@ -149,6 +156,9 @@ UPDATE aps_schedule_result SET status_v2 = 'COMPLETED'    WHERE status = 3 AND s
 -- mes_process(原本就是 varchar,直接 copy)
 UPDATE mes_process SET status_v2 = status WHERE status_v2 IS NULL;
 
+-- mdm.bom(boms 表,与 mes_process 同模式,直接 copy)
+UPDATE boms SET status_v2 = status WHERE status_v2 IS NULL;
+
 -- aps_work_center(原本就是 varchar,直接 copy)
 UPDATE aps_work_center SET status_v2 = status WHERE status_v2 IS NULL;
 
@@ -166,6 +176,7 @@ BEGIN
         SELECT 'production_report'   UNION ALL
         SELECT 'mobile_job_report'   UNION ALL
         SELECT 'mes_process'         UNION ALL
+        SELECT 'boms'                UNION ALL
         SELECT 'aps_mps'             UNION ALL
         SELECT 'aps_mrp'             UNION ALL
         SELECT 'aps_schedule_plan'   UNION ALL
@@ -192,6 +203,7 @@ COMMIT;
 -- ALTER TABLE production_report     DROP COLUMN IF EXISTS status_v2;
 -- ALTER TABLE mobile_job_report     DROP COLUMN IF EXISTS status_v2;
 -- ALTER TABLE mes_process           DROP COLUMN IF EXISTS status_v2;
+-- ALTER TABLE boms                  DROP COLUMN IF EXISTS status_v2;
 -- ALTER TABLE aps_mps               DROP COLUMN IF EXISTS status_v2;
 -- ALTER TABLE aps_mrp               DROP COLUMN IF EXISTS status_v2;
 -- ALTER TABLE aps_schedule_plan     DROP COLUMN IF EXISTS status_v2;

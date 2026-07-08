@@ -8,6 +8,7 @@ import (
 
 	"mom-server/internal/dto"
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 
 	"gorm.io/gorm"
@@ -193,8 +194,17 @@ func (s *BOMService) Delete(ctx context.Context, id uint) error {
 	return s.bomRepo.Delete(ctx, id)
 }
 
-func (s *BOMService) UpdateStatus(ctx context.Context, id uint, status string) error {
-	return s.bomRepo.Update(ctx, id, map[string]interface{}{"status": status})
+// UpdateStatus 更新 BOM 状态(V2.1: 双轨制,同时写 status + status_v2,走字典码校验)
+// 与 mes_process.UpdateStatus 同模式,统一 MOM 3.0 切读路径
+func (s *BOMService) UpdateStatus(ctx context.Context, id uint, statusCode string) error {
+	code := status.Code(statusCode)
+	if !code.IsValid(status.MDMBomAll) {
+		return errors.New("无效的 BOM 状态: " + statusCode)
+	}
+	return s.bomRepo.Update(ctx, id, map[string]interface{}{
+		"status":     code.String(), // 双轨:legacy varchar 保留
+		"status_v2":  code.String(), // 双轨:V2.1 字典码
+	})
 }
 
 // Copy 复制BOM（带版本递增）

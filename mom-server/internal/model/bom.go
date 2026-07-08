@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"mom-server/internal/pkg/status"
 )
 
 // MDM BOM 物料清单头表
@@ -14,7 +16,8 @@ type MdmBOM struct {
 	MaterialCode string     `json:"material_code" gorm:"size:50"`
 	MaterialName string     `json:"material_name" gorm:"size:100"`
 	Version      string     `json:"version" gorm:"size:20"` // 版本
-	Status       string     `json:"status" gorm:"size:20;default:'DRAFT'"` // DRAFT草稿/ACTIVE生效/EXPIRED失效
+	Status       string     `json:"status" gorm:"size:20;default:'DRAFT'"` // DRAFT草稿/ACTIVE生效/EXPIRED失效(legacy,保留双轨)
+	StatusV2     string     `json:"status_v2" gorm:"size:30;index"`       // 双轨:varchar - MOM 3.0 V2.1,与 mdm_status_dict 对齐
 	EffDate      *time.Time `json:"eff_date" gorm:"type:date"` // 生效日期
 	ExpDate      *time.Time `json:"exp_date" gorm:"type:date"` // 失效日期
 	Remark       *string    `json:"remark" gorm:"size:500"`
@@ -22,6 +25,26 @@ type MdmBOM struct {
 	ErpSyncTime  *time.Time `json:"erp_sync_time"`                         // 同步时间
 	ErpSyncStatus string     `json:"erp_sync_status" gorm:"size:20"`       // SYNCED/PENDING/FAILED
 	IsCurrent    int        `json:"is_current" gorm:"default:1"`         // 是否当前版本 0否 1是
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// 与 mes_process.StatusCode() 同模式,统一 MOM 3.0 切读路径
+func (b *MdmBOM) StatusCode() string {
+	if b.StatusV2 != "" {
+		return b.StatusV2
+	}
+	return string(status.MDMBomFromLegacyVarchar(b.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制,与 mdm_status_dict 对齐)
+// 入参:字典码(DRAFT / ACTIVE / OBSOLETE),非法码自动 fallback DRAFT
+func (b *MdmBOM) SetStatus(code string) {
+	c := status.Code(code)
+	if !c.IsValid(status.MDMBomAll) {
+		code = string(status.MDMBomDraft)
+	}
+	b.Status = code
+	b.StatusV2 = code
 }
 
 func (MdmBOM) TableName() string {

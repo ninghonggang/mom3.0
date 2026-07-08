@@ -253,9 +253,16 @@ func (s *MesProcessService) Delete(ctx context.Context, id uint) error {
 	return s.processRepo.Delete(ctx, id)
 }
 
-// UpdateStatus 更新工艺路线状态
-func (s *MesProcessService) UpdateStatus(ctx context.Context, id uint, status string) error {
-	return s.processRepo.Update(ctx, id, map[string]interface{}{"status": status})
+// UpdateStatus 更新工艺路线状态(V2.1: 双轨制,同时写 status + status_v2,走字典码校验)
+func (s *MesProcessService) UpdateStatus(ctx context.Context, id uint, statusCode string) error {
+	code := status.Code(statusCode)
+	if !code.IsValid(status.MesProcessAll) {
+		return errors.New("无效的工艺路线状态: " + statusCode)
+	}
+	return s.processRepo.Update(ctx, id, map[string]interface{}{
+		"status":     code.String(), // 双轨:legacy varchar 保留
+		"status_v2":  code.String(), // 双轨:V2.1 字典码
+	})
 }
 
 // Copy 复制工艺路线（带版本递增）
