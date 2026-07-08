@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 )
 
@@ -94,7 +95,7 @@ func (s *ProductionIssueService) Update(ctx context.Context, id uint, req *model
 	if err != nil {
 		return err
 	}
-	if issue.Status != "PENDING" {
+	if issue.StatusCode() != string(status.ProductionIssuePending) {
 		return fmt.Errorf("只有待提交状态可以编辑")
 	}
 
@@ -118,7 +119,7 @@ func (s *ProductionIssueService) Delete(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	if issue.Status != "PENDING" {
+	if issue.StatusCode() != string(status.ProductionIssuePending) {
 		return fmt.Errorf("只有待提交状态可以删除")
 	}
 	return s.issueRepo.Delete(ctx, id)
@@ -130,7 +131,7 @@ func (s *ProductionIssueService) Submit(ctx context.Context, id uint, req *model
 	if err != nil {
 		return err
 	}
-	if issue.Status != "PENDING" {
+	if issue.StatusCode() != string(status.ProductionIssuePending) {
 		return fmt.Errorf("当前状态不允许提交")
 	}
 
@@ -156,7 +157,7 @@ func (s *ProductionIssueService) StartPick(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	if issue.Status != "APPROVED" {
+	if issue.StatusCode() != string(status.ProductionIssueApproved) {
 		return fmt.Errorf("当前状态不允许开始拣配")
 	}
 	return s.issueRepo.Update(ctx, id, map[string]interface{}{
@@ -171,7 +172,7 @@ func (s *ProductionIssueService) ConfirmPick(ctx context.Context, id uint, items
 	if err != nil {
 		return err
 	}
-	if issue.Status != "PICKING" {
+	if issue.StatusCode() != string(status.ProductionIssuePicking) {
 		return fmt.Errorf("当前状态不允许确认拣配")
 	}
 
@@ -203,7 +204,7 @@ func (s *ProductionIssueService) Issue(ctx context.Context, id uint, issuedBy in
 	if err != nil {
 		return err
 	}
-	if issue.Status != "PICKED" {
+	if issue.StatusCode() != string(status.ProductionIssuePicked) {
 		return fmt.Errorf("当前状态不允许发料")
 	}
 
@@ -230,11 +231,11 @@ func (s *ProductionIssueService) Cancel(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	if issue.Status == "ISSUED" {
+	if issue.StatusCode() == string(status.ProductionIssueIssued) {
 		return fmt.Errorf("已发料状态不允许取消")
 	}
 
-	if issue.Status == "PICKED" {
+	if issue.StatusCode() == string(status.ProductionIssuePicked) {
 		warehouseID := issue.WorkshopID
 		if warehouseID == nil {
 			return fmt.Errorf("工单车间ID为空")

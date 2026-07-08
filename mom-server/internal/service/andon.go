@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 	"time"
 
@@ -74,7 +75,7 @@ func (s *AndonService) Create(ctx context.Context, call *model.AndonCall) error 
 	call.CallNo = callNo
 	call.CallLevel = 1
 	if call.Status == "" {
-		call.Status = "CALLING"
+		call.SetStatus("CALLING") // V2.1 双轨: 同时写 status + status_v2
 	}
 	if call.CallTime.IsZero() {
 		call.CallTime = time.Now()
@@ -150,7 +151,7 @@ func (s *AndonService) Escalate(ctx context.Context, id int64, toLevel int, esca
 		return fmt.Errorf("呼叫不存在: %w", err)
 	}
 
-	if call.Status == "RESOLVED" || call.Status == "CLOSED" {
+	if call.StatusCode() == string(status.AndonCallResolved) || call.StatusCode() == string(status.AndonCallClosed) {
 		return fmt.Errorf("已关闭的呼叫不能升级")
 	}
 
@@ -199,7 +200,7 @@ func (s *AndonService) CheckAndEscalate(ctx context.Context, callID int64) error
 	}
 
 	// 已关闭的呼叫不检查
-	if call.Status == "RESOLVED" || call.Status == "CLOSED" {
+	if call.StatusCode() == string(status.AndonCallResolved) || call.StatusCode() == string(status.AndonCallClosed) {
 		return nil
 	}
 

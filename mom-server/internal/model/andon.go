@@ -3,6 +3,8 @@ package model
 import (
 	"encoding/json"
 	"time"
+
+	"mom-server/internal/pkg/status"
 )
 
 // ========== Andon升级机制 ==========
@@ -36,7 +38,8 @@ type AndonCall struct {
 	RelatedOrderID     *int64         `json:"related_order_id" gorm:"index"`
 	RelatedNCRID       *int64         `json:"related_ncr_id" gorm:"index"`
 	RelatedRepairID    *int64         `json:"related_repair_id" gorm:"index"`
-	Status             string         `json:"status" gorm:"size:20;default:CALLING;index"` // CALLING/RESPONDED/HANDLING/RESOLVED/CLOSED
+	Status             string         `json:"status" gorm:"size:20;default:CALLING;index"` // CALLING/RESPONDED/HANDLING/RESOLVED/CLOSED(legacy,保留双轨)
+	StatusV2           string         `json:"status_v2" gorm:"size:30;index"`              // 双轨:varchar - MOM 3.0 V2.1(P2 扩展)
 	IsEscalated        int            `json:"is_escalated" gorm:"default:0"`                // 0未升级/1已升级
 	EscalatedAt        *time.Time     `json:"escalated_at"`
 	EscalationCount    int            `json:"escalation_count" gorm:"default:0"`
@@ -46,6 +49,25 @@ type AndonCall struct {
 
 func (AndonCall) TableName() string {
 	return "andon_call"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// P2 扩展,与 MdmBOM.StatusCode() 同模式
+func (c *AndonCall) StatusCode() string {
+	if c.StatusV2 != "" {
+		return c.StatusV2
+	}
+	return string(status.AndonCallFromLegacyVarchar(c.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制)
+func (c *AndonCall) SetStatus(code string) {
+	cc := status.Code(code)
+	if !cc.IsValid(status.AndonCallAll) {
+		code = string(status.AndonCallCalling)
+	}
+	c.Status = code
+	c.StatusV2 = code
 }
 
 // AndonEscalationRule 升级规则

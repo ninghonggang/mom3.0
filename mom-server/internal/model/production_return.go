@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"mom-server/internal/pkg/status"
 )
 
 // ProductionReturn 生产退料单
@@ -14,7 +16,8 @@ type ProductionReturn struct {
 	OrderNo             *string   `json:"order_no" gorm:"size:50"`
 	WorkstationID       *int64    `json:"workstation_id" gorm:"index"`
 	WorkshopID          *int64    `json:"workshop_id" gorm:"index"`
-	Status              string    `json:"status" gorm:"size:20;not null;default:PENDING"` // PENDING/APPROVED/RETURNING/RETURNED
+	Status              string    `json:"status" gorm:"size:20;not null;default:PENDING"` // PENDING/APPROVED/RETURNING/RETURNED(legacy,保留双轨)
+	StatusV2            string    `json:"status_v2" gorm:"size:30;index"`               // 双轨:varchar - MOM 3.0 V2.1(P2 扩展)
 	ReturnType          string    `json:"return_type" gorm:"size:20;not null"`             // NORMAL/EMERGENCY
 	RequestBy           *int64    `json:"request_by"`
 	RequestTime         *time.Time `json:"request_time"`
@@ -30,6 +33,25 @@ type ProductionReturn struct {
 
 func (ProductionReturn) TableName() string {
 	return "wms_production_return"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// P2 扩展,与 MdmBOM.StatusCode() 同模式
+func (r *ProductionReturn) StatusCode() string {
+	if r.StatusV2 != "" {
+		return r.StatusV2
+	}
+	return string(status.ProductionReturnFromLegacyVarchar(r.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制)
+func (r *ProductionReturn) SetStatus(code string) {
+	c := status.Code(code)
+	if !c.IsValid(status.ProductionReturnAll) {
+		code = string(status.ProductionReturnPending)
+	}
+	r.Status = code
+	r.StatusV2 = code
 }
 
 // ProductionReturnItem 生产退料明细

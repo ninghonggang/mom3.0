@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 	"time"
 )
@@ -65,7 +66,7 @@ func (s *EquipmentDowntimeService) Create(ctx context.Context, tenantID int64, r
 		if err == nil {
 			downtime.EndTime = &endTime
 			downtime.Duration = int(endTime.Sub(startTime).Minutes())
-			downtime.Status = "CLOSED"
+			downtime.SetStatus("CLOSED") // V2.1 双轨: 同时写 status + status_v2
 		}
 	}
 
@@ -113,7 +114,7 @@ func (s *EquipmentDowntimeService) Update(ctx context.Context, id int64, req *mo
 	downtime.MaintainerID = req.MaintainerID
 	downtime.MaintainerName = req.MaintainerName
 	if req.Status != "" {
-		downtime.Status = req.Status
+		downtime.SetStatus(req.Status) // V2.1 双轨 + 字典码校验
 	}
 	if req.Remark != "" {
 		downtime.Remark = req.Remark
@@ -136,12 +137,12 @@ func (s *EquipmentDowntimeService) StartDowntime(ctx context.Context, id int64) 
 	if err != nil {
 		return err
 	}
-	if downtime.Status != "OPEN" {
+	if downtime.StatusCode() != string(status.DowntimeOpen) {
 		return errors.New("only OPEN status can be started")
 	}
 	now := time.Now()
 	downtime.StartTime = now
-	downtime.Status = "INPROGRESS"
+	downtime.SetStatus("INPROGRESS") // V2.1 双轨
 	return s.repo.Update(ctx, downtime)
 }
 
@@ -151,12 +152,12 @@ func (s *EquipmentDowntimeService) EndDowntime(ctx context.Context, id int64) er
 	if err != nil {
 		return err
 	}
-	if downtime.Status == "CLOSED" {
+	if downtime.StatusCode() == string(status.DowntimeClosed) {
 		return errors.New("already closed")
 	}
 	now := time.Now()
 	downtime.EndTime = &now
 	downtime.Duration = int(now.Sub(downtime.StartTime).Minutes())
-	downtime.Status = "CLOSED"
+	downtime.SetStatus("CLOSED") // V2.1 双轨
 	return s.repo.Update(ctx, downtime)
 }

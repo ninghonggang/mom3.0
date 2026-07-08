@@ -151,6 +151,159 @@ func MDMBomFromLegacyVarchar(s string) Code {
 	}
 }
 
+// ========== wms.production_issue(BATCH 2026-07-08,扩展 P2) ==========
+// 字典来源:wms_production_issue.status 现有枚举
+// 状态机:PENDING → APPROVED → PICKING → PICKED → ISSUED (+ CANCELLED 终态)
+const (
+	ProductionIssuePending   Code = "PENDING"
+	ProductionIssueApproved  Code = "APPROVED"
+	ProductionIssuePicking   Code = "PICKING"
+	ProductionIssuePicked    Code = "PICKED"
+	ProductionIssueIssued    Code = "ISSUED"
+	ProductionIssueCancelled Code = "CANCELLED"
+)
+
+// ProductionIssueAll production_issue 完整允许状态集
+var ProductionIssueAll = []Code{
+	ProductionIssuePending, ProductionIssueApproved, ProductionIssuePicking,
+	ProductionIssuePicked, ProductionIssueIssued, ProductionIssueCancelled,
+}
+
+// ProductionIssueFromLegacyVarchar varchar legacy → V2(原表本身即 varchar,直接透传)
+func ProductionIssueFromLegacyVarchar(s string) Code {
+	switch s {
+	case "PENDING":
+		return ProductionIssuePending
+	case "APPROVED":
+		return ProductionIssueApproved
+	case "PICKING":
+		return ProductionIssuePicking
+	case "PICKED":
+		return ProductionIssuePicked
+	case "ISSUED":
+		return ProductionIssueIssued
+	case "CANCELLED":
+		return ProductionIssueCancelled
+	default:
+		return ProductionIssuePending
+	}
+}
+
+// ========== purchase.purchase_return(BATCH 2026-07-08 P2 扩展) ==========
+// 字典来源:purchase_return.status 现有枚举
+// 状态机:PENDING → APPROVED → RETURNING → RETURNED
+const (
+	PurchaseReturnPending   Code = "PENDING"
+	PurchaseReturnApproved  Code = "APPROVED"
+	PurchaseReturnReturning Code = "RETURNING"
+	PurchaseReturnReturned  Code = "RETURNED"
+)
+
+var PurchaseReturnAll = []Code{
+	PurchaseReturnPending, PurchaseReturnApproved, PurchaseReturnReturning, PurchaseReturnReturned,
+}
+
+func PurchaseReturnFromLegacyVarchar(s string) Code {
+	switch s {
+	case "PENDING":
+		return PurchaseReturnPending
+	case "APPROVED":
+		return PurchaseReturnApproved
+	case "RETURNING":
+		return PurchaseReturnReturning
+	case "RETURNED":
+		return PurchaseReturnReturned
+	default:
+		return PurchaseReturnPending
+	}
+}
+
+// ========== production.production_return(BATCH 2026-07-08 P2 扩展) ==========
+// 与 purchase_return 同字典(返回生产物料到仓库 vs 采购返回)
+const (
+	ProductionReturnPending   Code = "PENDING"
+	ProductionReturnApproved  Code = "APPROVED"
+	ProductionReturnReturning Code = "RETURNING"
+	ProductionReturnReturned  Code = "RETURNED"
+)
+
+var ProductionReturnAll = []Code{
+	ProductionReturnPending, ProductionReturnApproved, ProductionReturnReturning, ProductionReturnReturned,
+}
+
+func ProductionReturnFromLegacyVarchar(s string) Code {
+	switch s {
+	case "PENDING":
+		return ProductionReturnPending
+	case "APPROVED":
+		return ProductionReturnApproved
+	case "RETURNING":
+		return ProductionReturnReturning
+	case "RETURNED":
+		return ProductionReturnReturned
+	default:
+		return ProductionReturnPending
+	}
+}
+
+// ========== eam.andon_call(BATCH 2026-07-08 P2 扩展) ==========
+// 字典来源:andon.status 现有枚举
+// 状态机:CALLING → RESPONDED → HANDLING → RESOLVED → CLOSED
+const (
+	AndonCallCalling   Code = "CALLING"
+	AndonCallResponded Code = "RESPONDED"
+	AndonCallHandling  Code = "HANDLING"
+	AndonCallResolved  Code = "RESOLVED"
+	AndonCallClosed    Code = "CLOSED"
+)
+
+var AndonCallAll = []Code{
+	AndonCallCalling, AndonCallResponded, AndonCallHandling, AndonCallResolved, AndonCallClosed,
+}
+
+func AndonCallFromLegacyVarchar(s string) Code {
+	switch s {
+	case "CALLING":
+		return AndonCallCalling
+	case "RESPONDED":
+		return AndonCallResponded
+	case "HANDLING":
+		return AndonCallHandling
+	case "RESOLVED":
+		return AndonCallResolved
+	case "CLOSED":
+		return AndonCallClosed
+	default:
+		return AndonCallCalling
+	}
+}
+
+// ========== eam.downtime(BATCH 2026-07-08 P2 扩展) ==========
+// 字典来源:downtime.status 现有枚举
+// 状态机:OPEN → INPROGRESS → CLOSED
+const (
+	DowntimeOpen       Code = "OPEN"
+	DowntimeInProgress Code = "INPROGRESS"
+	DowntimeClosed     Code = "CLOSED"
+)
+
+var DowntimeAll = []Code{
+	DowntimeOpen, DowntimeInProgress, DowntimeClosed,
+}
+
+func DowntimeFromLegacyVarchar(s string) Code {
+	switch s {
+	case "OPEN":
+		return DowntimeOpen
+	case "INPROGRESS":
+		return DowntimeInProgress
+	case "CLOSED":
+		return DowntimeClosed
+	default:
+		return DowntimeOpen
+	}
+}
+
 // ========== production.mobile_job_report / production_report / dispatch ==========
 const (
 	ReportSubmitted Code = "SUBMITTED"

@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"mom-server/internal/pkg/status"
 )
 
 // EquipmentDowntime 设备停机记录
@@ -24,7 +26,8 @@ type EquipmentDowntime struct {
 	OperatorName    string     `gorm:"size:50" json:"operator_name"`           // 操作员姓名
 	MaintainerID    int64      `json:"maintainer_id"`                          // 维修人员ID
 	MaintainerName  string     `gorm:"size:50" json:"maintainer_name"`         // 维修人员姓名
-	Status          string     `gorm:"size:20;index" json:"status"`            // OPEN/INPROGRESS/CLOSED
+	Status          string     `gorm:"size:20;index" json:"status"`            // OPEN/INPROGRESS/CLOSED(legacy,保留双轨)
+	StatusV2        string     `gorm:"size:30;index" json:"status_v2"`          // 双轨:varchar - MOM 3.0 V2.1(P2 扩展)
 	Remark          string     `gorm:"size:500" json:"remark"`                  // 备注
 	CreatedBy       string     `gorm:"size:50" json:"created_by"`
 	UpdatedBy       string     `gorm:"size:50" json:"updated_by"`
@@ -34,6 +37,25 @@ type EquipmentDowntime struct {
 
 func (EquipmentDowntime) TableName() string {
 	return "eam_equipment_downtime"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// P2 扩展,与 MdmBOM.StatusCode() 同模式
+func (d *EquipmentDowntime) StatusCode() string {
+	if d.StatusV2 != "" {
+		return d.StatusV2
+	}
+	return string(status.DowntimeFromLegacyVarchar(d.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制)
+func (d *EquipmentDowntime) SetStatus(code string) {
+	c := status.Code(code)
+	if !c.IsValid(status.DowntimeAll) {
+		code = string(status.DowntimeOpen)
+	}
+	d.Status = code
+	d.StatusV2 = code
 }
 
 // EquipmentDowntimeCreateRequest 设备停机创建请求

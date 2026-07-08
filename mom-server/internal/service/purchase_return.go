@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 )
 
@@ -88,7 +89,7 @@ func (s *PurchaseReturnService) Update(ctx context.Context, id uint, req *model.
 	if err != nil {
 		return err
 	}
-	if ret.Status != "PENDING" {
+	if ret.StatusCode() != string(status.PurchaseReturnPending) {
 		return fmt.Errorf("只有待提交状态可以编辑")
 	}
 
@@ -106,7 +107,7 @@ func (s *PurchaseReturnService) Delete(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	if ret.Status != "PENDING" {
+	if ret.StatusCode() != string(status.PurchaseReturnPending) {
 		return fmt.Errorf("只有待提交状态可以删除")
 	}
 	return s.returnRepo.Delete(ctx, id)
@@ -118,7 +119,7 @@ func (s *PurchaseReturnService) Submit(ctx context.Context, id uint, req *model.
 	if err != nil {
 		return err
 	}
-	if ret.Status != "PENDING" {
+	if ret.StatusCode() != string(status.PurchaseReturnPending) {
 		return fmt.Errorf("当前状态不允许提交")
 	}
 
@@ -144,7 +145,7 @@ func (s *PurchaseReturnService) Approve(ctx context.Context, id uint, approvedBy
 	if err != nil {
 		return err
 	}
-	if ret.Status != "APPROVED" {
+	if ret.StatusCode() != string(status.PurchaseReturnApproved) {
 		return fmt.Errorf("当前状态不允许审批")
 	}
 
@@ -162,7 +163,7 @@ func (s *PurchaseReturnService) StartReturn(ctx context.Context, id uint) error 
 	if err != nil {
 		return err
 	}
-	if ret.Status != "APPROVED" {
+	if ret.StatusCode() != string(status.PurchaseReturnApproved) {
 		return fmt.Errorf("当前状态不允许开始退货")
 	}
 	return s.returnRepo.Update(ctx, id, map[string]interface{}{
@@ -176,7 +177,7 @@ func (s *PurchaseReturnService) ConfirmReturn(ctx context.Context, id uint, item
 	if err != nil {
 		return err
 	}
-	if ret.Status != "RETURNING" {
+	if ret.StatusCode() != string(status.PurchaseReturnReturning) {
 		return fmt.Errorf("当前状态不允许确认退货")
 	}
 
@@ -205,7 +206,7 @@ func (s *PurchaseReturnService) Cancel(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	if ret.Status == "RETURNED" {
+	if ret.StatusCode() == string(status.PurchaseReturnReturned) {
 		return fmt.Errorf("已退货状态不允许取消")
 	}
 	return s.returnRepo.Update(ctx, id, map[string]interface{}{

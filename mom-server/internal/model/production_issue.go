@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"mom-server/internal/pkg/status"
 )
 
 // ProductionIssue 生产发料单
@@ -15,8 +17,9 @@ type ProductionIssue struct {
 	OrderNo       *string   `json:"order_no" gorm:"size:50"`
 	WorkstationID *int64    `json:"workstation_id" gorm:"index"`
 	WorkshopID    *int64    `json:"workshop_id" gorm:"index"`
-	Status        string    `json:"status" gorm:"size:20;not null;default:PENDING"` // PENDING/APPROVED/PICKING/PICKED/ISSUED/CANCELLED
-	PickStatus    string    `json:"pick_status" gorm:"size:20;default:PENDING"`      // PENDING/PICKING/PICKED
+	Status        string    `json:"status" gorm:"size:20;not null;default:PENDING"`           // PENDING/APPROVED/PICKING/PICKED/ISSUED/CANCELLED(legacy,保留双轨)
+	StatusV2      string    `json:"status_v2" gorm:"size:30;index"`                          // 双轨:varchar - MOM 3.0 V2.1(P2 扩展)
+	PickStatus    string    `json:"pick_status" gorm:"size:20;default:PENDING"`              // PENDING/PICKING/PICKED
 	RequestBy     *int64    `json:"request_by"`
 	RequestTime   *time.Time `json:"request_time"`
 	IssuedBy      *int64    `json:"issued_by"`
@@ -25,6 +28,25 @@ type ProductionIssue struct {
 	TenantID      int64     `json:"tenant_id" gorm:"index;not null"`
 	CreatedBy     *string   `json:"created_by" gorm:"size:50"`
 	Items         []ProductionIssueItem `json:"items" gorm:"foreignKey:IssueID"`
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// 与 MdmBOM.StatusCode() 同模式(P2 扩展,统一 MOM 3.0 切读路径)
+func (i *ProductionIssue) StatusCode() string {
+	if i.StatusV2 != "" {
+		return i.StatusV2
+	}
+	return string(status.ProductionIssueFromLegacyVarchar(i.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制)
+func (i *ProductionIssue) SetStatus(code string) {
+	c := status.Code(code)
+	if !c.IsValid(status.ProductionIssueAll) {
+		code = string(status.ProductionIssuePending)
+	}
+	i.Status = code
+	i.StatusV2 = code
 }
 
 func (ProductionIssue) TableName() string {
