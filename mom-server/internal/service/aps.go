@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 	"mom-server/internal/scheduler"
 )
@@ -734,14 +735,15 @@ func (s *ScheduleService) GetGanttData(ctx context.Context, planID int64) (*Gant
 		}
 	}
 
-	// 添加任务
+	// 添加任务(V2.1: switch StatusCode 字典码,不再比较 legacy int)
 	for _, r := range results {
 		status := "WAITING"
 		progress := 0
-		if r.Status == 2 {
+		switch r.StatusCode() {
+		case "IN_PROGRESS":
 			status = "RUNNING"
 			progress = 50
-		} else if r.Status == 3 {
+		case "COMPLETED":
 			status = "COMPLETED"
 			progress = 100
 		}
@@ -986,11 +988,12 @@ func (s *ScheduleService) GetOptimizationSuggestions(ctx context.Context, planID
 	return suggestions, nil
 }
 
-// convertToScheduleOrders 转换工单为排程订单
+// convertToScheduleOrders 转换工单为排程订单(V2.1: switch StatusCode 字典码)
 func (s *ScheduleService) convertToScheduleOrders(orders []model.ProductionOrder) []scheduler.ScheduleOrder {
 	scheduleOrders := make([]scheduler.ScheduleOrder, 0, len(orders))
 	for _, order := range orders {
-		if order.Status == 1 || order.Status == 2 {
+		code := order.StatusCode()
+		if code == string(status.ProductionOrderDraft) || code == string(status.ProductionOrderReleased) {
 			stdHours := order.Quantity * 0.5
 			dueDate := time.Now().Add(72 * time.Hour)
 			if order.PlanEndDate != nil {

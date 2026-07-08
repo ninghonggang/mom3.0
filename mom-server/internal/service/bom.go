@@ -265,7 +265,7 @@ func (s *BOMService) ValidateBOM(ctx context.Context, id uint) error {
 	if err != nil {
 		return err
 	}
-	if bom.Status != "ACTIVE" {
+	if bom.StatusCode() != string(status.MDMBomActive) {
 		return errors.New("BOM状态必须为生效才能使用")
 	}
 	items, err := s.bomItemRepo.ListByBOMID(ctx, id)
