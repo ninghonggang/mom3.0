@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"mom-server/internal/pkg/status"
+
 	"mom-server/internal/model"
 	"mom-server/internal/repository"
 )
@@ -40,7 +42,7 @@ func (e *IntegrationExecutor) ExecuteConfig(ctx context.Context, configID int64,
 	if err != nil {
 		return nil, fmt.Errorf("配置不存在: %w", err)
 	}
-	if cfg.Status != "ENABLE" {
+	if cfg.StatusCode() != string(status.IntegrationConfigStatusEnable) {
 		return nil, fmt.Errorf("配置已禁用")
 	}
 

@@ -485,3 +485,25 @@ func WMSPutawayRecordFromLegacyVarchar(s string) Code {
 		return WMSPutawayRecordPending
 	}
 }
+
+// ========== integration.interface_config(BATCH 3-3 / 2026-07-09) ==========
+// 字典来源:interface_config.status 现有枚举
+const (
+	IntegrationConfigStatusEnable  Code = "ENABLE"
+	IntegrationConfigStatusDisable Code = "DISABLE"
+)
+
+var IntegrationConfigStatusAll = []Code{
+	IntegrationConfigStatusEnable, IntegrationConfigStatusDisable,
+}
+
+func IntegrationConfigStatusFromLegacyVarchar(s string) Code {
+	switch s {
+	case "ENABLE":
+		return IntegrationConfigStatusEnable
+	case "DISABLE":
+		return IntegrationConfigStatusDisable
+	default:
+		return IntegrationConfigStatusEnable
+	}
+}

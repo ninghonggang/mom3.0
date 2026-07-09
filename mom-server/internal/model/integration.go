@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"mom-server/internal/pkg/status"
 )
 
 // InterfaceCategory 接口分类
@@ -119,12 +121,32 @@ type InterfaceConfig struct {
 	IncrementalField    string `json:"incremental_field" gorm:"size:50"`     // 增量时间字段
 	IncrementalWindow   int    `json:"incremental_window" gorm:"default:0"`   // 增量窗口（分钟）
 
-	Status    string `json:"status" gorm:"size:20;default:ENABLE"` // ENABLE/DISABLE
+	Status    string `json:"status" gorm:"size:20;default:ENABLE"` // ENABLE/DISABLE(legacy,保留双轨)
+	StatusV2  string `json:"status_v2" gorm:"size:30;index"`        // V2 字典码(批次 3-3 / 2026-07-09)
 	Remark    string `json:"remark" gorm:"size:500"`
 }
 
 func (InterfaceConfig) TableName() string {
 	return "sys_interface_config"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// BATCH 3-3 / 2026-07-09,与 AndonCall.StatusCode() 同模式
+func (c *InterfaceConfig) StatusCode() string {
+	if c.StatusV2 != "" {
+		return c.StatusV2
+	}
+	return string(status.IntegrationConfigStatusFromLegacyVarchar(c.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制)
+func (c *InterfaceConfig) SetStatus(code string) {
+	cc := status.Code(code)
+	if !cc.IsValid(status.IntegrationConfigStatusAll) {
+		code = string(status.IntegrationConfigStatusEnable)
+	}
+	c.Status = code
+	c.StatusV2 = code
 }
 
 // InterfaceFieldMap 字段映射
