@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 )
 
@@ -170,7 +171,7 @@ func (s *SCPService) CancelPurchaseOrder(ctx context.Context, id string) error {
 // ReceivePurchaseOrderItem 按行项目收货
 // itemID: 订单行项目ID
 // receivedQty: 本次收货数量
-// batchNo: 批号（可选）
+// batchNo: 批号(可选)
 func (s *SCPService) ReceivePurchaseOrderItem(ctx context.Context, itemID uint, receivedQty float64, batchNo string) error {
 	// 获取行项目
 	item, err := s.poRepo.GetItem(ctx, itemID)
@@ -178,12 +179,12 @@ func (s *SCPService) ReceivePurchaseOrderItem(ctx context.Context, itemID uint, 
 		return fmt.Errorf("行项目不存在: %w", err)
 	}
 
-	if item.Status == "COMPLETED" {
-		return fmt.Errorf("该行项目已收货完成，无法重复操作")
+	if item.StatusCode() == string(status.PurchaseOrderItemCompleted) {
+		return fmt.Errorf("该行项目已收货完成,无法重复操作")
 	}
 
-	if item.Status == "CANCELLED" {
-		return fmt.Errorf("该行项目已取消，无法收货")
+	if item.StatusCode() == string(status.PurchaseOrderItemCancelled) {
+		return fmt.Errorf("该行项目已取消,无法收货")
 	}
 
 	// 获取PO信息用于事件
@@ -195,14 +196,14 @@ func (s *SCPService) ReceivePurchaseOrderItem(ctx context.Context, itemID uint, 
 	// 计算新的已收货数量
 	newReceivedQty := item.ReceivedQty + receivedQty
 	if newReceivedQty > item.OrderQty {
-		return fmt.Errorf("收货数量超过订单数量，当前订单数量: %.3f，已收货: %.3f，本次: %.3f",
+		return fmt.Errorf("收货数量超过订单数量,当前订单数量: %.3f,已收货: %.3f,本次: %.3f",
 			item.OrderQty, item.ReceivedQty, receivedQty)
 	}
 
-	// 确定行项目状态
-	newStatus := "PARTIAL"
+	// 确定行项目状态(走字典码,批次 3-1 / 2026-07-09)
+	newStatus := string(status.PurchaseOrderItemPartial)
 	if newReceivedQty >= item.OrderQty {
-		newStatus = "COMPLETED"
+		newStatus = string(status.PurchaseOrderItemCompleted)
 	}
 
 	// 更新行项目
@@ -220,7 +221,7 @@ func (s *SCPService) ReceivePurchaseOrderItem(ctx context.Context, itemID uint, 
 		return err
 	}
 
-	// 发布采购收货事件，触发WMS入库
+	// 发布采购收货事件,触发WMS入库
 	var materialID int64
 	if item.MaterialID != nil {
 		materialID = *item.MaterialID
@@ -248,7 +249,7 @@ func (s *SCPService) ReceivePurchaseOrderItem(ctx context.Context, itemID uint, 
 	return nil
 }
 
-// ReceivePurchaseOrder 整单收货（兼容旧接口）
+// ReceivePurchaseOrder 整单收货(兼容旧接口)
 func (s *SCPService) ReceivePurchaseOrder(ctx context.Context, id string) error {
 	var orderID uint
 	_, err := fmt.Sscanf(id, "%d", &orderID)

@@ -397,3 +397,33 @@ func ProductionCompleteFromLegacyVarchar(s string) Code {
 		return ProductionCompletePending
 	}
 }
+
+// ========== scp.purchase_order_item(BATCH 3-1 / 2026-07-09) ==========
+// 字典来源:scp_purchase_order_item.status 现有枚举
+// 状态机:PENDING → PARTIAL → COMPLETED,任意态可 → CANCELLED
+const (
+	PurchaseOrderItemPending   Code = "PENDING"
+	PurchaseOrderItemPartial   Code = "PARTIAL"
+	PurchaseOrderItemCompleted Code = "COMPLETED"
+	PurchaseOrderItemCancelled Code = "CANCELLED"
+)
+
+var PurchaseOrderItemAll = []Code{
+	PurchaseOrderItemPending, PurchaseOrderItemPartial,
+	PurchaseOrderItemCompleted, PurchaseOrderItemCancelled,
+}
+
+func PurchaseOrderItemFromLegacyVarchar(s string) Code {
+	switch s {
+	case "PENDING":
+		return PurchaseOrderItemPending
+	case "PARTIAL":
+		return PurchaseOrderItemPartial
+	case "COMPLETED":
+		return PurchaseOrderItemCompleted
+	case "CANCELLED":
+		return PurchaseOrderItemCancelled
+	default:
+		return PurchaseOrderItemPending
+	}
+}

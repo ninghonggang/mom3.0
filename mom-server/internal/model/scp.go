@@ -3,6 +3,8 @@ package model
 import (
 	"encoding/json"
 	"time"
+
+	"mom-server/internal/pkg/status"
 )
 
 // SCPBaseModel 供应链公共字段
@@ -68,13 +70,33 @@ type PurchaseOrderItem struct {
 	QualityRequire      *string        `json:"quality_require" gorm:"type:text"`              // 质量要求
 	PackageRequire      *string        `json:"package_require" gorm:"size:200"`                // 包装要求
 	IsGifted            int            `json:"is_gifted" gorm:"default:0"`                    // 是否赠品
-	Status              string         `json:"status" gorm:"size:20;default:PENDING"`         // PENDING/PARTIAL/COMPLETED/CANCELLED
+	Status              string         `json:"status" gorm:"size:20;default:PENDING"`         // PENDING/PARTIAL/COMPLETED/CANCELLED(legacy,保留双轨)
+	StatusV2            string         `json:"status_v2" gorm:"size:30;index"`                // V2 字典码(批次 3-1 / 2026-07-09)
 	Remark              *string        `json:"remark" gorm:"type:text"`                       // 备注
 	CreatedAt           time.Time      `json:"created_at" gorm:"autoCreateTime"`
 }
 
 func (PurchaseOrderItem) TableName() string {
 	return "scp_purchase_order_item"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// BATCH 3-1 / 2026-07-09,与 AndonCall.StatusCode() 同模式
+func (p *PurchaseOrderItem) StatusCode() string {
+	if p.StatusV2 != "" {
+		return p.StatusV2
+	}
+	return string(status.PurchaseOrderItemFromLegacyVarchar(p.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制)
+func (p *PurchaseOrderItem) SetStatus(code string) {
+	cc := status.Code(code)
+	if !cc.IsValid(status.PurchaseOrderItemAll) {
+		code = string(status.PurchaseOrderItemPending)
+	}
+	p.Status = code
+	p.StatusV2 = code
 }
 
 // POChangeLog 采购订单变更记录
