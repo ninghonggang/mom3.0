@@ -21,6 +21,10 @@ func CORS() gin.HandlerFunc {
 		"http://localhost:5179",
 		"http://localhost:9080",
 		"http://localhost:9081",
+		// 外部域名(7-09 添加:老板从 dev.galway.cn 访问)
+		"http://dev.galway.cn",
+		"http://dev.galway.cn:5175",
+		"http://dev.galway.cn:9081",
 	}
 	
 	// 如果设置了环境变量，使用环境变量中的配置
