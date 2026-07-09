@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 )
 
@@ -275,7 +276,7 @@ func (s *MesWorkSchedulingService) StartDetail(ctx context.Context, id int64, us
 	if err != nil {
 		return errors.New("工序排程明细不存在")
 	}
-	if d.Status != "PENDING" && d.Status != "PAUSED" {
+	if d.StatusCode() != string(status.MesWorkSchedulingDetailStatusPending) && d.StatusCode() != string(status.MesWorkSchedulingDetailStatusPaused) {
 		return errors.New("只有待开工或暂停状态的工序可以开工")
 	}
 	now := time.Now()
@@ -292,7 +293,7 @@ func (s *MesWorkSchedulingService) PauseDetail(ctx context.Context, id int64, us
 	if err != nil {
 		return errors.New("工序排程明细不存在")
 	}
-	if d.Status != "IN_PROGRESS" {
+	if d.StatusCode() != string(status.MesWorkSchedulingDetailStatusInProgress) {
 		return errors.New("只有进行中的工序可以暂停")
 	}
 	return s.detailRepo.UpdateStatus(ctx, id, "PAUSED", map[string]interface{}{"updated_by": userID})
@@ -304,7 +305,7 @@ func (s *MesWorkSchedulingService) ResumeDetail(ctx context.Context, id int64, u
 	if err != nil {
 		return errors.New("工序排程明细不存在")
 	}
-	if d.Status != "PAUSED" {
+	if d.StatusCode() != string(status.MesWorkSchedulingDetailStatusPaused) {
 		return errors.New("只有暂停状态的工序可以恢复")
 	}
 	return s.detailRepo.UpdateStatus(ctx, id, "IN_PROGRESS", map[string]interface{}{"updated_by": userID})
@@ -316,7 +317,7 @@ func (s *MesWorkSchedulingService) CompleteDetail(ctx context.Context, id int64,
 	if err != nil {
 		return errors.New("工序排程明细不存在")
 	}
-	if d.Status != "IN_PROGRESS" {
+	if d.StatusCode() != string(status.MesWorkSchedulingDetailStatusInProgress) {
 		return errors.New("只有进行中的工序可以完工")
 	}
 	now := time.Now()

@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"mom-server/internal/pkg/status"
+)
 
 // MesWorkSchedulingDetail 工单排程明细表
 type MesWorkSchedulingDetail struct {
@@ -9,7 +13,8 @@ type MesWorkSchedulingDetail struct {
 	SchedulingID    int64      `json:"scheduling_id" gorm:"index;not null"`
 	WorkingNode     string     `json:"working_node" gorm:"size:50"`
 	WorkingName     string     `json:"working_name" gorm:"size:100"`
-	Status          string     `json:"status" gorm:"size:20"`
+	Status          string     `json:"status" gorm:"size:20"` // PENDING/IN_PROGRESS/PAUSED/COMPLETED(legacy,保留双轨)
+	StatusV2       string     `json:"status_v2" gorm:"size:30;index"` // V2 字典码(批次 3-5 / 2026-07-09)
 	EquipmentID     int64      `json:"equipment_id"`
 	EquipmentCode   string     `json:"equipment_code" gorm:"size:50"`
 	WorkstationID   int64      `json:"workstation_id"`
@@ -27,6 +32,25 @@ type MesWorkSchedulingDetail struct {
 
 func (MesWorkSchedulingDetail) TableName() string {
 	return "mes_work_scheduling_detail"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// BATCH 3-5 / 2026-07-09
+func (d *MesWorkSchedulingDetail) StatusCode() string {
+	if d.StatusV2 != "" {
+		return d.StatusV2
+	}
+	return string(status.MesWorkSchedulingDetailStatusFromLegacyVarchar(d.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制)
+func (d *MesWorkSchedulingDetail) SetStatus(code string) {
+	cc := status.Code(code)
+	if !cc.IsValid(status.MesWorkSchedulingDetailStatusAll) {
+		code = string(status.MesWorkSchedulingDetailStatusPending)
+	}
+	d.Status = code
+	d.StatusV2 = code
 }
 
 // MesWorkSchedulingDetailCreateReqVO 创建工序排程请求

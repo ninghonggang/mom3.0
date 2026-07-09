@@ -507,3 +507,33 @@ func IntegrationConfigStatusFromLegacyVarchar(s string) Code {
 		return IntegrationConfigStatusEnable
 	}
 }
+
+// ========== mes.mes_work_scheduling_detail(BATCH 3-5 / 2026-07-09) ==========
+// 字典来源:mes_work_scheduling_detail.status 现有枚举
+// 状态机:PENDING → IN_PROGRESS → PAUSED ↔ IN_PROGRESS → COMPLETED
+const (
+	MesWorkSchedulingDetailStatusPending     Code = "PENDING"
+	MesWorkSchedulingDetailStatusInProgress Code = "IN_PROGRESS"
+	MesWorkSchedulingDetailStatusPaused     Code = "PAUSED"
+	MesWorkSchedulingDetailStatusCompleted  Code = "COMPLETED"
+)
+
+var MesWorkSchedulingDetailStatusAll = []Code{
+	MesWorkSchedulingDetailStatusPending, MesWorkSchedulingDetailStatusInProgress,
+	MesWorkSchedulingDetailStatusPaused, MesWorkSchedulingDetailStatusCompleted,
+}
+
+func MesWorkSchedulingDetailStatusFromLegacyVarchar(s string) Code {
+	switch s {
+	case "PENDING":
+		return MesWorkSchedulingDetailStatusPending
+	case "IN_PROGRESS":
+		return MesWorkSchedulingDetailStatusInProgress
+	case "PAUSED":
+		return MesWorkSchedulingDetailStatusPaused
+	case "COMPLETED":
+		return MesWorkSchedulingDetailStatusCompleted
+	default:
+		return MesWorkSchedulingDetailStatusPending
+	}
+}
