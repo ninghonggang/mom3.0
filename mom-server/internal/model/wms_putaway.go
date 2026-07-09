@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"mom-server/internal/pkg/status"
 )
 
 // WMSPutawayJob 上架作业单
@@ -12,7 +14,8 @@ type WMSPutawayJob struct {
 	SourceType   string     `json:"source_type" gorm:"size:20"`            // RECEIVE/RETURN/TRANSFER
 	SourceNo     string     `json:"source_no" gorm:"size:50"`             // 来源单号
 	WarehouseID  int64      `json:"warehouse_id" gorm:"index"`
-	Status       string     `json:"status" gorm:"size:20;default:'PENDING'"` // PENDING/ASSIGNED/PUTAWAYING/COMPLETED/CANCELLED
+	Status       string     `json:"status" gorm:"size:20;default:'PENDING'"` // PENDING/ASSIGNED/PUTAWAYING/COMPLETED/CANCELLED(legacy,保留双轨)
+	StatusV2     string     `json:"status_v2" gorm:"size:30;index"`            // V2 字典码(批次 3-2 / 2026-07-09)
 	AssignTime   *time.Time `json:"assign_time"`
 	OperatorID   *int64     `json:"operator_id"`
 	OperatorName string     `json:"operator_name" gorm:"size:50"`
@@ -22,6 +25,25 @@ type WMSPutawayJob struct {
 
 func (WMSPutawayJob) TableName() string {
 	return "wms_putaway_job"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+// BATCH 3-2 / 2026-07-09,与 AndonCall.StatusCode() 同模式
+func (p *WMSPutawayJob) StatusCode() string {
+	if p.StatusV2 != "" {
+		return p.StatusV2
+	}
+	return string(status.WMSPutawayJobFromLegacyVarchar(p.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制)
+func (p *WMSPutawayJob) SetStatus(code string) {
+	cc := status.Code(code)
+	if !cc.IsValid(status.WMSPutawayJobAll) {
+		code = string(status.WMSPutawayJobPending)
+	}
+	p.Status = code
+	p.StatusV2 = code
 }
 
 // WMSPutawayRecord 上架明细
@@ -37,11 +59,30 @@ type WMSPutawayRecord struct {
 	ToLocationID  *int64  `json:"to_location_id"`   // 目标库位
 	PutawayQty    float64 `json:"putaway_qty" gorm:"type:decimal(18,3)"`
 	PutawardedQty float64 `json:"putawayed_qty" gorm:"type:decimal(18,3);default:0"`
-	Status        string  `json:"status" gorm:"size:20;default:'PENDING'"`
+	Status        string  `json:"status" gorm:"size:20;default:'PENDING'"` // PENDING/PUTAWAYING/COMPLETED(legacy,保留双轨)
+	StatusV2      string  `json:"status_v2" gorm:"size:30;index"`         // V2 字典码(批次 3-2)
 }
 
 func (WMSPutawayRecord) TableName() string {
 	return "wms_putaway_record"
+}
+
+// StatusCode 返回有效状态码(优先 status_v2, fallback status → 字典码)
+func (p *WMSPutawayRecord) StatusCode() string {
+	if p.StatusV2 != "" {
+		return p.StatusV2
+	}
+	return string(status.WMSPutawayRecordFromLegacyVarchar(p.Status))
+}
+
+// SetStatus 同时写 status + status_v2(双轨制)
+func (p *WMSPutawayRecord) SetStatus(code string) {
+	cc := status.Code(code)
+	if !cc.IsValid(status.WMSPutawayRecordAll) {
+		code = string(status.WMSPutawayRecordPending)
+	}
+	p.Status = code
+	p.StatusV2 = code
 }
 
 // WMSPutawayJobCreateReqVO 创建上架作业单请求

@@ -427,3 +427,61 @@ func PurchaseOrderItemFromLegacyVarchar(s string) Code {
 		return PurchaseOrderItemPending
 	}
 }
+
+// ========== wms.wms_putaway_job(BATCH 3-2 / 2026-07-09) ==========
+// 字典来源:wms_putaway_job.status 现有枚举
+// 状态机:PENDING → ASSIGNED → PUTAWAYING → COMPLETED,任意态可 → CANCELLED
+const (
+	WMSPutawayJobPending    Code = "PENDING"
+	WMSPutawayJobAssigned   Code = "ASSIGNED"
+	WMSPutawayJobPutawaying Code = "PUTAWAYING"
+	WMSPutawayJobCompleted  Code = "COMPLETED"
+	WMSPutawayJobCancelled  Code = "CANCELLED"
+)
+
+var WMSPutawayJobAll = []Code{
+	WMSPutawayJobPending, WMSPutawayJobAssigned, WMSPutawayJobPutawaying,
+	WMSPutawayJobCompleted, WMSPutawayJobCancelled,
+}
+
+func WMSPutawayJobFromLegacyVarchar(s string) Code {
+	switch s {
+	case "PENDING":
+		return WMSPutawayJobPending
+	case "ASSIGNED":
+		return WMSPutawayJobAssigned
+	case "PUTAWAYING":
+		return WMSPutawayJobPutawaying
+	case "COMPLETED":
+		return WMSPutawayJobCompleted
+	case "CANCELLED":
+		return WMSPutawayJobCancelled
+	default:
+		return WMSPutawayJobPending
+	}
+}
+
+// ========== wms.wms_putaway_record(BATCH 3-2) ==========
+// 字典来源:wms_putaway_record.status 现有枚举(PENDING/PUTAWAYING/COMPLETED)
+const (
+	WMSPutawayRecordPending    Code = "PENDING"
+	WMSPutawayRecordPutawaying Code = "PUTAWAYING"
+	WMSPutawayRecordCompleted  Code = "COMPLETED"
+)
+
+var WMSPutawayRecordAll = []Code{
+	WMSPutawayRecordPending, WMSPutawayRecordPutawaying, WMSPutawayRecordCompleted,
+}
+
+func WMSPutawayRecordFromLegacyVarchar(s string) Code {
+	switch s {
+	case "PENDING":
+		return WMSPutawayRecordPending
+	case "PUTAWAYING":
+		return WMSPutawayRecordPutawaying
+	case "COMPLETED":
+		return WMSPutawayRecordCompleted
+	default:
+		return WMSPutawayRecordPending
+	}
+}

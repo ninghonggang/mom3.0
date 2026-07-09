@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 
 	"gorm.io/gorm"
@@ -101,7 +102,7 @@ func (s *PutawayService) Assign(ctx context.Context, id uint, req *model.WMSPuta
 		return fmt.Errorf("putaway job not found: %w", err)
 	}
 
-	if job.Status != "PENDING" {
+	if job.StatusCode() != string(status.WMSPutawayJobPending) {
 		return fmt.Errorf("only PENDING status job can be assigned")
 	}
 
@@ -123,7 +124,7 @@ func (s *PutawayService) Start(ctx context.Context, id uint) error {
 		return fmt.Errorf("putaway job not found: %w", err)
 	}
 
-	if job.Status != "ASSIGNED" {
+	if job.StatusCode() != string(status.WMSPutawayJobAssigned) {
 		return fmt.Errorf("only ASSIGNED status job can be started")
 	}
 
@@ -146,7 +147,7 @@ func (s *PutawayService) Complete(ctx context.Context, id uint) error {
 		return fmt.Errorf("putaway job not found: %w", err)
 	}
 
-	if job.Status != "PUTAWAYING" {
+	if job.StatusCode() != string(status.WMSPutawayJobPutawaying) {
 		return fmt.Errorf("only PUTAWAYING status job can be completed")
 	}
 
@@ -171,7 +172,7 @@ func (s *PutawayService) Cancel(ctx context.Context, id uint, reason string) err
 		return fmt.Errorf("putaway job not found: %w", err)
 	}
 
-	if job.Status == "COMPLETED" || job.Status == "CANCELLED" {
+	if job.StatusCode() == string(status.WMSPutawayJobCompleted) || job.StatusCode() == string(status.WMSPutawayJobCancelled) {
 		return fmt.Errorf("completed or cancelled job cannot be cancelled")
 	}
 
@@ -190,13 +191,13 @@ func (s *PutawayService) AddRecord(ctx context.Context, jobID uint, record *mode
 		return fmt.Errorf("putaway job not found: %w", err)
 	}
 
-	if job.Status != "PENDING" {
+	if job.StatusCode() != string(status.WMSPutawayJobPending) {
 		return fmt.Errorf("only PENDING status job can add records")
 	}
 
 	record.PutawayJobID = int64(jobID)
 	record.PutawayNo = job.PutawayNo
-	record.Status = "PENDING"
+	record.SetStatus(string(status.WMSPutawayRecordPending))
 
 	return s.recordRepo.Create(ctx, record)
 }
