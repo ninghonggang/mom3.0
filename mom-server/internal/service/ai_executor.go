@@ -10,6 +10,7 @@ import (
 
 	"mom-server/internal/dto"
 	"mom-server/internal/model"
+	"mom-server/internal/pkg/status"
 	"mom-server/internal/repository"
 )
 
@@ -544,12 +545,13 @@ func (e *AIExecutor) executeProductionAnalysis(ctx context.Context, intent *AIIn
 		var total, pending, inProgress, completed int
 		for _, o := range orders {
 			total++
-			switch o.Status {
-			case 1:
+			// BATCH 3-4 / 2026-07-09: 切 V2 字典码,与 ProductionOrderFromLegacyInt 对应
+			switch o.StatusCode() {
+			case string(status.ProductionOrderDraft):
 				pending++
-			case 2:
+			case string(status.ProductionOrderInProgress):
 				inProgress++
-			case 3:
+			case string(status.ProductionOrderCompleted):
 				completed++
 			}
 		}
