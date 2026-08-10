@@ -1,0 +1,173 @@
+syntax = "proto3";
+
+package mom.qms;
+
+import "common/common.proto";
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/qms;qms";
+
+// ============ QMS 枚举 ============
+
+enum InspectionType {
+  INSPECTION_TYPE_UNSPECIFIED = 0;
+  INSPECTION_TYPE_IQC = 1;  // 来料检验
+  INSPECTION_TYPE_IPQC = 2; // 过程检验
+  INSPECTION_TYPE_FQC = 3;  // 成品检验
+  INSPECTION_TYPE_OQC = 4;  // 出货检验
+}
+
+enum InspectionSheetStatus {
+  INSPECTION_SHEET_STATUS_UNSPECIFIED = 0;
+  INSPECTION_SHEET_STATUS_PENDING = 1;
+  INSPECTION_SHEET_STATUS_IN_PROGRESS = 2;
+  INSPECTION_SHEET_STATUS_PASSED = 3;
+  INSPECTION_SHEET_STATUS_FAILED = 4;
+  INSPECTION_SHEET_STATUS_WAIVED = 5;
+  INSPECTION_SHEET_STATUS_CANCELLED = 6;
+}
+
+enum CharDataType {
+  CHAR_DATA_TYPE_UNSPECIFIED = 0;
+  CHAR_DATA_TYPE_NUMBER = 1;
+  CHAR_DATA_TYPE_TEXT = 2;
+  CHAR_DATA_TYPE_PASS_FAIL = 3;
+  CHAR_DATA_TYPE_BOOLEAN = 4;
+}
+
+// ============ 检验单 ============
+
+message InspectionSheet {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  string sheet_no = 3;
+  InspectionType inspection_type = 4;
+  int64 material_id = 5;
+  int64 batch_id = 6;
+  string sample_size = 7;
+  string defect_count = 8;
+  InspectionSheetStatus status = 9;
+  int64 inspector_id = 10;
+  int64 inspected_at = 11;
+  int64 created_at = 12;
+  int64 updated_at = 13;
+}
+
+message CreateInspectionSheetRequest {
+  InspectionType inspection_type = 1;
+  int64 material_id = 2;
+  int64 batch_id = 3;
+  string sample_size = 4;
+  int64 inspector_id = 5;
+}
+
+message UpdateInspectionSheetRequest {
+  int64 id = 1;
+  InspectionSheetStatus status = 2;
+  string defect_count = 3;
+  int64 inspector_id = 4;
+}
+
+message GetInspectionSheetRequest {
+  int64 id = 1;
+}
+
+message ListInspectionSheetsRequest {
+  common.PageRequest page = 1;
+  InspectionType inspection_type = 2;
+  InspectionSheetStatus status = 3;
+  int64 material_id = 4;
+  int64 begin_time = 5;
+  int64 end_time = 6;
+}
+
+message ListInspectionSheetsResponse {
+  repeated InspectionSheet items = 1;
+  common.PageResponse page = 2;
+}
+
+message DeleteInspectionSheetRequest {
+  int64 id = 1;
+}
+
+// ============ 检验特性 ============
+
+message InspectionCharacteristic {
+  int64 id = 1;
+  string char_code = 2;
+  string char_name = 3;
+  CharDataType data_type = 4;
+  string usl = 5;
+  string lsl = 6;
+  string target = 7;
+  string unit = 8;
+}
+
+message CreateCharacteristicRequest {
+  string char_code = 1;
+  string char_name = 2;
+  CharDataType data_type = 3;
+  string usl = 4;
+  string lsl = 5;
+  string target = 6;
+  string unit = 7;
+}
+
+message ListCharacteristicsRequest {
+  common.PageRequest page = 1;
+}
+
+message ListCharacteristicsResponse {
+  repeated InspectionCharacteristic items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 检验计划 ============
+
+message InspectionPlan {
+  int64 id = 1;
+  string scheme_code = 2;
+  string scheme_name = 3;
+  string scheme_type = 4;
+  int64 template_id = 5;
+  string status = 6;
+  repeated int64 characteristic_ids = 7;
+}
+
+message CreateInspectionPlanRequest {
+  string scheme_code = 1;
+  string scheme_name = 2;
+  string scheme_type = 3;
+  int64 template_id = 4;
+  repeated int64 characteristic_ids = 5;
+}
+
+message ListInspectionPlansRequest {
+  common.PageRequest page = 1;
+  string scheme_type = 2;
+}
+
+message ListInspectionPlansResponse {
+  repeated InspectionPlan items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 检验结果 ============
+
+message InspectionResult {
+  int64 id = 1;
+  int64 sheet_id = 2;
+  int64 char_id = 3;
+  string value = 4;
+  bool pass = 5;
+}
+
+message RecordInspectionResultRequest {
+  int64 sheet_id = 1;
+  repeated ResultEntry entries = 2;
+}
+
+message ResultEntry {
+  int64 char_id = 1;
+  string value = 2;
+  bool pass = 3;
+}

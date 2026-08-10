@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package mom.trace;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/trace;trace";
+
+import "common/common.proto";
+import "trace/trace.proto";
+
+service TraceService {
+  // 追溯
+  rpc CreateTraceRecord(CreateTraceRecordRequest) returns (TraceRecord);
+  rpc ForwardTrace(GetTraceRequest) returns (ForwardTraceResponse);
+  rpc BackwardTrace(GetTraceRequest) returns (BackwardTraceResponse);
+  rpc ListTraces(ListTracesRequest) returns (ListTracesResponse);
+
+  // 序列号
+  rpc GenerateSerials(GenerateSerialRequest) returns (GenerateSerialResponse);
+
+  // 数据采集
+  rpc CreateDataPoint(CreateDataPointRequest) returns (DataPoint);
+  rpc ListDataPoints(ListDataPointsRequest) returns (ListDataPointsResponse);
+  rpc CollectData(CollectDataRequest) returns (CollectRecord);
+  rpc ListCollectRecords(ListCollectRecordsRequest) returns (ListCollectRecordsResponse);
+
+  // 扫描日志
+  rpc CreateScanLog(CreateScanLogRequest) returns (ScanLog);
+}

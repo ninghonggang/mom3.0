@@ -1,0 +1,205 @@
+syntax = "proto3";
+
+package mom.wms;
+
+import "common/common.proto";
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/wms;wms";
+
+// ============ 入库单 ============
+
+message ReceiveOrder {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  string receive_no = 3;
+  int64 po_id = 4;
+  int64 supplier_id = 5;
+  ReceiveOrderStatus status = 6;
+  int64 received_at = 7;
+  int64 putaway_at = 8;
+  int64 completed_at = 9;
+  repeated ReceiveOrderLine lines = 10;
+}
+
+enum ReceiveOrderStatus {
+  RECEIVE_STATUS_UNSPECIFIED = 0;
+  RECEIVE_STATUS_DRAFT = 1;
+  RECEIVE_STATUS_RECEIVING = 2;
+  RECEIVE_STATUS_RECEIVED = 3;
+  RECEIVE_STATUS_PUTAWAY = 4;
+  RECEIVE_STATUS_COMPLETED = 5;
+  RECEIVE_STATUS_CANCELLED = 6;
+}
+
+message ReceiveOrderLine {
+  int64 id = 1;
+  int64 material_id = 2;
+  string expected_qty = 3;
+  string received_qty = 4;
+  string batch_no = 5;
+  string expire_date = 6;
+  // 采购单价。上架时按移动加权平均并入库存余额的 unit_cost，作为库存估值依据。
+  string unit_price = 7;
+}
+
+message CreateReceiveOrderRequest {
+  int64 po_id = 1;
+  int64 supplier_id = 2;
+  repeated CreateReceiveLineRequest lines = 3;
+}
+
+message CreateReceiveLineRequest {
+  int64 material_id = 1;
+  string expected_qty = 2;
+  string unit_price = 3;
+}
+
+message ReceiveConfirmRequest {
+  int64 id = 1;
+  repeated ReceiveConfirmLine lines = 2;
+}
+
+message ReceiveConfirmLine {
+  int64 line_id = 1;
+  string received_qty = 2;
+  string batch_no = 3;
+  string expire_date = 4;
+}
+
+message PutawayRequest {
+  int64 receive_order_id = 1;
+  repeated PutawayLine lines = 2;
+}
+
+message PutawayLine {
+  int64 line_id = 1;
+  int64 location_id = 2;
+  string quantity = 3;
+}
+
+message ListReceiveOrdersRequest {
+  common.PageRequest page = 1;
+  ReceiveOrderStatus status = 2;
+  int64 supplier_id = 3;
+}
+
+message ListReceiveOrdersResponse {
+  repeated ReceiveOrder items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 出库单 ============
+
+message DeliveryOrder {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  string delivery_no = 3;
+  int64 so_id = 4;
+  int64 customer_id = 5;
+  DeliveryOrderStatus status = 6;
+  int64 shipped_at = 7;
+  repeated DeliveryOrderLine lines = 8;
+}
+
+enum DeliveryOrderStatus {
+  DELIVERY_STATUS_UNSPECIFIED = 0;
+  DELIVERY_STATUS_DRAFT = 1;
+  DELIVERY_STATUS_PICKING = 2;
+  DELIVERY_STATUS_PICKED = 3;
+  DELIVERY_STATUS_PACKING = 4;
+  DELIVERY_STATUS_ON_HOLD = 5;
+  DELIVERY_STATUS_SHIPPED = 6;
+  DELIVERY_STATUS_CANCELLED = 7;
+}
+
+message DeliveryOrderLine {
+  int64 id = 1;
+  int64 material_id = 2;
+  string ordered_qty = 3;
+  string picked_qty = 4;
+}
+
+message CreateDeliveryOrderRequest {
+  int64 so_id = 1;
+  int64 customer_id = 2;
+  repeated CreateDeliveryLineRequest lines = 3;
+}
+
+message CreateDeliveryLineRequest {
+  int64 material_id = 1;
+  string ordered_qty = 2;
+}
+
+message PickRequest {
+  int64 delivery_order_id = 1;
+  repeated PickLine lines = 2;
+}
+
+message PickLine {
+  int64 line_id = 1;
+  int64 location_id = 2;
+  string picked_qty = 3;
+  int64 picker_id = 4;
+}
+
+message ShipRequest {
+  int64 id = 1;
+}
+
+message ListDeliveryOrdersRequest {
+  common.PageRequest page = 1;
+  DeliveryOrderStatus status = 2;
+  int64 customer_id = 3;
+}
+
+message ListDeliveryOrdersResponse {
+  repeated DeliveryOrder items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 调拨 ============
+
+message TransferOrder {
+  int64 id = 1;
+  string transfer_no = 2;
+  int64 source_warehouse_id = 3;
+  int64 dest_warehouse_id = 4;
+  string transfer_date = 5;
+  string total_qty = 6;
+  string status = 7;
+}
+
+// ============ 盘点 ============
+
+message CountPlan {
+  int64 id = 1;
+  string plan_no = 2;
+  int64 warehouse_id = 3;
+  string plan_type = 4;
+  string status = 5;
+}
+
+message CountRecord {
+  int64 id = 1;
+  int64 job_id = 2;
+  int64 material_id = 3;
+  string system_qty = 4;
+  string actual_qty = 5;
+  string diff_qty = 6;
+}
+
+message CreateCountPlanRequest {
+  int64 warehouse_id = 1;
+  string plan_type = 2;
+}
+
+message SubmitCountRecordRequest {
+  int64 plan_id = 1;
+  repeated CountRecordItem items = 2;
+}
+
+message CountRecordItem {
+  int64 material_id = 1;
+  int64 location_id = 2;
+  string actual_qty = 3;
+}

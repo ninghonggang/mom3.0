@@ -1,0 +1,171 @@
+syntax = "proto3";
+
+package mom.andon;
+
+import "common/common.proto";
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/andon;andon";
+
+// ============ 安灯呼叫 ============
+
+message AndonCall {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  string andon_no = 3;
+  int64 workstation_id = 4;
+  int64 reporter_id = 5;
+  AndonType andon_type = 6;
+  string description = 7;
+  AndonCallStatus status = 8;
+  int64 triggered_at = 9;
+  int64 acknowledged_at = 10;
+  int64 resolved_at = 11;
+  int32 response_seconds = 12;
+}
+
+enum AndonType {
+  ANDON_TYPE_UNSPECIFIED = 0;
+  ANDON_TYPE_MATERIAL = 1;
+  ANDON_TYPE_EQUIPMENT = 2;
+  ANDON_TYPE_QUALITY = 3;
+  ANDON_TYPE_SAFETY = 4;
+}
+
+enum AndonCallStatus {
+  ANDON_CALL_STATUS_UNSPECIFIED = 0;
+  ANDON_CALL_STATUS_TRIGGERED = 1;
+  ANDON_CALL_STATUS_ACKNOWLEDGED = 2;
+  ANDON_CALL_STATUS_IN_PROGRESS = 3;
+  ANDON_CALL_STATUS_RESOLVED = 4;
+  ANDON_CALL_STATUS_CLOSED = 5;
+  ANDON_CALL_STATUS_CANCELLED = 6;
+  ANDON_CALL_STATUS_ESCALATED = 7;
+}
+
+message TriggerAndonRequest {
+  int64 workstation_id = 1;
+  int64 reporter_id = 2;
+  AndonType andon_type = 3;
+  string description = 4;
+}
+
+message AcknowledgeAndonRequest {
+  int64 id = 1;
+  int64 operator_id = 2;
+}
+
+message ResolveAndonRequest {
+  int64 id = 1;
+  int64 operator_id = 2;
+  string resolution = 3;
+}
+
+message EscalateAndonRequest {
+  int64 id = 1;
+  int32 level = 2;
+  int64 escalate_to_user_id = 3;
+}
+
+message AndonAction {
+  int64 id = 1;
+  int64 andon_id = 2;
+  string action_type = 3;
+  string action_desc = 4;
+  int64 operator_id = 5;
+  int64 action_time = 6;
+}
+
+message ListAndonCallsRequest {
+  common.PageRequest page = 1;
+  AndonType andon_type = 2;
+  AndonCallStatus status = 3;
+  int64 workstation_id = 4;
+}
+
+message ListAndonCallsResponse {
+  repeated AndonCall items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 告警 ============
+
+message AlertConfig {
+  int64 id = 1;
+  string config_code = 2;
+  string config_name = 3;
+  TriggerType trigger_type = 4;
+  AlertSeverity severity = 5;
+  string trigger_condition = 6;
+  string notify_channels = 7;
+  string status = 8;
+}
+
+enum TriggerType {
+  TRIGGER_TYPE_UNSPECIFIED = 0;
+  TRIGGER_TYPE_THRESHOLD = 1;
+  TRIGGER_TYPE_EVENT = 2;
+  TRIGGER_TYPE_SCHEDULE = 3;
+}
+
+enum AlertSeverity {
+  ALERT_SEVERITY_UNSPECIFIED = 0;
+  ALERT_SEVERITY_P0 = 1;
+  ALERT_SEVERITY_P1 = 2;
+  ALERT_SEVERITY_P2 = 3;
+  ALERT_SEVERITY_P3 = 4;
+}
+
+message Alert {
+  int64 id = 1;
+  int64 config_id = 2;
+  int64 target_id = 3;
+  string target_type = 4;
+  AlertStatus status = 5;
+  int64 triggered_at = 6;
+  int64 acknowledged_at = 7;
+  int64 resolved_at = 8;
+}
+
+enum AlertStatus {
+  ALERT_STATUS_UNSPECIFIED = 0;
+  ALERT_STATUS_ACTIVE = 1;
+  ALERT_STATUS_ACKNOWLEDGED = 2;
+  ALERT_STATUS_RESOLVED = 3;
+  ALERT_STATUS_ESCALATED = 4;
+  ALERT_STATUS_SUPPRESSED = 5;
+  ALERT_STATUS_CLOSED = 6;
+}
+
+message CreateAlertConfigRequest {
+  string config_code = 1;
+  string config_name = 2;
+  TriggerType trigger_type = 3;
+  AlertSeverity severity = 4;
+  string trigger_condition = 5;
+  string notify_channels = 6;
+}
+
+message TriggerAlertRequest {
+  int64 config_id = 1;
+  int64 target_id = 2;
+  string target_type = 3;
+}
+
+message ListAlertsRequest {
+  common.PageRequest page = 1;
+  AlertStatus status = 2;
+  AlertSeverity severity = 3;
+}
+
+message ListAlertsResponse {
+  repeated Alert items = 1;
+  common.PageResponse page = 2;
+}
+
+message AlertEscalation {
+  int64 id = 1;
+  int64 alert_id = 2;
+  int32 level = 3;
+  int64 escalate_to_user_id = 4;
+  int32 timeout_seconds = 5;
+}

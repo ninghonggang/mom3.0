@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package mom.andon;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/andon;andon";
+
+import "common/common.proto";
+import "andon/andon.proto";
+
+service AndonService {
+  // 安灯呼叫
+  rpc TriggerAndon(TriggerAndonRequest) returns (AndonCall);
+  rpc AcknowledgeAndon(AcknowledgeAndonRequest) returns (AndonCall);
+  rpc ResolveAndon(ResolveAndonRequest) returns (AndonCall);
+  rpc EscalateAndon(EscalateAndonRequest) returns (AndonCall);
+  rpc GetAndonCall(common.IdRequest) returns (AndonCall);
+  rpc ListAndonCalls(ListAndonCallsRequest) returns (ListAndonCallsResponse);
+
+  // 告警配置
+  rpc CreateAlertConfig(CreateAlertConfigRequest) returns (AlertConfig);
+
+  // 告警
+  rpc TriggerAlert(TriggerAlertRequest) returns (Alert);
+  rpc AcknowledgeAlert(common.IdRequest) returns (Alert);
+  rpc ResolveAlert(common.IdRequest) returns (Alert);
+  rpc ListAlerts(ListAlertsRequest) returns (ListAlertsResponse);
+}

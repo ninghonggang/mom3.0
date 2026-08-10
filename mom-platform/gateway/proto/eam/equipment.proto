@@ -1,0 +1,295 @@
+syntax = "proto3";
+
+package mom.eam;
+
+import "common/common.proto";
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/eam;eam";
+
+// ============ 设备台账 ============
+
+message Equipment {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  string equipment_code = 3;
+  string equipment_name = 4;
+  EquipmentType equipment_type = 5;
+  int64 equipment_class_id = 6;
+  string model = 7;
+  string specification = 8;
+  int64 manufacturer_id = 9;
+  int64 supplier_id = 10;
+  string serial_no = 11;
+  int64 workshop_id = 12;
+  int64 line_id = 13;
+  int64 location_id = 14;
+  EquipmentStatus status = 15;
+  string target_oee = 16;
+  string purchase_amount = 17;
+  int32 service_life = 18;
+  string install_date = 19;
+}
+
+enum EquipmentType {
+  EQUIPMENT_TYPE_UNSPECIFIED = 0;
+  EQUIPMENT_TYPE_MACHINE = 1;
+  EQUIPMENT_TYPE_MOLD = 2;
+  EQUIPMENT_TYPE_INSTRUMENT = 3;
+}
+
+enum EquipmentStatus {
+  EQUIPMENT_STATUS_UNSPECIFIED = 0;
+  EQUIPMENT_STATUS_RUNNING = 1;
+  EQUIPMENT_STATUS_IDLE = 2;
+  EQUIPMENT_STATUS_MAINTENANCE = 3;
+  EQUIPMENT_STATUS_REPAIR = 4;
+  EQUIPMENT_STATUS_SCRAPPED = 5;
+}
+
+message CreateEquipmentRequest {
+  string equipment_code = 1;
+  string equipment_name = 2;
+  EquipmentType equipment_type = 3;
+  string model = 4;
+  string specification = 5;
+  int64 workshop_id = 6;
+  int64 line_id = 7;
+  string target_oee = 8;
+}
+
+message GetEquipmentRequest {
+  int64 id = 1;
+}
+
+message ListEquipmentRequest {
+  common.PageRequest page = 1;
+  EquipmentType equipment_type = 2;
+  EquipmentStatus status = 3;
+  int64 workshop_id = 4;
+  int64 line_id = 5;
+}
+
+message ListEquipmentResponse {
+  repeated Equipment items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 维修单 ============
+
+message RepairOrder {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  string repair_no = 3;
+  int64 equipment_id = 4;
+  string fault_type = 5;
+  string fault_desc = 6;
+  Urgency urgency = 7;
+  int64 reporter_id = 8;
+  int64 repairman_id = 9;
+  RepairOrderStatus status = 10;
+  int64 reported_at = 11;
+  int64 completed_at = 12;
+}
+
+enum Urgency {
+  URGENCY_UNSPECIFIED = 0;
+  URGENCY_NORMAL = 1;
+  URGENCY_URGENT = 2;
+  URGENCY_EMERGENCY = 3;
+}
+
+enum RepairOrderStatus {
+  REPAIR_STATUS_UNSPECIFIED = 0;
+  REPAIR_STATUS_REPORTED = 1;
+  REPAIR_STATUS_ASSIGNED = 2;
+  REPAIR_STATUS_IN_PROGRESS = 3;
+  REPAIR_STATUS_PENDING_PARTS = 4;
+  REPAIR_STATUS_COMPLETED = 5;
+  REPAIR_STATUS_VERIFIED = 6;
+  REPAIR_STATUS_CANCELLED = 7;
+}
+
+message CreateRepairOrderRequest {
+  int64 equipment_id = 1;
+  string fault_type = 2;
+  string fault_desc = 3;
+  Urgency urgency = 4;
+  int64 reporter_id = 5;
+}
+
+message UpdateRepairOrderRequest {
+  int64 id = 1;
+  RepairOrderStatus status = 2;
+  int64 repairman_id = 3;
+}
+
+message ListRepairOrdersRequest {
+  common.PageRequest page = 1;
+  int64 equipment_id = 2;
+  RepairOrderStatus status = 3;
+}
+
+message ListRepairOrdersResponse {
+  repeated RepairOrder items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 设备OEE ============
+
+message EquipmentOee {
+  int64 id = 1;
+  int64 equipment_id = 2;
+  string calc_date = 3;
+  string availability = 4;
+  string performance = 5;
+  string quality = 6;
+  string oee = 7;
+}
+
+// SaveOeeRequest 上报某设备某日的 OEE 三要素（0~1 的小数字符串），
+// 服务端据此计算 OEE = 时间稼动率 × 性能稼动率 × 良品率，并按 (设备, 日期) 幂等 upsert。
+message SaveOeeRequest {
+  int64 equipment_id = 1;
+  string calc_date = 2;    // YYYY-MM-DD，留空则取服务端当天
+  string availability = 3; // 时间稼动率 A
+  string performance = 4;  // 性能稼动率 P
+  string quality = 5;      // 良品率 Q
+}
+
+message ListOeeRequest {
+  int64 equipment_id = 1;
+  string begin_date = 2;
+  string end_date = 3;
+}
+
+message ListOeeResponse {
+  repeated EquipmentOee items = 1;
+}
+
+// ============ 保养计划 ============
+
+message MaintenancePlan {
+  int64 id = 1;
+  int64 equipment_id = 2;
+  string plan_no = 3;
+  string maintenance_type = 4;
+  int32 cycle_days = 5;
+  string next_maintenance_date = 6;
+  MaintenancePlanStatus status = 7;
+}
+
+enum MaintenancePlanStatus {
+  MAINTENANCE_STATUS_UNSPECIFIED = 0;
+  MAINTENANCE_STATUS_SCHEDULED = 1;
+  MAINTENANCE_STATUS_IN_PROGRESS = 2;
+  MAINTENANCE_STATUS_COMPLETED = 3;
+  MAINTENANCE_STATUS_SKIPPED = 4;
+}
+
+message CreateMaintenancePlanRequest {
+  int64 equipment_id = 1;
+  string maintenance_type = 2;
+  int32 cycle_days = 3;
+  string next_maintenance_date = 4;
+}
+
+message ListMaintenancePlansRequest {
+  common.PageRequest page = 1;
+  int64 equipment_id = 2;
+}
+
+message ListMaintenancePlansResponse {
+  repeated MaintenancePlan items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 点检记录 ============
+
+message EquipmentCheck {
+  int64 id = 1;
+  int64 equipment_id = 2;
+  string check_no = 3;
+  int64 check_std_id = 4;
+  int64 checker_id = 5;
+  int64 check_time = 6;
+  CheckResult result = 7;
+  string remark = 8;
+}
+
+enum CheckResult {
+  CHECK_RESULT_UNSPECIFIED = 0;
+  CHECK_RESULT_OK = 1;
+  CHECK_RESULT_NG = 2;
+  CHECK_RESULT_NA = 3;
+}
+
+message CreateCheckRequest {
+  int64 equipment_id = 1;
+  int64 check_std_id = 2;
+  int64 checker_id = 3;
+  CheckResult result = 4;
+  string remark = 5;
+}
+
+message ListChecksRequest {
+  common.PageRequest page = 1;
+  int64 equipment_id = 2;
+  int64 begin_time = 3;
+  int64 end_time = 4;
+}
+
+message ListChecksResponse {
+  repeated EquipmentCheck items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 设备停机 ============
+
+message EquipmentDowntime {
+  int64 id = 1;
+  int64 equipment_id = 2;
+  DowntimeType downtime_type = 3;
+  int64 start_time = 4;
+  int64 end_time = 5;
+  int32 duration_seconds = 6;
+  string reason = 7;
+  DowntimeStatus status = 8;
+  string resolution = 9;  // 解决方案，停机恢复时填写
+  string resolver_id = 10; // 处理人
+}
+
+enum DowntimeType {
+  DOWNTIME_TYPE_UNSPECIFIED = 0;
+  DOWNTIME_TYPE_UNPLANNED = 1;
+  DOWNTIME_TYPE_PLANNED = 2;
+}
+
+enum DowntimeStatus {
+  DOWNTIME_STATUS_UNSPECIFIED = 0;
+  DOWNTIME_STATUS_ACTIVE = 1;
+  DOWNTIME_STATUS_RESOLVED = 2;
+  DOWNTIME_STATUS_PLANNED = 3;
+}
+
+message StartDowntimeRequest {
+  int64 equipment_id = 1;
+  DowntimeType downtime_type = 2;
+  string reason = 3;
+}
+
+message ResolveDowntimeRequest {
+  int64 id = 1;
+  string resolution = 2;  // 解决方案描述，落库留痕
+  string resolver_id = 3; // 处理人
+}
+
+message ListDowntimesRequest {
+  common.PageRequest page = 1;
+  int64 equipment_id = 2;
+  DowntimeStatus status = 3;
+}
+
+message ListDowntimesResponse {
+  repeated EquipmentDowntime items = 1;
+  common.PageResponse page = 2;
+}

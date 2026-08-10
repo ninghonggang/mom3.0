@@ -1,0 +1,14 @@
+go 1.25
+
+use (
+	./gen
+	./pkg
+	./services/mdm-service
+	./services/mes-service
+	./services/qms-service
+	./services/eam-service
+	./services/wms-service
+	./services/aps-service
+	./services/trace-service
+	./services/andon-service
+)

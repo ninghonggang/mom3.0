@@ -1,0 +1,222 @@
+syntax = "proto3";
+
+package mom.trace;
+
+import "common/common.proto";
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/trace;trace";
+
+// ============ 追溯记录 ============
+
+message TraceRecord {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  string trace_no = 3;
+  TraceType trace_type = 4;
+  string serial_no = 5;
+  string batch_no = 6;
+  int64 material_id = 7;
+  int64 production_order_id = 8;
+  TraceRecordStatus status = 9;
+  int64 trace_at = 10;
+}
+
+enum TraceType {
+  TRACE_TYPE_UNSPECIFIED = 0;
+  TRACE_TYPE_SERIAL = 1;
+  TRACE_TYPE_BATCH = 2;
+  TRACE_TYPE_ORDER = 3;
+  TRACE_TYPE_MATERIAL = 4;
+}
+
+enum TraceRecordStatus {
+  TRACE_STATUS_UNSPECIFIED = 0;
+  TRACE_STATUS_PENDING = 1;
+  TRACE_STATUS_ACTIVE = 2;
+  TRACE_STATUS_BROKEN = 3;
+  TRACE_STATUS_ARCHIVED = 4;
+}
+
+message CreateTraceRecordRequest {
+  TraceType trace_type = 1;
+  string serial_no = 2;
+  string batch_no = 3;
+  int64 material_id = 4;
+  int64 production_order_id = 5;
+}
+
+message GetTraceRequest {
+  string serial_no = 1;
+  string batch_no = 2;
+  int64 material_id = 3;
+}
+
+message TraceLink {
+  int64 id = 1;
+  int64 trace_id = 2;
+  int64 parent_trace_id = 3;
+  LinkType link_type = 4;
+  int32 level = 5;
+}
+
+enum LinkType {
+  LINK_TYPE_UNSPECIFIED = 0;
+  LINK_TYPE_MATERIAL = 1;
+  LINK_TYPE_PROCESS = 2;
+  LINK_TYPE_ORDER = 3;
+}
+
+message ForwardTraceResponse {
+  TraceRecord root = 1;
+  repeated TraceLink links = 2;
+  repeated TraceRecord nodes = 3;
+}
+
+message BackwardTraceResponse {
+  TraceRecord leaf = 1;
+  repeated TraceLink links = 2;
+  repeated TraceRecord nodes = 3;
+}
+
+message ListTracesRequest {
+  common.PageRequest page = 1;
+  TraceType trace_type = 2;
+  int64 material_id = 3;
+  int64 begin_time = 4;
+  int64 end_time = 5;
+}
+
+message ListTracesResponse {
+  repeated TraceRecord items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 序列号管理 ============
+
+message SerialNumber {
+  int64 id = 1;
+  string serial_no = 2;
+  int64 material_id = 3;
+  int64 production_order_id = 4;
+  string batch_no = 5;
+  string status = 6;
+  int64 created_at = 7;
+}
+
+message GenerateSerialRequest {
+  int64 material_id = 1;
+  int64 production_order_id = 2;
+  string batch_no = 3;
+  int32 count = 4;
+}
+
+message GenerateSerialResponse {
+  repeated SerialNumber serials = 1;
+}
+
+// ============ 数据采集 ============
+
+message DataPoint {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  string point_code = 3;
+  string point_name = 4;
+  int64 equipment_id = 5;
+  DataType data_type = 6;
+  string upper_limit = 7;
+  string lower_limit = 8;
+  int32 collect_interval_seconds = 9;
+  DataPointStatus status = 10;
+}
+
+enum DataType {
+  DATA_TYPE_UNSPECIFIED = 0;
+  DATA_TYPE_NUMBER = 1;
+  DATA_TYPE_STRING = 2;
+  DATA_TYPE_BOOLEAN = 3;
+}
+
+enum DataPointStatus {
+  DATA_POINT_STATUS_UNSPECIFIED = 0;
+  DATA_POINT_STATUS_ACTIVE = 1;
+  DATA_POINT_STATUS_PAUSED = 2;
+  DATA_POINT_STATUS_ERROR = 3;
+}
+
+message CreateDataPointRequest {
+  string point_code = 1;
+  string point_name = 2;
+  int64 equipment_id = 3;
+  DataType data_type = 4;
+  string upper_limit = 5;
+  string lower_limit = 6;
+  int32 collect_interval_seconds = 7;
+}
+
+message ListDataPointsRequest {
+  int64 tenant_id = 1;
+  int64 equipment_id = 2;
+  DataPointStatus status = 3;
+  common.PageRequest page = 4;
+}
+
+message ListDataPointsResponse {
+  repeated DataPoint items = 1;
+  common.PageResponse page = 2;
+}
+
+message CollectRecord {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  int64 data_point_id = 3;
+  string value = 4;
+  DataQuality quality = 5;
+  int64 collected_at = 6;
+}
+
+enum DataQuality {
+  DATA_QUALITY_UNSPECIFIED = 0;
+  DATA_QUALITY_GOOD = 1;
+  DATA_QUALITY_BAD = 2;
+  DATA_QUALITY_UNCERTAIN = 3;
+}
+
+message CollectDataRequest {
+  int64 data_point_id = 1;
+  string value = 2;
+  DataQuality quality = 3;
+}
+
+message ListCollectRecordsRequest {
+  int64 data_point_id = 1;
+  int64 begin_time = 2;
+  int64 end_time = 3;
+  common.PageRequest page = 4;
+}
+
+message ListCollectRecordsResponse {
+  repeated CollectRecord items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 扫描日志 ============
+
+message ScanLog {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  string scan_code = 3;
+  string scan_type = 4;
+  int64 operator_id = 5;
+  int64 equipment_id = 6;
+  int64 workstation_id = 7;
+  int64 trace_id = 8;
+  int64 scan_time = 9;
+}
+
+message CreateScanLogRequest {
+  string scan_code = 1;
+  string scan_type = 2;
+  int64 operator_id = 3;
+  int64 equipment_id = 4;
+  int64 workstation_id = 5;
+}

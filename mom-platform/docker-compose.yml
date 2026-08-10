@@ -1,0 +1,240 @@
+services:
+  # ==================== 基础设施 ====================
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: momadmin
+      POSTGRES_PASSWORD: mom123456
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U momadmin"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  nats:
+    image: nats:2.10-alpine
+    command: -js -m 8222
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  # ==================== Go 微服务 ====================
+  mdm-service:
+    image: mom-platform/mdm-service:latest
+    build:
+      context: .
+      dockerfile: services/mdm-service/Dockerfile
+    ports:
+      - "50051:50051"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=momadmin
+      - DB_PASSWORD=mom123456
+      - DB_NAME=mom_mdm
+      - NATS_URL=nats://nats:4222
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  mes-service:
+    image: mom-platform/mes-service:latest
+    build:
+      context: .
+      dockerfile: services/mes-service/Dockerfile
+    ports:
+      - "50052:50052"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=momadmin
+      - DB_PASSWORD=mom123456
+      - DB_NAME=mom_mes
+      - NATS_URL=nats://nats:4222
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  qms-service:
+    image: mom-platform/qms-service:latest
+    build:
+      context: .
+      dockerfile: services/qms-service/Dockerfile
+    ports:
+      - "50053:50053"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=momadmin
+      - DB_PASSWORD=mom123456
+      - DB_NAME=mom_qms
+      - NATS_URL=nats://nats:4222
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  eam-service:
+    image: mom-platform/eam-service:latest
+    build:
+      context: .
+      dockerfile: services/eam-service/Dockerfile
+    ports:
+      - "50054:50054"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=momadmin
+      - DB_PASSWORD=mom123456
+      - DB_NAME=mom_eam
+      - NATS_URL=nats://nats:4222
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  wms-service:
+    image: mom-platform/wms-service:latest
+    build:
+      context: .
+      dockerfile: services/wms-service/Dockerfile
+    ports:
+      - "50055:50055"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=momadmin
+      - DB_PASSWORD=mom123456
+      - DB_NAME=mom_wms
+      - NATS_URL=nats://nats:4222
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  aps-service:
+    image: mom-platform/aps-service:latest
+    build:
+      context: .
+      dockerfile: services/aps-service/Dockerfile
+    ports:
+      - "50056:50056"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=momadmin
+      - DB_PASSWORD=mom123456
+      - DB_NAME=mom_aps
+      - NATS_URL=nats://nats:4222
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  trace-service:
+    image: mom-platform/trace-service:latest
+    build:
+      context: .
+      dockerfile: services/trace-service/Dockerfile
+    ports:
+      - "50057:50057"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=momadmin
+      - DB_PASSWORD=mom123456
+      - DB_NAME=mom_trace
+      - NATS_URL=nats://nats:4222
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  andon-service:
+    image: mom-platform/andon-service:latest
+    build:
+      context: .
+      dockerfile: services/andon-service/Dockerfile
+    ports:
+      - "50058:50058"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=momadmin
+      - DB_PASSWORD=mom123456
+      - DB_NAME=mom_andon
+      - NATS_URL=nats://nats:4222
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ==================== BFF 网关 ====================
+  gateway:
+    image: mom-platform/gateway:latest
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - MDM_SERVICE_URL=mdm-service:50051
+      - MES_SERVICE_URL=mes-service:50052
+      - QMS_SERVICE_URL=qms-service:50053
+      - EAM_SERVICE_URL=eam-service:50054
+      - WMS_SERVICE_URL=wms-service:50055
+      - APS_SERVICE_URL=aps-service:50056
+      - TRACE_SERVICE_URL=trace-service:50057
+      - ANDON_SERVICE_URL=andon-service:50058
+    depends_on:
+      - mdm-service
+      - mes-service
+      - qms-service
+      - eam-service
+      - wms-service
+      - aps-service
+      - trace-service
+      - andon-service
+
+  # ==================== 前端 ====================
+  web:
+    image: mom-platform/web:latest
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - API_BASE_URL=http://gateway:3000
+      - PORT=3001
+    depends_on:
+      - gateway
+
+volumes:
+  pgdata:
+  miniodata:

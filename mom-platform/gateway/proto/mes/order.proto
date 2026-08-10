@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package mom.mes;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/mes;mes";
+
+import "common/common.proto";
+import "common/enums.proto";
+import "google/protobuf/timestamp.proto";
+
+// SalesOrder — 销售订单
+message SalesOrder {
+  mom.common.BaseModel base = 1;
+  string order_no = 2;
+  int64 customer_id = 3;
+  string customer_name = 4;
+  string status = 5;
+  google.protobuf.Timestamp order_date = 6;
+  google.protobuf.Timestamp delivery_date = 7;
+  repeated SalesOrderItem items = 8;
+}
+
+// SalesOrderItem — 销售订单行
+message SalesOrderItem {
+  mom.common.BaseModel base = 1;
+  int64 order_id = 2;
+  int64 material_id = 3;
+  string material_code = 4;
+  string material_name = 5;
+  double quantity = 6;
+  double unit_price = 7;
+  double amount = 8;
+}
+
+// ProductionOrder — 生产工单（核心实体）
+message ProductionOrder {
+  mom.common.BaseModel base = 1;
+  string order_no = 2;
+  string sales_order_no = 3;
+  int64 material_id = 4;
+  string material_code = 5;
+  string material_name = 6;
+  string material_spec = 7;
+  double quantity = 8;
+  double completed_qty = 9;
+  double rejected_qty = 10;
+  int64 workshop_id = 11;
+  string workshop_name = 12;
+  int64 line_id = 13;
+  string line_name = 14;
+  mom.common.ProductionOrderStatus status = 15;
+  mom.common.Priority priority = 16;
+  google.protobuf.Timestamp plan_start_date = 17;
+  google.protobuf.Timestamp plan_end_date = 18;
+  google.protobuf.Timestamp actual_start_date = 19;
+  google.protobuf.Timestamp actual_end_date = 20;
+  string remark = 21;
+}

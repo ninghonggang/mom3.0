@@ -1,0 +1,178 @@
+syntax = "proto3";
+
+package mom.events;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/events;events";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// DomainEvent — 通用领域事件封装
+// 通过 NATS JetStream 传递, subject 格式: "mom.{domain}.{entity}.{action}"
+message DomainEvent {
+  string event_id = 1;
+  string event_name = 2;
+  google.protobuf.Timestamp event_time = 3;
+  int64 tenant_id = 4;
+  string source = 5;
+  bytes payload = 6;
+}
+
+// ---- MDM 事件 ----
+
+message MaterialCreatedEvent {
+  int64 material_id = 1;
+  string material_code = 2;
+  string material_name = 3;
+  int64 tenant_id = 4;
+}
+
+message MaterialObsoleteEvent {
+  int64 material_id = 1;
+  string material_code = 2;
+  int64 tenant_id = 3;
+}
+
+message BOMActivatedEvent {
+  int64 bom_id = 1;
+  string bom_code = 2;
+  int64 product_id = 3;
+  string product_code = 4;
+  string version = 5;
+  int64 tenant_id = 6;
+}
+
+message SupplierActivatedEvent {
+  int64 supplier_id = 1;
+  string supplier_code = 2;
+  string supplier_name = 3;
+  int64 tenant_id = 4;
+}
+
+message SupplierBlacklistedEvent {
+  int64 supplier_id = 1;
+  string supplier_code = 2;
+  string reason = 3;
+  int64 tenant_id = 4;
+}
+
+// ---- MES 事件 ----
+
+message ProductionOrderCreatedEvent {
+  int64 order_id = 1;
+  string order_no = 2;
+  int64 material_id = 3;
+  string material_code = 4;
+  double quantity = 5;
+  int64 line_id = 6;
+  int64 tenant_id = 7;
+}
+
+message ProductionOrderCompletedEvent {
+  int64 order_id = 1;
+  string order_no = 2;
+  double completed_qty = 3;
+  double rejected_qty = 4;
+  google.protobuf.Timestamp completed_at = 5;
+  int64 tenant_id = 6;
+}
+
+message ProductionOrderHoldEvent {
+  int64 order_id = 1;
+  string order_no = 2;
+  string reason = 3;
+  int64 tenant_id = 4;
+}
+
+message JobReportAuditedEvent {
+  int64 report_id = 1;
+  int64 order_id = 2;
+  string order_no = 3;
+  double qualified_qty = 4;
+  double defective_qty = 5;
+  int64 tenant_id = 6;
+}
+
+message ProductionExceptionEvent {
+  int64 issue_id = 1;
+  int64 order_id = 2;
+  string order_no = 3;
+  string issue_type = 4;
+  string description = 5;
+  int64 tenant_id = 6;
+}
+
+// ---- APS 事件 ----
+
+message MPSReleasedEvent {
+  int64 mps_id = 1;
+  string mps_no = 2;
+  int64 material_id = 3;
+  string material_code = 4;
+  double quantity = 5;
+  int64 tenant_id = 6;
+}
+
+message MRPCompletedEvent {
+  int64 mrp_id = 1;
+  string mrp_no = 2;
+  int64 mps_id = 3;
+  int64 tenant_id = 4;
+}
+
+message SchedulePublishedEvent {
+  int64 plan_id = 1;
+  string plan_no = 2;
+  int64 workcenter_id = 3;
+  int32 result_count = 4;
+  int64 tenant_id = 5;
+}
+
+message MaterialShortageEvent {
+  int64 order_id = 1;
+  string order_no = 2;
+  int64 material_id = 3;
+  string material_code = 4;
+  double shortage_qty = 5;
+  string level = 6;
+  int64 tenant_id = 7;
+}
+
+// ---- 外部系统集成事件 ----
+
+message ERPMaterialSyncedEvent {
+  string erp_source = 1;
+  string material_code = 2;
+  string material_name = 3;
+  string spec = 4;
+  string unit = 5;
+  int64 tenant_id = 6;
+}
+
+message ERPOrderSyncedEvent {
+  string erp_source = 1;
+  string order_no = 2;
+  string customer_code = 3;
+  string material_code = 4;
+  double quantity = 5;
+  google.protobuf.Timestamp delivery_date = 6;
+  int64 tenant_id = 7;
+}
+
+// ---- 事件名称常量（用于 NATS subject 路由） ----
+// mdm.material.created
+// mdm.material.obsolete
+// mdm.bom.activated
+// mdm.supplier.activated
+// mdm.supplier.blacklisted
+// production.order.created
+// production.order.completed
+// production.order.hold
+// production.report.audited
+// production.exception.created
+// aps.mps.released
+// aps.mrp.completed
+// aps.schedule.published
+// aps.material.shortage
+// erp.material.synced
+// erp.order.synced

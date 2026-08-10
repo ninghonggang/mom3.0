@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package mom.mdm;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/mdm;mdm";
+
+import "common/common.proto";
+import "common/enums.proto";
+
+// Material — 物料主数据
+message Material {
+  mom.common.BaseModel base = 1;
+  string material_code = 2;
+  string material_name = 3;
+  int64 category_id = 4;
+  string category_name = 5;
+  int64 unit_id = 6;
+  string unit_name = 7;
+  string spec = 8;
+  double safety_stock = 9;
+  mom.common.MaterialStatus status = 10;
+}
+
+// MaterialCategory — 物料分类
+message MaterialCategory {
+  mom.common.BaseModel base = 1;
+  string category_code = 2;
+  string category_name = 3;
+  int64 parent_id = 4;
+  int32 sort_order = 5;
+}
+
+// Unit — 计量单位
+message Unit {
+  mom.common.BaseModel base = 1;
+  string unit_code = 2;
+  string unit_name = 3;
+  string description = 4;
+}

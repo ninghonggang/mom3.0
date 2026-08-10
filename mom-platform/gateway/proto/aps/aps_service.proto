@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package mom.aps;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/aps;aps";
+
+import "common/common.proto";
+import "common/enums.proto";
+import "aps/plan.proto";
+import "aps/schedule.proto";
+
+// ---- MPS Service ----
+
+message GetMPSRequest { int64 id = 1; }
+message GetMPSResponse { MasterProductionSchedule mps = 1; }
+
+message ListMPSRequest {
+  int64 tenant_id = 1;
+  mom.common.Pagination pagination = 2;
+  string plan_month = 3;
+  mom.common.MpsStatus status = 4;
+}
+message ListMPSResponse {
+  repeated MasterProductionSchedule items = 1;
+  mom.common.Pagination pagination = 2;
+}
+
+message ReleaseMPSRequest {
+  int64 id = 1;
+  string operator = 2;
+}
+message ReleaseMPSResponse { MasterProductionSchedule mps = 1; }
+
+message CreateMPSRequest {
+  string mps_no = 1;
+  string plan_month = 2;
+  int64 material_id = 3;
+  double quantity = 4;
+  string remark = 5;
+}
+message CreateMPSResponse { MasterProductionSchedule mps = 1; }
+
+service MPSService {
+  rpc CreateMPS(CreateMPSRequest) returns (CreateMPSResponse);
+  rpc GetMPS(GetMPSRequest) returns (GetMPSResponse);
+  rpc ListMPS(ListMPSRequest) returns (ListMPSResponse);
+  rpc ReleaseMPS(ReleaseMPSRequest) returns (ReleaseMPSResponse);
+}
+
+// ---- MRP Service ----
+
+message RunMRPRequest {
+  int64 mps_id = 1;
+  string operator = 2;
+}
+message RunMRPResponse { MaterialRequirementsPlan mrp = 1; }
+
+message GetMRPRequest { int64 id = 1; }
+message GetMRPResponse { MaterialRequirementsPlan mrp = 1; }
+
+service MRPService {
+  rpc RunMRP(RunMRPRequest) returns (RunMRPResponse);
+  rpc GetMRP(GetMRPRequest) returns (GetMRPResponse);
+}
+
+// ---- Schedule Service ----
+
+message CreateScheduleRequest { SchedulePlan plan = 1; }
+message CreateScheduleResponse { SchedulePlan plan = 1; }
+
+message GetScheduleRequest { int64 id = 1; }
+message GetScheduleResponse { SchedulePlan plan = 1; }
+
+message PublishScheduleRequest {
+  int64 plan_id = 1;
+  string operator = 2;
+}
+message PublishScheduleResponse { SchedulePlan plan = 1; }
+
+message ListSchedulesRequest {
+  int64 tenant_id = 1;
+  mom.common.Pagination pagination = 2;
+  int64 mps_id = 3;
+  int64 workcenter_id = 4;
+  mom.common.SchedulePlanStatus status = 5;
+}
+message ListSchedulesResponse {
+  repeated SchedulePlan items = 1;
+  mom.common.Pagination pagination = 2;
+}
+
+service ScheduleService {
+  rpc CreateSchedule(CreateScheduleRequest) returns (CreateScheduleResponse);
+  rpc GetSchedule(GetScheduleRequest) returns (GetScheduleResponse);
+  rpc ListSchedules(ListSchedulesRequest) returns (ListSchedulesResponse);
+  rpc PublishSchedule(PublishScheduleRequest) returns (PublishScheduleResponse);
+}
+
+// ---- WorkCenter Service ----
+
+message ListWorkCentersRequest {
+  int64 tenant_id = 1;
+  int64 workshop_id = 2;
+}
+message ListWorkCentersResponse { repeated WorkCenter items = 1; }
+
+service WorkCenterService {
+  rpc ListWorkCenters(ListWorkCentersRequest) returns (ListWorkCentersResponse);
+}

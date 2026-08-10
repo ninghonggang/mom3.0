@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package mom.common;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/common;common";
+
+import "google/protobuf/timestamp.proto";
+
+// BaseModel — 所有业务实体公用的基础字段
+message BaseModel {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 4;
+  google.protobuf.Timestamp deleted_at = 5;
+}
+
+// Pagination — 分页请求/响应（统一）
+message Pagination {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total = 3;
+  int32 total_pages = 4;
+}
+
+// PageRequest — 分页请求
+message PageRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+// PageResponse — 分页响应
+message PageResponse {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total = 3;
+  int32 total_pages = 4;
+}
+
+// IdRequest — 通用 ID 查询请求
+message IdRequest {
+  int64 id = 1;
+}
+
+// StatusCode — 统一状态码 V2 格式
+message StatusCode {
+  string code = 1;
+  string label = 2;
+  string color = 3;
+}
+
+// Empty — 空响应
+message Empty {}

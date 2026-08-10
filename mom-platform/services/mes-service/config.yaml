@@ -1,0 +1,21 @@
+# MES Service Configuration
+server:
+  port: 50052
+  mode: debug
+
+database:
+  host: localhost
+  port: 5432
+  user: momadmin
+  password: mom123456
+  dbname: mom3.0
+  sslmode: disable
+
+nats:
+  url: nats://localhost:4222
+  cluster_id: mom-platform
+  client_id: mes-service
+
+logging:
+  level: debug
+  format: json

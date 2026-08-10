@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package mom.mdm;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/mdm;mdm";
+
+import "common/common.proto";
+import "common/enums.proto";
+import "google/protobuf/timestamp.proto";
+
+// BOMHeader — BOM 头
+message BOMHeader {
+  mom.common.BaseModel base = 1;
+  string bom_code = 2;
+  int64 product_id = 3;
+  string product_code = 4;
+  string product_name = 5;
+  string version = 6;
+  mom.common.BomStatus status = 7;
+  google.protobuf.Timestamp effective_date = 8;
+  repeated BOMLine lines = 9;
+}
+
+// BOMLine — BOM 行
+message BOMLine {
+  mom.common.BaseModel base = 1;
+  int64 bom_id = 2;
+  int64 component_id = 3;
+  string component_code = 4;
+  string component_name = 5;
+  double quantity = 6;
+  double loss_rate = 7;
+  int32 level = 8;
+  int32 sort_order = 9;
+}
+
+// ProcessRoute — 工艺路线
+message ProcessRoute {
+  mom.common.BaseModel base = 1;
+  string route_code = 2;
+  string route_name = 3;
+  int64 material_id = 4;
+  string material_code = 5;
+  mom.common.MesProcessStatus status = 6;
+  google.protobuf.Timestamp effective_date = 7;
+  google.protobuf.Timestamp expiry_date = 8;
+  bool is_current = 9;
+  repeated RouteOperation operations = 10;
+}
+
+// RouteOperation — 工序定义
+message RouteOperation {
+  mom.common.BaseModel base = 1;
+  int64 route_id = 2;
+  string operation_code = 3;
+  string operation_name = 4;
+  int32 sequence = 5;
+  int64 workcenter_id = 6;
+  double standard_hours = 7;
+  string description = 8;
+}

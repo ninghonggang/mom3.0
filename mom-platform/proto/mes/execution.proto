@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package mom.mes;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/mes;mes";
+
+import "common/common.proto";
+import "common/enums.proto";
+import "google/protobuf/timestamp.proto";
+
+// Dispatch — 派工单
+message Dispatch {
+  mom.common.BaseModel base = 1;
+  int64 order_id = 2;
+  string order_no = 3;
+  int64 line_id = 4;
+  int64 workstation_id = 5;
+  int64 process_id = 6;
+  int64 operation_id = 7;
+  string operation_name = 8;
+  int64 employee_id = 9;
+  string employee_name = 10;
+  double planned_qty = 11;
+  double completed_qty = 12;
+  google.protobuf.Timestamp plan_start_time = 13;
+  google.protobuf.Timestamp plan_end_time = 14;
+  mom.common.DispatchStatus status = 15;
+}
+
+// MobileJobReport — 移动报工（核心实体）
+message MobileJobReport {
+  mom.common.BaseModel base = 1;
+  int64 order_id = 2;
+  string order_no = 3;
+  int64 process_id = 4;
+  int64 operation_id = 5;
+  string operation_name = 6;
+  int64 employee_id = 7;
+  string employee_name = 8;
+  int64 workstation_id = 9;
+  double reported_qty = 10;
+  double qualified_qty = 11;
+  double defective_qty = 12;
+  int32 work_minutes = 13;
+  mom.common.ReportType report_type = 14;
+  mom.common.ReportStatus status = 15;
+  google.protobuf.Timestamp start_time = 16;
+  google.protobuf.Timestamp end_time = 17;
+  string defect_codes = 18;
+  string remark = 19;
+}
+
+// ProductionComplete — 完工入库单
+message ProductionComplete {
+  mom.common.BaseModel base = 1;
+  int64 order_id = 2;
+  string order_no = 3;
+  int64 warehouse_id = 4;
+  int64 location_id = 5;
+  double quantity = 6;
+  string batch_no = 7;
+  google.protobuf.Timestamp complete_time = 8;
+}
+
+// ProductionIssue — 生产异常
+message ProductionIssue {
+  mom.common.BaseModel base = 1;
+  int64 order_id = 2;
+  string order_no = 3;
+  string issue_type = 4;
+  string issue_level = 5;
+  string description = 6;
+  string handler = 7;
+  string resolution = 8;
+  google.protobuf.Timestamp resolved_at = 9;
+  string status = 10;
+}
+
+// FirstLastInspect — 首末件检验
+message FirstLastInspect {
+  mom.common.BaseModel base = 1;
+  int64 order_id = 2;
+  string order_no = 3;
+  string inspect_type = 4;
+  int64 inspector_id = 5;
+  string inspector_name = 6;
+  string result = 7;
+  double measured_value = 8;
+  double standard_value = 9;
+  double tolerance_upper = 10;
+  double tolerance_lower = 11;
+  google.protobuf.Timestamp inspect_time = 12;
+  string remark = 13;
+}

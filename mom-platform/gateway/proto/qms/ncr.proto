@@ -1,0 +1,140 @@
+syntax = "proto3";
+
+package mom.qms;
+
+import "common/common.proto";
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/qms;qms";
+
+// ============ 不良品处置单(NCR) ============
+
+message Ncr {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  string ncr_no = 3;
+  int64 inspection_sheet_id = 4;
+  int64 material_id = 5;
+  int64 batch_id = 6;
+  string quantity = 7;
+  NcrSeverity severity = 8;
+  NcrStatus status = 9;
+  int64 created_at = 10;
+  int64 updated_at = 11;
+}
+
+enum NcrSeverity {
+  NCR_SEVERITY_UNSPECIFIED = 0;
+  NCR_SEVERITY_CRITICAL = 1;
+  NCR_SEVERITY_MAJOR = 2;
+  NCR_SEVERITY_MINOR = 3;
+}
+
+enum NcrStatus {
+  NCR_STATUS_UNSPECIFIED = 0;
+  NCR_STATUS_OPEN = 1;
+  NCR_STATUS_INVESTIGATING = 2;
+  NCR_STATUS_DISPOSITIONED = 3;
+  NCR_STATUS_VERIFIED = 4;
+  NCR_STATUS_CLOSED = 5;
+  NCR_STATUS_CANCELLED = 6;
+  NCR_STATUS_REOPENED = 7;
+}
+
+message CreateNcrRequest {
+  int64 inspection_sheet_id = 1;
+  int64 material_id = 2;
+  int64 batch_id = 3;
+  string quantity = 4;
+  NcrSeverity severity = 5;
+}
+
+message UpdateNcrRequest {
+  int64 id = 1;
+  NcrStatus status = 2;
+}
+
+message NcrAction {
+  int64 id = 1;
+  int64 ncr_id = 2;
+  string action_type = 3;
+  string action_desc = 4;
+  int64 responsible_id = 5;
+}
+
+message AddNcrActionRequest {
+  int64 ncr_id = 1;
+  string action_type = 2;
+  string action_desc = 3;
+  int64 responsible_id = 4;
+}
+
+message ListNcrActionsResponse {
+  repeated NcrAction items = 1;
+}
+
+message GetNcrRequest {
+  int64 id = 1;
+}
+
+message ListNcrsRequest {
+  common.PageRequest page = 1;
+  NcrStatus status = 2;
+  NcrSeverity severity = 3;
+}
+
+message ListNcrsResponse {
+  repeated Ncr items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 缺陷代码 ============
+
+message DefectCode {
+  int64 id = 1;
+  string defect_code = 2;
+  string defect_name = 3;
+  string defect_class = 4;
+  NcrSeverity severity = 5;
+}
+
+message CreateDefectCodeRequest {
+  string defect_code = 1;
+  string defect_name = 2;
+  string defect_class = 3;
+  NcrSeverity severity = 4;
+}
+
+message ListDefectCodesRequest {
+  common.PageRequest page = 1;
+}
+
+message ListDefectCodesResponse {
+  repeated DefectCode items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ SPC 数据 ============
+
+message SpcData {
+  int64 id = 1;
+  int64 char_id = 2;
+  string sample_value = 3;
+  int64 sample_time = 4;
+  string xbar = 5;
+  string r_value = 6;
+}
+
+message RecordSpcDataRequest {
+  int64 char_id = 1;
+  string sample_value = 2;
+}
+
+message ListSpcDataRequest {
+  int64 char_id = 1;
+  int64 begin_time = 2;
+  int64 end_time = 3;
+}
+
+message ListSpcDataResponse {
+  repeated SpcData items = 1;
+}

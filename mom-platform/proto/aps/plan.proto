@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package mom.aps;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/aps;aps";
+
+import "common/common.proto";
+import "common/enums.proto";
+import "google/protobuf/timestamp.proto";
+
+// MPS — 主生产计划
+message MasterProductionSchedule {
+  mom.common.BaseModel base = 1;
+  string mps_no = 2;
+  string plan_month = 3;
+  int64 material_id = 4;
+  string material_code = 5;
+  string material_name = 6;
+  double quantity = 7;
+  mom.common.MpsStatus status = 8;
+  google.protobuf.Timestamp released_at = 9;
+  string remark = 10;
+}
+
+// MRP — 物料需求计划
+message MaterialRequirementsPlan {
+  mom.common.BaseModel base = 1;
+  string mrp_no = 2;
+  int64 mps_id = 3;
+  string mps_no = 4;
+  string mrp_type = 5;
+  google.protobuf.Timestamp plan_date = 6;
+  mom.common.MrpStatus status = 7;
+  repeated MRPItem items = 8;
+  string remark = 9;
+}
+
+// MRPItem — MRP 物料需求明细
+message MRPItem {
+  mom.common.BaseModel base = 1;
+  int64 mrp_id = 2;
+  int64 material_id = 3;
+  string material_code = 4;
+  string material_name = 5;
+  double gross_requirement = 6;
+  double inventory = 7;
+  double on_order = 8;
+  double allocated = 9;
+  double net_requirement = 10;
+  google.protobuf.Timestamp requirement_date = 11;
+}
+
+// WorkCenter — 工作中心
+message WorkCenter {
+  mom.common.BaseModel base = 1;
+  string work_center_code = 2;
+  string work_center_name = 3;
+  mom.common.WorkCenterType work_center_type = 4;
+  int64 workshop_id = 5;
+  string workshop_name = 6;
+  double standard_capacity = 7;
+  double max_capacity = 8;
+  double efficiency_factor = 9;
+  mom.common.WorkCenterStatus status = 10;
+}
+
+// FactoryCalendar — 工厂日历
+message FactoryCalendar {
+  mom.common.BaseModel base = 1;
+  string name = 2;
+  google.protobuf.Timestamp date = 3;
+  bool is_work_day = 4;
+  int32 shift_count = 5;
+  string shift_hours = 6;
+}

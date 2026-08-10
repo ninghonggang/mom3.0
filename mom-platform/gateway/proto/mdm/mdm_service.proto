@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package mom.mdm;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/mdm;mdm";
+
+import "common/common.proto";
+import "common/enums.proto";
+import "mdm/material.proto";
+import "mdm/bom.proto";
+import "mdm/workshop.proto";
+
+// ---- Material Service ----
+
+message GetMaterialRequest { int64 id = 1; }
+message GetMaterialResponse { Material material = 1; }
+
+message ListMaterialsRequest {
+  int64 tenant_id = 1;
+  mom.common.Pagination pagination = 2;
+  string keyword = 3;
+  int64 category_id = 4;
+  mom.common.MaterialStatus status = 5;
+}
+message ListMaterialsResponse {
+  repeated Material items = 1;
+  mom.common.Pagination pagination = 2;
+}
+
+message CreateMaterialRequest { Material material = 1; }
+message CreateMaterialResponse { Material material = 1; }
+
+message UpdateMaterialRequest { Material material = 1; }
+message UpdateMaterialResponse { Material material = 1; }
+
+service MaterialService {
+  rpc GetMaterial(GetMaterialRequest) returns (GetMaterialResponse);
+  rpc ListMaterials(ListMaterialsRequest) returns (ListMaterialsResponse);
+  rpc CreateMaterial(CreateMaterialRequest) returns (CreateMaterialResponse);
+  rpc UpdateMaterial(UpdateMaterialRequest) returns (UpdateMaterialResponse);
+}
+
+// ---- BOM Service ----
+
+message GetBOMRequest { int64 id = 1; }
+message GetBOMResponse { BOMHeader bom = 1; }
+
+message ListBOMsRequest {
+  int64 tenant_id = 1;
+  mom.common.Pagination pagination = 2;
+  int64 product_id = 3;
+  mom.common.BomStatus status = 4;
+}
+message ListBOMsResponse {
+  repeated BOMHeader items = 1;
+  mom.common.Pagination pagination = 2;
+}
+
+message CreateBOMRequest { BOMHeader bom = 1; }
+message CreateBOMResponse { BOMHeader bom = 1; }
+
+service BOMService {
+  rpc GetBOM(GetBOMRequest) returns (GetBOMResponse);
+  rpc ListBOMs(ListBOMsRequest) returns (ListBOMsResponse);
+  rpc CreateBOM(CreateBOMRequest) returns (CreateBOMResponse);
+}
+
+// ---- Workshop / Factory Assets Service ----
+
+message ListWorkshopsRequest {
+  int64 tenant_id = 1;
+  int64 factory_id = 2;
+}
+message ListWorkshopsResponse { repeated Workshop items = 1; }
+
+message ListProductionLinesRequest {
+  int64 workshop_id = 1;
+}
+message ListProductionLinesResponse { repeated ProductionLine items = 1; }
+
+message ListWorkstationsRequest {
+  int64 line_id = 1;
+}
+message ListWorkstationsResponse { repeated Workstation items = 1; }
+
+service FactoryAssetService {
+  rpc ListWorkshops(ListWorkshopsRequest) returns (ListWorkshopsResponse);
+  rpc ListProductionLines(ListProductionLinesRequest) returns (ListProductionLinesResponse);
+  rpc ListWorkstations(ListWorkstationsRequest) returns (ListWorkstationsResponse);
+}
+
+// ---- Partner Service (Customer + Supplier) ----
+
+message ListCustomersRequest {
+  int64 tenant_id = 1;
+  mom.common.Pagination pagination = 2;
+  string keyword = 3;
+}
+message ListCustomersResponse {
+  repeated Customer items = 1;
+  mom.common.Pagination pagination = 2;
+}
+
+message ListSuppliersRequest {
+  int64 tenant_id = 1;
+  mom.common.Pagination pagination = 2;
+  string keyword = 3;
+}
+message ListSuppliersResponse {
+  repeated Supplier items = 1;
+  mom.common.Pagination pagination = 2;
+}
+
+service PartnerService {
+  rpc ListCustomers(ListCustomersRequest) returns (ListCustomersResponse);
+  rpc ListSuppliers(ListSuppliersRequest) returns (ListSuppliersResponse);
+}

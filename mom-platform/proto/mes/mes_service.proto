@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package mom.mes;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/mes;mes";
+
+import "common/common.proto";
+import "common/enums.proto";
+import "mes/order.proto";
+import "mes/execution.proto";
+
+// ---- Production Order Service ----
+
+message GetOrderRequest { int64 id = 1; }
+message GetOrderResponse { ProductionOrder order = 1; }
+
+message ListOrdersRequest {
+  int64 tenant_id = 1;
+  mom.common.Pagination pagination = 2;
+  string keyword = 3;
+  int64 workshop_id = 4;
+  int64 line_id = 5;
+  mom.common.ProductionOrderStatus status = 6;
+  string date_from = 7;
+  string date_to = 8;
+}
+message ListOrdersResponse {
+  repeated ProductionOrder items = 1;
+  mom.common.Pagination pagination = 2;
+}
+
+message CreateOrderRequest { ProductionOrder order = 1; }
+message CreateOrderResponse { ProductionOrder order = 1; }
+
+message UpdateOrderStatusRequest {
+  int64 id = 1;
+  mom.common.ProductionOrderStatus status = 2;
+  string operator = 3;
+}
+message UpdateOrderStatusResponse { ProductionOrder order = 1; }
+
+message HoldOrderRequest {
+  int64 id = 1;
+  string reason = 2;
+  string operator = 3;
+}
+message ResumeOrderRequest {
+  int64 id = 1;
+  string operator = 2;
+}
+
+service ProductionOrderService {
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse);
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  rpc UpdateOrderStatus(UpdateOrderStatusRequest) returns (UpdateOrderStatusResponse);
+  rpc HoldOrder(HoldOrderRequest) returns (UpdateOrderStatusResponse);
+  rpc ResumeOrder(ResumeOrderRequest) returns (UpdateOrderStatusResponse);
+}
+
+// ---- Dispatch Service ----
+
+message ListDispatchesRequest {
+  int64 tenant_id = 1;
+  int64 order_id = 2;
+  int64 line_id = 3;
+  int64 workstation_id = 4;
+}
+message ListDispatchesResponse {
+  repeated Dispatch items = 1;
+}
+
+message CreateDispatchRequest {
+  int64 order_id = 1;
+  repeated Dispatch dispatches = 2;
+}
+message CreateDispatchResponse {
+  repeated Dispatch dispatches = 1;
+}
+
+service DispatchService {
+  rpc ListDispatches(ListDispatchesRequest) returns (ListDispatchesResponse);
+  rpc CreateDispatch(CreateDispatchRequest) returns (CreateDispatchResponse);
+}
+
+// ---- Job Report Service ----
+
+message CreateJobReportRequest { MobileJobReport report = 1; }
+message CreateJobReportResponse { MobileJobReport report = 1; }
+
+message ListJobReportsRequest {
+  int64 tenant_id = 1;
+  mom.common.Pagination pagination = 2;
+  int64 order_id = 3;
+  int64 employee_id = 4;
+  string date_from = 5;
+  string date_to = 6;
+}
+message ListJobReportsResponse {
+  repeated MobileJobReport items = 1;
+  mom.common.Pagination pagination = 2;
+}
+
+message ConfirmReportRequest {
+  int64 report_id = 1;
+  string operator = 2;
+}
+message ConfirmReportResponse { MobileJobReport report = 1; }
+
+message AuditReportRequest {
+  int64 report_id = 1;
+  string operator = 2;
+}
+message AuditReportResponse { MobileJobReport report = 1; }
+
+service JobReportService {
+  rpc CreateReport(CreateJobReportRequest) returns (CreateJobReportResponse);
+  rpc ListReports(ListJobReportsRequest) returns (ListJobReportsResponse);
+  rpc ConfirmReport(ConfirmReportRequest) returns (ConfirmReportResponse);
+  rpc AuditReport(AuditReportRequest) returns (AuditReportResponse);
+}
+
+// ---- Production Complete Service ----
+
+message CreateCompleteRequest { ProductionComplete complete = 1; }
+message CreateCompleteResponse { ProductionComplete complete = 1; }
+
+service ProductionCompleteService {
+  rpc CreateComplete(CreateCompleteRequest) returns (CreateCompleteResponse);
+}

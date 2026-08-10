@@ -1,0 +1,30 @@
+# Node dependencies (not needed for Go builds)
+gateway/
+web/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*~
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Deployment configs (not needed in build)
+deploy/
+scripts/
+
+# Docker files themselves
+docker-compose.yml
+.dockerignore
+
+# Build caches and artifacts
+**/tmp/
+**/.cache/
+**/bin/

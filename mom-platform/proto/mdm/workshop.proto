@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package mom.mdm;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/mdm;mdm";
+
+import "common/common.proto";
+import "common/enums.proto";
+
+// Workshop — 车间
+message Workshop {
+  mom.common.BaseModel base = 1;
+  string workshop_code = 2;
+  string workshop_name = 3;
+  int64 workshop_type_id = 4;
+  string workshop_type_name = 5;
+  int64 factory_id = 6;
+}
+
+// ProductionLine — 产线
+message ProductionLine {
+  mom.common.BaseModel base = 1;
+  int64 workshop_id = 2;
+  string workshop_name = 3;
+  string line_code = 4;
+  string line_name = 5;
+  string description = 6;
+}
+
+// Workstation — 工位
+message Workstation {
+  mom.common.BaseModel base = 1;
+  int64 line_id = 2;
+  string line_name = 3;
+  string station_code = 4;
+  string station_name = 5;
+  string station_type = 6;
+}
+
+// Shift — 班次
+message Shift {
+  mom.common.BaseModel base = 1;
+  string shift_code = 2;
+  string shift_name = 3;
+  string start_time = 4;
+  string end_time = 5;
+  int32 duration_minutes = 6;
+}
+
+// Customer — 客户
+message Customer {
+  mom.common.BaseModel base = 1;
+  string customer_code = 2;
+  string customer_name = 3;
+  string contact_person = 4;
+  string contact_phone = 5;
+  string address = 6;
+  mom.common.PartnerStatus status = 7;
+}
+
+// Supplier — 供应商
+message Supplier {
+  mom.common.BaseModel base = 1;
+  string supplier_code = 2;
+  string supplier_name = 3;
+  string contact_person = 4;
+  string contact_phone = 5;
+  string address = 6;
+  string payment_terms = 7;
+  double credit_limit = 8;
+  mom.common.PartnerStatus status = 9;
+}

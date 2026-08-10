@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package mom.aps;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/aps;aps";
+
+import "common/common.proto";
+import "common/enums.proto";
+import "google/protobuf/timestamp.proto";
+
+// SchedulePlan — 排程计划
+message SchedulePlan {
+  mom.common.BaseModel base = 1;
+  string plan_no = 2;
+  int64 mps_id = 3;
+  string mps_no = 4;
+  mom.common.PlanType plan_type = 5;
+  mom.common.SchedulingAlgorithm algorithm = 6;
+  google.protobuf.Timestamp start_date = 7;
+  google.protobuf.Timestamp end_date = 8;
+  int64 workcenter_id = 9;
+  mom.common.SchedulePlanStatus status = 10;
+  repeated ScheduleResult results = 11;
+}
+
+// ScheduleResult — 排程结果
+message ScheduleResult {
+  mom.common.BaseModel base = 1;
+  int64 plan_id = 2;
+  int64 order_id = 3;
+  string order_no = 4;
+  int32 sequence = 5;
+  int64 line_id = 6;
+  string line_name = 7;
+  int64 workcenter_id = 8;
+  string workcenter_name = 9;
+  google.protobuf.Timestamp plan_start_time = 10;
+  google.protobuf.Timestamp plan_end_time = 11;
+  double estimated_hours = 12;
+  mom.common.ScheduleResultStatus status = 13;
+}
+
+// ChangeoverMatrix — 换型矩阵
+message ChangeoverMatrix {
+  mom.common.BaseModel base = 1;
+  int64 workcenter_id = 2;
+  int64 from_product_family_id = 3;
+  int64 to_product_family_id = 4;
+  int32 changeover_minutes = 5;
+}
+
+// MaterialShortage — 缺料分析
+message MaterialShortage {
+  mom.common.BaseModel base = 1;
+  int64 order_id = 2;
+  string order_no = 3;
+  int64 material_id = 4;
+  string material_code = 5;
+  double shortage_qty = 6;
+  mom.common.ShortageLevel level = 7;
+  google.protobuf.Timestamp required_date = 8;
+}

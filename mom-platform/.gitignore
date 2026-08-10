@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+dist/
+.next/
+bin/
+gen/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+*.exe
+*.test
+*.out
+coverage.out
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Docker
+pgdata/
+miniodata/

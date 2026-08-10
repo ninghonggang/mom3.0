@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package mom.wms;
+
+import "common/common.proto";
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/wms;wms";
+
+// ============ 仓库 ============
+
+message Warehouse {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  string warehouse_code = 3;
+  string warehouse_name = 4;
+  string warehouse_type = 5;
+  string status = 6;
+}
+
+message CreateWarehouseRequest {
+  string warehouse_code = 1;
+  string warehouse_name = 2;
+  string warehouse_type = 3;
+}
+
+message ListWarehousesRequest {
+  common.PageRequest page = 1;
+}
+
+message ListWarehousesResponse {
+  repeated Warehouse items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 库位 ============
+
+message Location {
+  int64 id = 1;
+  int64 warehouse_id = 2;
+  int64 area_id = 3;
+  string location_code = 4;
+  LocationType location_type = 5;
+  string capacity = 6;
+  string used_capacity = 7;
+  LocationStatus status = 8;
+}
+
+enum LocationType {
+  LOCATION_TYPE_UNSPECIFIED = 0;
+  LOCATION_TYPE_PICK = 1;
+  LOCATION_TYPE_STORAGE = 2;
+  LOCATION_TYPE_INBOUND = 3;
+  LOCATION_TYPE_OUTBOUND = 4;
+}
+
+enum LocationStatus {
+  LOCATION_STATUS_UNSPECIFIED = 0;
+  LOCATION_STATUS_ACTIVE = 1;
+  LOCATION_STATUS_INACTIVE = 2;
+  LOCATION_STATUS_FULL = 3;
+}
+
+message CreateLocationRequest {
+  int64 warehouse_id = 1;
+  int64 area_id = 2;
+  string location_code = 3;
+  LocationType location_type = 4;
+  string capacity = 5;
+}
+
+message ListLocationsRequest {
+  common.PageRequest page = 1;
+  int64 warehouse_id = 2;
+  int64 area_id = 3;
+}
+
+message ListLocationsResponse {
+  repeated Location items = 1;
+  common.PageResponse page = 2;
+}
+
+// ============ 库存台账 ============
+
+message InventoryBalance {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  int64 material_id = 3;
+  int64 location_id = 4;
+  string batch_no = 5;
+  string quantity = 6;
+  string locked_qty = 7;
+  string available_qty = 8;
+  string expire_date = 9;
+  BalanceStatus status = 10;
+  string unit_cost = 11;
+}
+
+enum BalanceStatus {
+  BALANCE_STATUS_UNSPECIFIED = 0;
+  BALANCE_STATUS_NORMAL = 1;
+  BALANCE_STATUS_LOCKED = 2;
+  BALANCE_STATUS_EXPIRED = 3;
+}
+
+message GetBalanceRequest {
+  int64 material_id = 1;
+  int64 location_id = 2;
+  string batch_no = 3;
+}
+
+message ListBalancesRequest {
+  common.PageRequest page = 1;
+  int64 material_id = 2;
+  int64 warehouse_id = 3;
+  BalanceStatus status = 4;
+}
+
+message ListBalancesResponse {
+  repeated InventoryBalance items = 1;
+  common.PageResponse page = 2;
+}
+
+message LockInventoryRequest {
+  int64 balance_id = 1;
+  string lock_qty = 2;
+  string lock_type = 3;
+  string reason = 4;
+}
+
+message UnlockInventoryRequest {
+  int64 lock_id = 1;
+}

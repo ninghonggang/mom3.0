@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package mom.qms;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/qms;qms";
+
+import "qms/inspection.proto";
+import "qms/ncr.proto";
+
+service QmsService {
+  // 检验单
+  rpc CreateInspectionSheet(CreateInspectionSheetRequest) returns (InspectionSheet);
+  rpc UpdateInspectionSheet(UpdateInspectionSheetRequest) returns (InspectionSheet);
+  rpc GetInspectionSheet(GetInspectionSheetRequest) returns (InspectionSheet);
+  rpc ListInspectionSheets(ListInspectionSheetsRequest) returns (ListInspectionSheetsResponse);
+  rpc DeleteInspectionSheet(DeleteInspectionSheetRequest) returns (InspectionSheet);
+
+  // 检验特性
+  rpc CreateCharacteristic(CreateCharacteristicRequest) returns (InspectionCharacteristic);
+  rpc ListCharacteristics(ListCharacteristicsRequest) returns (ListCharacteristicsResponse);
+
+  // 检验计划
+  rpc CreateInspectionPlan(CreateInspectionPlanRequest) returns (InspectionPlan);
+  rpc ListInspectionPlans(ListInspectionPlansRequest) returns (ListInspectionPlansResponse);
+
+  // 检验结果
+  rpc RecordInspectionResult(RecordInspectionResultRequest) returns (InspectionSheet);
+
+  // NCR
+  rpc CreateNcr(CreateNcrRequest) returns (Ncr);
+  rpc UpdateNcr(UpdateNcrRequest) returns (Ncr);
+  rpc GetNcr(GetNcrRequest) returns (Ncr);
+  rpc ListNcrs(ListNcrsRequest) returns (ListNcrsResponse);
+  rpc AddNcrAction(AddNcrActionRequest) returns (NcrAction);
+  rpc ListNcrActions(GetNcrRequest) returns (ListNcrActionsResponse);
+
+  // 缺陷代码
+  rpc CreateDefectCode(CreateDefectCodeRequest) returns (DefectCode);
+  rpc ListDefectCodes(ListDefectCodesRequest) returns (ListDefectCodesResponse);
+
+  // SPC
+  rpc RecordSpcData(RecordSpcDataRequest) returns (SpcData);
+  rpc ListSpcData(ListSpcDataRequest) returns (ListSpcDataResponse);
+}

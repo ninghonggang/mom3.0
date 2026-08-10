@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package mom.eam;
+
+import "eam/equipment.proto";
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/eam;eam";
+
+service EamService {
+  // 设备台账
+  rpc CreateEquipment(CreateEquipmentRequest) returns (Equipment);
+  rpc GetEquipment(GetEquipmentRequest) returns (Equipment);
+  rpc ListEquipment(ListEquipmentRequest) returns (ListEquipmentResponse);
+
+  // 维修单
+  rpc CreateRepairOrder(CreateRepairOrderRequest) returns (RepairOrder);
+  rpc UpdateRepairOrder(UpdateRepairOrderRequest) returns (RepairOrder);
+  rpc GetRepairOrder(GetEquipmentRequest) returns (RepairOrder);
+  rpc ListRepairOrders(ListRepairOrdersRequest) returns (ListRepairOrdersResponse);
+
+  // OEE
+  rpc SaveOee(SaveOeeRequest) returns (EquipmentOee);
+  rpc ListOee(ListOeeRequest) returns (ListOeeResponse);
+
+  // 保养计划
+  rpc CreateMaintenancePlan(CreateMaintenancePlanRequest) returns (MaintenancePlan);
+  rpc ListMaintenancePlans(ListMaintenancePlansRequest) returns (ListMaintenancePlansResponse);
+
+  // 点检
+  rpc CreateCheck(CreateCheckRequest) returns (EquipmentCheck);
+  rpc ListChecks(ListChecksRequest) returns (ListChecksResponse);
+
+  // 停机
+  rpc StartDowntime(StartDowntimeRequest) returns (EquipmentDowntime);
+  rpc ResolveDowntime(ResolveDowntimeRequest) returns (EquipmentDowntime);
+  rpc ListDowntimes(ListDowntimesRequest) returns (ListDowntimesResponse);
+}

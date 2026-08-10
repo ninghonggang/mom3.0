@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package mom.wms;
+
+option go_package = "github.com/ninghonggang/mom-platform/gen/wms;wms";
+
+import "common/common.proto";
+import "wms/inventory.proto";
+import "wms/transaction.proto";
+
+service WmsService {
+  // 仓库
+  rpc CreateWarehouse(CreateWarehouseRequest) returns (Warehouse);
+  rpc ListWarehouses(ListWarehousesRequest) returns (ListWarehousesResponse);
+
+  // 库位
+  rpc CreateLocation(CreateLocationRequest) returns (Location);
+  rpc ListLocations(ListLocationsRequest) returns (ListLocationsResponse);
+
+  // 库存
+  rpc GetBalance(GetBalanceRequest) returns (InventoryBalance);
+  rpc ListBalances(ListBalancesRequest) returns (ListBalancesResponse);
+  rpc LockInventory(LockInventoryRequest) returns (InventoryBalance);
+  rpc UnlockInventory(UnlockInventoryRequest) returns (InventoryBalance);
+
+  // 入库
+  rpc CreateReceiveOrder(CreateReceiveOrderRequest) returns (ReceiveOrder);
+  rpc ReceiveConfirm(ReceiveConfirmRequest) returns (ReceiveOrder);
+  rpc Putaway(PutawayRequest) returns (ReceiveOrder);
+  rpc GetReceiveOrder(common.IdRequest) returns (ReceiveOrder);
+  rpc ListReceiveOrders(ListReceiveOrdersRequest) returns (ListReceiveOrdersResponse);
+
+  // 出库
+  rpc CreateDeliveryOrder(CreateDeliveryOrderRequest) returns (DeliveryOrder);
+  rpc PickItems(PickRequest) returns (DeliveryOrder);
+  rpc ShipOrder(ShipRequest) returns (DeliveryOrder);
+  rpc GetDeliveryOrder(common.IdRequest) returns (DeliveryOrder);
+  rpc ListDeliveryOrders(ListDeliveryOrdersRequest) returns (ListDeliveryOrdersResponse);
+
+  // 盘点
+  rpc CreateCountPlan(CreateCountPlanRequest) returns (CountPlan);
+  rpc SubmitCountRecord(SubmitCountRecordRequest) returns (CountPlan);
+}
