@@ -1,4 +1,4 @@
-# 峰梅动力 MOM3.0 - Architecture Context Hub
+# MOM 3.0 - Architecture Context Hub
 
 > Last updated: 2026-04-21
 > AI Assistant: Hermes Agent
@@ -7,7 +7,7 @@
 
 ## 项目概览
 
-**项目名称**: 峰梅动力 MOM 3.0 (制造运营管理系统)
+**项目名称**: MOM 3.0 (制造运营管理系统)
 **技术栈**: React (前端 mom-web) + Go (后端 mom-server)
 **测试框架**: Playwright (UI) + Go test (后端)
 **工作目录**: `/data/mom3.0`

@@ -8,7 +8,7 @@
 
 ## 1. 是什么
 
-MOM 3.0（Manufacturing Operations Management，制造运营管理系统）是**峰梅动力**面向汽车零部件多品种小批量场景自研的工业软件，覆盖主数据、计划排程、生产执行、质量、设备、仓储、追溯、供应链等核心业务。
+MOM 3.0（Manufacturing Operations Management，制造运营管理系统）是面向**离散制造多品种小批量**场景自研的工业软件，覆盖主数据、计划排程、生产执行、质量、设备、仓储、追溯、供应链等核心业务。遵循 ISA-95 / IEC 62264 标准，支持多工厂、多车间部署。
 
 文档维护规约见 [DOCUMENTATION_GUIDE.md](./DOCUMENTATION_GUIDE.md)。
 
